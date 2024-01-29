@@ -1,0 +1,23 @@
+{
+  "network": {
+    "url": "https://matic-mumbai.chainstacklabs.com",
+    "accounts": ["YOUR_DEPLOYER_KEY", "YOUR_GOVERNOR_KEY"],
+    "gas": "auto",
+    "gasPrice": "auto",
+    "gasMultiplier": 1
+  },
+  "etherscan": {
+    "apiKey": "YOUR_ETHERSCAN_KEY"
+  },
+  "macro":{
+    "DEFAULT_FEE_ADDRESS": "0x199AaA230f18432a715528B4091120cdCc7D9779",
+    "BLOCK_PERIOD": "1 seconds",
+    "UPGRADE_NOTICE_PERIOD": 0,
+    "PRIORITY_EXPIRATION": 0,
+    "CHAIN_ID": 1,
+    "MAX_CHAIN_ID": 4,
+    "ALL_CHAINS": 15,
+    "MASTER_CHAIN_ID": 1,
+    "SYNC_TYPE": 0
+  }
+}

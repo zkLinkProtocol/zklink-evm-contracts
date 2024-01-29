@@ -1,0 +1,28 @@
+{
+  "name": "zklink-contracts",
+  "version": "1.0.0",
+  "license": "MIT",
+  "homepage": "https://zk.link",
+  "keywords": [
+    "zklink",
+    "zk-rollup",
+    "cross chain"
+  ],
+  "devDependencies": {
+    "@matterlabs/hardhat-zksync-deploy": "^1.1.1",
+    "@matterlabs/hardhat-zksync-solc": "^1.0.3",
+    "@matterlabs/hardhat-zksync-upgradable": "^1.2.1",
+    "@matterlabs/hardhat-zksync-verify": "^1.2.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "hardhat": "^2.19.3",
+    "zksync-ethers": "^6.0.0"
+  },
+  "scripts": {
+    "compile-master": "MASTER_UNITTEST=true npx hardhat compile",
+    "compile-slaver": "SLAVER_UNITTEST=true npx hardhat compile"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.5",
+    "@openzeppelin/contracts-upgradeable": "^4.9.5"
+  }
+}

@@ -1,0 +1,14 @@
+.idea
+.DS_Store
+node_modules
+
+log
+tmp
+
+etc/*
+!etc/EXAMPLE.json
+
+#Hardhat files
+cache
+artifacts
+.openzeppelin
