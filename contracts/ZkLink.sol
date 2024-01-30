@@ -2,13 +2,19 @@
 
 pragma solidity ^0.8.0;
 
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AddressAliasHelper} from "./AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
+import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
+import {Message} from "./libraries/Message.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
-contract ZkLink is IZkLink {
+contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
     /// @notice The struct that describes whether users will be charged for pubdata for L1->L2 transactions.
     /// @param Rollup The users are charged for pubdata & it is priced based on the gas price on Ethereum.
     /// @param Validium The pubdata is considered free with regard to the L1 gas price.
@@ -72,6 +78,10 @@ contract ZkLink is IZkLink {
     /// @dev Even though the price for 1 byte of pubdata is 16 L1 gas, we have a slightly increased value.
     uint256 public constant L1_GAS_PER_PUBDATA_BYTE = 17;
 
+    /// @notice The gateway is used for communicating with L1
+    IL2Gateway public gateway;
+    /// @notice List of permitted validators
+    mapping(address validatorAddress => bool isValidator) public validators;
     /// @dev Gas price of primary chain
     uint256 public txGasPrice;
     /// @dev Fee params used to derive gasPrice for the L1->L2 transactions. For L2 transactions,
@@ -79,12 +89,46 @@ contract ZkLink is IZkLink {
     FeeParams public feeParams;
     /// @dev The total number of priority operations that were added to the priority queue
     uint256 public totalPriorityTxs;
+    /// @dev The total number of synced priority operations
+    uint256 public totalSyncedPriorityTxs;
     /// @dev The sync status for each priority operation
     mapping(uint256 priorityOpId => SyncStatus) public priorityOpSyncStatus;
     /// @dev Stored root hashes of L2 -> L1 logs
     mapping(uint256 batchNumber => bytes32 l2LogsRootHash) public l2LogsRootHashes;
 
     event NewPriorityRequest(uint256 indexed priorityOpId, ForwardL2Request l2Request);
+    event SyncL2Requests(uint256 indexed totalSyncedPriorityTxs, bytes32 indexed syncHash, uint256 indexed forwardEthAmount);
+
+    /// @notice Check if msg sender is gateway
+    modifier onlyGateway() {
+        require(msg.sender == address(gateway), "Caller is not gateway");
+        _;
+    }
+
+    /// @notice Checks if validator is active
+    modifier onlyValidator() {
+        require(validators[msg.sender], "Caller is not validator"); // validator is not active
+        _;
+    }
+
+    function initialize() external initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        __ReentrancyGuard_init();
+        __Pausable_init();
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    /// @dev Pause the contract, can only be called by the owner
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @dev Unpause the contract, can only be called by the owner
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 
     function l2TransactionBaseCost(
         uint256 _gasPrice,
@@ -103,7 +147,7 @@ contract ZkLink is IZkLink {
         uint256 _l2GasPerPubdataByteLimit,
         bytes[] calldata _factoryDeps,
         address _refundRecipient
-    ) external payable returns (bytes32 canonicalTxHash){
+    ) external payable nonReentrant whenNotPaused returns (bytes32 canonicalTxHash){
         // Change the sender address if it is a smart contract to prevent address collision between L1 and L2.
         // Please note, currently zkSync address derivation is different from Ethereum one, but it may be changed in the future.
         address sender = msg.sender;
@@ -116,13 +160,13 @@ contract ZkLink is IZkLink {
         // VERY IMPORTANT: nobody should rely on this constant to be fixed and every contract should give their users the ability to provide the
         // ability to provide `_l2GasPerPubdataByteLimit` for each independent transaction.
         // CHANGING THIS CONSTANT SHOULD BE A CLIENT-SIDE CHANGE.
-        require(_l2GasPerPubdataByteLimit == REQUIRED_L2_GAS_PRICE_PER_PUBDATA, "qp");
-        require(_factoryDeps.length <= MAX_NEW_FACTORY_DEPS, "uj");
+        require(_l2GasPerPubdataByteLimit == REQUIRED_L2_GAS_PRICE_PER_PUBDATA, "Invalid l2GasPerPubdataByteLimit");
+        require(_factoryDeps.length <= MAX_NEW_FACTORY_DEPS, "Invalid factoryDeps");
 
         // Checking that the user provided enough ether to pay for the transaction.
         uint256 l2GasPrice = _deriveL2GasPrice(txGasPrice, _l2GasPerPubdataByteLimit);
         uint256 baseCost = l2GasPrice * _l2GasLimit;
-        require(msg.value == baseCost + _l2Value, "mv"); // The `msg.value` doesn't cover the transaction cost
+        require(msg.value == baseCost + _l2Value, "Invalid msg value"); // The `msg.value` doesn't cover the transaction cost
 
         // If the `_refundRecipient` is not provided, we use the `sender` as the recipient.
         address refundRecipient = _refundRecipient == address(0) ? sender : _refundRecipient;
@@ -160,6 +204,28 @@ contract ZkLink is IZkLink {
         totalPriorityTxs = _totalPriorityTxs + 1;
 
         emit NewPriorityRequest(request.txId, request);
+    }
+
+    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable onlyValidator {
+        // Check newTotalSyncedPriorityTxs
+        require(_newTotalSyncedPriorityTxs <= totalPriorityTxs && _newTotalSyncedPriorityTxs > totalSyncedPriorityTxs, "Invalid newTotalSyncedPriorityTxs");
+
+        // Forward eth amount is the difference of two accumulate amount
+        SyncStatus memory lastSyncStatus;
+        if (totalSyncedPriorityTxs > 0) {
+            lastSyncStatus = priorityOpSyncStatus[totalSyncedPriorityTxs - 1];
+        }
+        SyncStatus memory currentSyncStatus = priorityOpSyncStatus[_newTotalSyncedPriorityTxs - 1];
+        uint256 forwardAmount = currentSyncStatus.amount - lastSyncStatus.amount;
+
+        // Update synced priority txs
+        totalSyncedPriorityTxs = _newTotalSyncedPriorityTxs;
+
+        // Send sync status to L1 gateway
+        bytes memory msgData = abi.encode(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
+        gateway.sendMessage{value: msg.value + forwardAmount}(Message.MsgType.SyncL2Request, msgData);
+
+        emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
