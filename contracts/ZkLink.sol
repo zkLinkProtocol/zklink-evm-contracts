@@ -34,8 +34,7 @@ contract ZkLink is IZkLink {
         uint64 minimalL2GasPrice;
     }
 
-    /// @dev Internal structure that contains the parameters for the writePriorityOp
-    /// internal function.
+    /// @dev Internal structure that contains the parameters for the forwardRequestL2Transaction
     /// @param sender The sender's address.
     /// @param txId The id of the priority transaction.
     /// @param contractAddressL2 The address of the contract on L2 to call.
@@ -46,7 +45,7 @@ contract ZkLink is IZkLink {
     /// @param l2GasPricePerPubdata The price for a single pubdata byte in L2 gas.
     /// @param refundRecipient The recipient of the refund for the transaction on L2. If the transaction fails, then
     /// this address will receive the `l2Value`.
-    struct WritePriorityOpParams {
+    struct ForwardL2Request {
         address sender;
         uint256 txId;
         address contractAddressL2;
@@ -85,7 +84,7 @@ contract ZkLink is IZkLink {
     /// @dev Stored root hashes of L2 -> L1 logs
     mapping(uint256 batchNumber => bytes32 l2LogsRootHash) public l2LogsRootHashes;
 
-    event NewPriorityRequest(uint256 indexed priorityOpId, bytes32 indexed canonicalTxHash ,bytes l2Request);
+    event NewPriorityRequest(uint256 indexed priorityOpId, ForwardL2Request l2Request);
 
     function l2TransactionBaseCost(
         uint256 _gasPrice,
@@ -134,7 +133,7 @@ contract ZkLink is IZkLink {
 
         // Build l2 request params
         uint256 _totalPriorityTxs = totalPriorityTxs;
-        WritePriorityOpParams memory params = WritePriorityOpParams(
+        ForwardL2Request memory request = ForwardL2Request(
             sender,
             _totalPriorityTxs,
             _contractL2,
@@ -145,9 +144,7 @@ contract ZkLink is IZkLink {
             _factoryDeps,
             refundRecipient
         );
-        bytes memory l2Request = abi.encode(params);
-        canonicalTxHash = keccak256(l2Request);
-        emit NewPriorityRequest(_totalPriorityTxs, canonicalTxHash, l2Request);
+        canonicalTxHash = keccak256(abi.encode(request));
 
         // Accumulate sync status
         SyncStatus memory syncStatus;
@@ -161,6 +158,8 @@ contract ZkLink is IZkLink {
         }
         priorityOpSyncStatus[_totalPriorityTxs] = syncStatus;
         totalPriorityTxs = _totalPriorityTxs + 1;
+
+        emit NewPriorityRequest(request.txId, request);
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
