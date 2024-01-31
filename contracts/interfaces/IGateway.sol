@@ -6,7 +6,7 @@ interface IGateway {
     function getRemoteGateway() external view returns (address);
 
     /// @notice Send message to remote gateway
-    /// @param value The msg value
-    /// @param callData The call data
-    function sendMessage(uint256 value, bytes memory callData) external payable;
+    /// @param _value The msg value
+    /// @param _callData The call data
+    function sendMessage(uint256 _value, bytes memory _callData) external payable;
 }

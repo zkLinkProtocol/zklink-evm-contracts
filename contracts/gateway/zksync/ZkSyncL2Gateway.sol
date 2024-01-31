@@ -8,8 +8,9 @@ import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../AddressAliasHelper.sol";
 import {IZkSyncL1Gateway} from "../../interfaces/zksync/IZkSyncL1Gateway.sol";
 import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
+import {BaseGateway} from "../BaseGateway.sol";
 
-contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway {
+contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway, BaseGateway {
     uint160 internal constant SYSTEM_CONTRACTS_OFFSET = 0x8000; // 2^15
 
     /// @notice ZkSync system message service on local chain
@@ -29,25 +30,26 @@ contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway {
         __BaseGateway_init();
     }
 
-    function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
         // no fee
-        require(msg.value == value, "Invalid value");
+        require(msg.value == _value, "Invalid value");
 
-        if (value > 0) {
+        if (_value > 0) {
             // send eth to ZkSyncL1Gateway(the first message send to L1)
-            L2_ETH_ADDRESS.withdraw{value: value}(remoteGateway);
+            L2_ETH_ADDRESS.withdraw{value: _value}(remoteGateway);
         }
 
         // send message to ZkSyncL1Gateway(the second message send to L1)
-        bytes memory message = abi.encode(IZkSyncL1Gateway.finalizeMessage.selector, value, callData);
+        bytes memory message = abi.encode(IZkSyncL1Gateway.finalizeMessage.selector, _value, _callData);
         L2_MESSENGER.sendToL1(message);
     }
 
-    function claimMessage(uint256 value, bytes memory callData) external payable onlyRemoteGateway {
-        require(msg.value == value, "Claim eth value not match");
+    function claimMessage(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
+        // no fee
+        require(msg.value == _value, "Claim eth value not match");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(zkLink).call{value: value}(callData);
+        (bool success, ) = address(zkLink).call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

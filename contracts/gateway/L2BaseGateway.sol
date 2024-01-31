@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IZkLink} from "../interfaces/IZkLink.sol";
-import {BaseGateway} from "./BaseGateway.sol";
 
-abstract contract L2BaseGateway is BaseGateway {
+abstract contract L2BaseGateway is UUPSUpgradeable {
     /// @notice The zkLink contract
     IZkLink public zkLink;
 
@@ -22,7 +22,7 @@ abstract contract L2BaseGateway is BaseGateway {
     }
 
     function __L2BaseGateway_init(IZkLink _zkLink) internal onlyInitializing {
-        __BaseGateway_init();
+        __UUPSUpgradeable_init();
         __L2BaseGateway_init_unchained(_zkLink);
     }
 

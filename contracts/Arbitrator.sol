@@ -26,15 +26,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function forwardMessage(uint256 value, bytes memory callData) external payable {
+    function forwardMessage(uint256 _value, bytes memory _callData) external payable {
         IGateway gateway = IGateway(msg.sender);
         if (gateway == primaryChainGateway) {
-            (IGateway secondaryChainGateway, bytes memory forwardCallData) = abi.decode(callData, (IGateway, bytes));
+            (IGateway secondaryChainGateway, bytes memory forwardCallData) = abi.decode(_callData, (IGateway, bytes));
             require(secondaryChainGateways[secondaryChainGateway], "Invalid secondary chain gateway");
-            secondaryChainGateway.sendMessage{value: msg.value}(value, forwardCallData);
+            secondaryChainGateway.sendMessage{value: msg.value}(_value, forwardCallData);
         } else {
             require(secondaryChainGateways[IGateway(msg.sender)], "Not secondary chain gateway");
-            primaryChainGateway.sendMessage{value: msg.value}(value, callData);
+            primaryChainGateway.sendMessage{value: msg.value}(_value, _callData);
         }
     }
 }

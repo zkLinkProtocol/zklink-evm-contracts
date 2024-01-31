@@ -29,9 +29,4 @@ abstract contract L1BaseGateway is UUPSUpgradeable {
     function __L1BaseGateway_init_unchained(IArbitrator _arbitrator) internal onlyInitializing {
         arbitrator = _arbitrator;
     }
-
-    function transferToArbitrator(uint256 _amount) external onlyArbitrator {
-        (bool sent, ) = address(arbitrator).call{value: _amount}("");
-        require(sent, "Failed to send Ether");
-    }
 }

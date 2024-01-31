@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import {IZkSync} from "../../interfaces/zksync/IZkSync.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
-import {BaseGateway} from "../BaseGateway.sol";
 import {IZkSyncL1Gateway} from "../../interfaces/zksync/IZkSyncL1Gateway.sol";
 import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
+import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
@@ -57,12 +57,12 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         arbitrator.forwardMessage{value: msg.value + value}(value, callData);
     }
 
-    function sendMessage(uint256 value, bytes memory callData) external payable override onlyArbitrator {
+    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyArbitrator {
         // ensure msg value include claim fee
         uint256 claimFee = messageService.l2TransactionBaseCost(tx.gasprice, FINALIZE_MESSAGE_L2_GAS_LIMIT, REQUIRED_L2_GAS_PRICE_PER_PUBDATA);
-        require(msg.value == claimFee + value, "Invalid value");
+        require(msg.value == claimFee + _value, "Invalid value");
 
-        bytes memory executeData = abi.encodeCall(IZkSyncL2Gateway.claimMessage, (value, callData));
-        messageService.requestL2Transaction{value: msg.value}(remoteGateway, value, executeData, claimFee, REQUIRED_L2_GAS_PRICE_PER_PUBDATA, new bytes[](0), tx.origin);
+        bytes memory executeData = abi.encodeCall(IZkSyncL2Gateway.claimMessage, (_value, _callData));
+        messageService.requestL2Transaction{value: msg.value}(remoteGateway, _value, executeData, claimFee, REQUIRED_L2_GAS_PRICE_PER_PUBDATA, new bytes[](0), tx.origin);
     }
 }
