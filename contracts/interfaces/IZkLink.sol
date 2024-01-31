@@ -43,4 +43,13 @@ interface IZkLink {
         uint256 _l2GasLimit,
         uint256 _l2GasPerPubdataByteLimit
     ) external view returns (uint256);
+
+    /// @notice Send l2 requests sync status to primary chain
+    /// @param _newTotalSyncedPriorityTxs New sync point
+    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable;
+
+    /// @notice Receive batch root from primary chain
+    /// @param _batchNumber The batch number
+    /// @param _l2LogsRootHash The L2 to L1 log root hash
+    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external;
 }

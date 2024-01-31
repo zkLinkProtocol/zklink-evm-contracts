@@ -9,8 +9,8 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AddressAliasHelper} from "./AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
-import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
-import {Message} from "./libraries/Message.sol";
+import {IGateway} from "./interfaces/IGateway.sol";
+import {IMailbox} from "./interfaces/IMailbox.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
@@ -79,7 +79,7 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     uint256 public constant L1_GAS_PER_PUBDATA_BYTE = 17;
 
     /// @notice The gateway is used for communicating with L1
-    IL2Gateway public gateway;
+    IGateway public gateway;
     /// @notice List of permitted validators
     mapping(address validatorAddress => bool isValidator) public validators;
     /// @dev Gas price of primary chain
@@ -101,13 +101,13 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
-        require(msg.sender == address(gateway), "Caller is not gateway");
+        require(msg.sender == address(gateway), "Not gateway");
         _;
     }
 
     /// @notice Checks if validator is active
     modifier onlyValidator() {
-        require(validators[msg.sender], "Caller is not validator"); // validator is not active
+        require(validators[msg.sender], "Not validator"); // validator is not active
         _;
     }
 
@@ -222,10 +222,14 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         totalSyncedPriorityTxs = _newTotalSyncedPriorityTxs;
 
         // Send sync status to L1 gateway
-        bytes memory msgData = abi.encode(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
-        gateway.sendMessage{value: msg.value + forwardAmount}(Message.MsgType.SyncL2Request, msgData);
+        bytes memory callData = abi.encodeCall(IMailbox.syncL2Requests, (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
+        gateway.sendMessage{value: msg.value + forwardAmount}(forwardAmount, callData);
 
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
+    }
+
+    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external {
+        l2LogsRootHashes[_batchNumber] = _l2LogsRootHash;
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
