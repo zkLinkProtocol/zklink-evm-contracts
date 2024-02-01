@@ -24,7 +24,7 @@ contract ZkPolygonL1Gateway is IZkPolygonL1Gateway, L1BaseGateway, BaseGateway {
         messageService = _messageService;
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData, bytes memory _adapterParams) external payable onlyArbitrator {
+    function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
         require(msg.value == _value, "Invalid value");
         messageService.bridgeMessage{value: msg.value}(
             1,

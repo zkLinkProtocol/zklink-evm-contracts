@@ -4,14 +4,13 @@ pragma solidity ^0.8.0;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {IZkLink} from "../../interfaces/IZkLink.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 
 contract EthereumGateway is L1BaseGateway, L2BaseGateway, OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
-    function initialize(IArbitrator _arbitrator, IZkLink _zkLink) external initializer {
+    function initialize(IArbitrator _arbitrator, address _zkLink) external initializer {
         __L1BaseGateway_init(_arbitrator);
         __L2BaseGateway_init(_zkLink);
 
@@ -21,11 +20,15 @@ contract EthereumGateway is L1BaseGateway, L2BaseGateway, OwnableUpgradeable, Re
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    function getRemoteGateway() external view returns (address) {
+        return address(this);
+    }
+
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
         require(msg.value == _value, "Invalid value from canonical message service");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(zkLink).call{value: _value}(_callData);
+        (bool success, ) = zkLink.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 

@@ -222,13 +222,13 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         totalSyncedPriorityTxs = _newTotalSyncedPriorityTxs;
 
         // Send sync status to L1 gateway
-        bytes memory callData = abi.encodeCall(IMailbox.syncL2Requests, (_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
+        bytes memory callData = abi.encodeCall(IMailbox.syncL2Requests, (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
         gateway.sendMessage{value: msg.value + forwardAmount}(forwardAmount, callData);
 
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
     }
 
-    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external {
+    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external onlyGateway {
         l2LogsRootHashes[_batchNumber] = _l2LogsRootHash;
     }
 
