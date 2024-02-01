@@ -7,7 +7,7 @@ import {IZkLink} from "../../interfaces/IZkLink.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {ScrollGateway} from "./ScrollGateway.sol";
 
-contract ScrollL2Gateway is IScrollGateway, L2BaseGateway, ScrollGateway {
+contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
     function initialize(IZkLink _zkLink, IScrollMessenger _messageService) external initializer {
         __L2BaseGateway_init(_zkLink);
         __ScrollGateway_init(_messageService);

@@ -7,7 +7,7 @@ import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {ScrollGateway} from "./ScrollGateway.sol";
 
-contract ScrollL1Gateway is IScrollGateway, ScrollGateway, L1BaseGateway {
+contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
     function initialize(IArbitrator _arbitrator, IScrollMessenger _messageService) external initializer {
         __L1BaseGateway_init(_arbitrator);
         __ScrollGateway_init(_messageService);

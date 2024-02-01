@@ -2,9 +2,10 @@
 pragma solidity ^0.8.0;
 
 import {IScrollMessenger} from "../../interfaces/scroll/IScrollMessenger.sol";
+import {IScrollGateway} from "../../interfaces/scroll/IScrollGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-abstract contract ScrollGateway is BaseGateway {
+abstract contract ScrollGateway is BaseGateway, IScrollGateway {
     /// @notice Linea message service on local chain
     IScrollMessenger public messageService;
 
