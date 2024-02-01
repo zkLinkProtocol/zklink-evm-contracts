@@ -34,7 +34,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         messageService = _messageService;
     }
 
-    function finalizeMessage(uint256 _l2BatchNumber, uint256 _l2MessageIndex, uint16 _l2TxNumberInBatch, bytes memory _message, bytes32[] calldata _merkleProof) external payable nonReentrant {
+    function finalizeMessage(uint256 _l2BatchNumber, uint256 _l2MessageIndex, uint16 _l2TxNumberInBatch, bytes memory _message, bytes32[] calldata _merkleProof) external nonReentrant {
         require(!isMessageFinalized[_l2BatchNumber][_l2MessageIndex], "Message was finalized");
 
         IZkSync.L2Message memory l2ToL1Message = IZkSync.L2Message({
@@ -54,7 +54,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         require(functionSignature == this.finalizeMessage.selector, "Invalid function selector");
 
         // Forward message to arbitrator
-        arbitrator.forwardMessage{value: msg.value + value}(value, callData);
+        arbitrator.receiveMessage{value: value}(value, callData);
     }
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyArbitrator {

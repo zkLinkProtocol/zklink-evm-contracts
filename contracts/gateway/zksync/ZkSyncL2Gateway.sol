@@ -45,8 +45,7 @@ contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway, BaseGateway {
     }
 
     function claimMessage(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
-        // no fee
-        require(msg.value == _value, "Claim eth value not match");
+        require(msg.value == _value, "Invalid value from canonical message service");
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(zkLink).call{value: _value}(_callData);

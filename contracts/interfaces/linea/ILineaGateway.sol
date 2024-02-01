@@ -12,9 +12,4 @@ interface ILineaGateway {
     /// @param _value The message value
     /// @param _callData The message data
     function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable;
-
-    /// @notice Finalize message
-    /// @param _value The message value
-    /// @param _callData The message data
-    function finalizeMessage(uint256 _value, bytes calldata _callData) external payable;
 }
