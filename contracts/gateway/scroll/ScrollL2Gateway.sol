@@ -5,30 +5,19 @@ import {IScrollGateway} from "../../interfaces/scroll/IScrollGateway.sol";
 import {IScrollMessenger} from "../../interfaces/scroll/IScrollMessenger.sol";
 import {IZkLink} from "../../interfaces/IZkLink.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
-import {BaseGateway} from "../BaseGateway.sol";
+import {ScrollGateway} from "./ScrollGateway.sol";
 
-contract ScrollL2Gateway is IScrollGateway, L2BaseGateway, BaseGateway {
-    /// @notice Linea message service on local chain
-    IScrollMessenger public messageService;
-
-    /// @dev Modifier to make sure the original sender is messageService on remote chain.
-    modifier onlyMessageService() {
-        require(msg.sender == address(messageService), "Not remote gateway");
-        _;
-    }
-
+contract ScrollL2Gateway is IScrollGateway, L2BaseGateway, ScrollGateway {
     function initialize(IZkLink _zkLink, IScrollMessenger _messageService) external initializer {
         __L2BaseGateway_init(_zkLink);
-        __BaseGateway_init();
-
-        messageService = _messageService;
+        __ScrollGateway_init(_messageService);
     }
 
-    function sendMessage(uint256 _value, bytes memory _calldata) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
         // no fee
         require(msg.value == _value, "Invalid value");
 
-        bytes memory callData = abi.encodeCall(IScrollGateway.finalizeMessage, (_value, _calldata));
+        bytes memory callData = abi.encodeCall(IScrollGateway.claimMessageCallback, (_value, _callData));
         // transfer no fee to L1
         messageService.sendMessage{value: _value}(
             remoteGateway,
@@ -38,7 +27,12 @@ contract ScrollL2Gateway is IScrollGateway, L2BaseGateway, BaseGateway {
         );
     }
 
-    function finalizeMessage(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
+    function claimMessageCallback(uint256 _value, bytes memory _callData)
+        external
+        payable
+        override
+        onlyMessageService
+    {
         require(msg.value == _value, "Invalid value from canonical message service");
 
         // solhint-disable-next-line avoid-low-level-calls
