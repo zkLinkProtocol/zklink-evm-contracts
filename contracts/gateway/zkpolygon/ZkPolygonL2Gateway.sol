@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IZkPolygon} from "../../interfaces/ZkPolygon/IZkPolygon.sol";
-import {IZkPolygonL2Gateway} from "../../interfaces/ZkPolygon/IZkPolygonL2Gateway.sol";
+import {IZkPolygon} from "../../interfaces/zkpolygon/IZkPolygon.sol";
+import {IZkPolygonL2Gateway} from "../../interfaces/zkpolygon/IZkPolygonL2Gateway.sol";
 import {IZkLink} from "../../interfaces/IZkLink.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
