@@ -14,7 +14,7 @@ contract LineaL1Gateway is L1BaseGateway, LineaGateway {
         __LineaGateway_init(_messageService);
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyArbitrator {
+    function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
         // no fee
         require(msg.value == _value, "Invalid value");
 

@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IZkLink} from "../interfaces/IZkLink.sol";
+import {IL2Gateway} from "../interfaces/IL2Gateway.sol";
 
-abstract contract L2BaseGateway is UUPSUpgradeable {
+abstract contract L2BaseGateway is IL2Gateway, UUPSUpgradeable {
     /// @notice The zkLink contract
     IZkLink public zkLink;
 

@@ -9,13 +9,6 @@ import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
-
-    /// @dev The L2 gasPricePerPubdata required to be used in bridges.
-    uint256 public constant REQUIRED_L2_GAS_PRICE_PER_PUBDATA = 800;
-
-    /// @dev The gas limit of finalize message on L2 gateway
-    uint256 public constant FINALIZE_MESSAGE_L2_GAS_LIMIT = 3000000;
-
     /// @notice ZkSync message service on local chain
     IZkSync public messageService;
 
@@ -32,6 +25,16 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         __BaseGateway_init();
 
         messageService = _messageService;
+    }
+
+    function sendMessage(uint256 _value, bytes memory _callData, bytes memory _adapterParams) external payable onlyArbitrator {
+        // ensure msg value include claim fee
+        (uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) = abi.decode(_adapterParams, (uint256, uint256));
+        uint256 claimFee = messageService.l2TransactionBaseCost(tx.gasprice, _l2GasLimit, _l2GasPerPubdataByteLimit);
+        require(msg.value == claimFee + _value, "Invalid value");
+
+        bytes memory executeData = abi.encodeCall(IZkSyncL2Gateway.claimMessage, (_value, _callData));
+        messageService.requestL2Transaction{value: msg.value}(remoteGateway, _value, executeData, claimFee, _l2GasPerPubdataByteLimit, new bytes[](0), tx.origin);
     }
 
     function finalizeMessage(uint256 _l2BatchNumber, uint256 _l2MessageIndex, uint16 _l2TxNumberInBatch, bytes memory _message, bytes32[] calldata _merkleProof) external nonReentrant {
@@ -55,14 +58,5 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
         // Forward message to arbitrator
         arbitrator.receiveMessage{value: value}(value, callData);
-    }
-
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyArbitrator {
-        // ensure msg value include claim fee
-        uint256 claimFee = messageService.l2TransactionBaseCost(tx.gasprice, FINALIZE_MESSAGE_L2_GAS_LIMIT, REQUIRED_L2_GAS_PRICE_PER_PUBDATA);
-        require(msg.value == claimFee + _value, "Invalid value");
-
-        bytes memory executeData = abi.encodeCall(IZkSyncL2Gateway.claimMessage, (_value, _callData));
-        messageService.requestL2Transaction{value: msg.value}(remoteGateway, _value, executeData, claimFee, REQUIRED_L2_GAS_PRICE_PER_PUBDATA, new bytes[](0), tx.origin);
     }
 }

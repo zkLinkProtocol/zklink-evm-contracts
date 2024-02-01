@@ -9,7 +9,7 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AddressAliasHelper} from "./AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
-import {IGateway} from "./interfaces/IGateway.sol";
+import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
 import {IMailbox} from "./interfaces/IMailbox.sol";
 
 /// @title ZkLink contract
@@ -79,7 +79,7 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     uint256 public constant L1_GAS_PER_PUBDATA_BYTE = 17;
 
     /// @notice The gateway is used for communicating with L1
-    IGateway public gateway;
+    IL2Gateway public gateway;
     /// @notice List of permitted validators
     mapping(address validatorAddress => bool isValidator) public validators;
     /// @dev Gas price of primary chain
@@ -222,7 +222,7 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         totalSyncedPriorityTxs = _newTotalSyncedPriorityTxs;
 
         // Send sync status to L1 gateway
-        bytes memory callData = abi.encodeCall(IMailbox.syncL2Requests, (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
+        bytes memory callData = abi.encodeCall(IMailbox.syncL2Requests, (_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
         gateway.sendMessage{value: msg.value + forwardAmount}(forwardAmount, callData);
 
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);

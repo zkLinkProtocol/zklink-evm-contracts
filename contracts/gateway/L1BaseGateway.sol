@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
+import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
-abstract contract L1BaseGateway is UUPSUpgradeable {
+abstract contract L1BaseGateway is IL1Gateway, UUPSUpgradeable {
     /// @notice The arbitrator to confirm synchronization
     IArbitrator public arbitrator;
 
