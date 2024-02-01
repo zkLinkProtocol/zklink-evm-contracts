@@ -6,7 +6,6 @@ import {IL2Messenger} from "../../interfaces/zksync/IL2Messenger.sol";
 import {IL2ETHToken} from "../../interfaces/zksync/IL2ETHToken.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../AddressAliasHelper.sol";
-import {IZkSyncL1Gateway} from "../../interfaces/zksync/IZkSyncL1Gateway.sol";
 import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
@@ -40,7 +39,7 @@ contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway, BaseGateway {
         }
 
         // send message to ZkSyncL1Gateway(the second message send to L1)
-        bytes memory message = abi.encode(IZkSyncL1Gateway.finalizeMessage.selector, _value, _callData);
+        bytes memory message = abi.encode(_value, _callData);
         L2_MESSENGER.sendToL1(message);
     }
 
