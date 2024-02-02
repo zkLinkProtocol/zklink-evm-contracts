@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import {IScrollGateway} from "../../interfaces/scroll/IScrollGateway.sol";
 import {IScrollMessenger} from "../../interfaces/scroll/IScrollMessenger.sol";
-import {IZkLink} from "../../interfaces/IZkLink.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {ScrollGateway} from "./ScrollGateway.sol";
 
 contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
-    function initialize(IZkLink _zkLink, IScrollMessenger _messageService) external initializer {
+    function initialize(address _zkLink, IScrollMessenger _messageService) external initializer {
+
         __L2BaseGateway_init(_zkLink);
         __ScrollGateway_init(_messageService);
     }
@@ -36,7 +36,7 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
         require(msg.value == _value, "Invalid value from canonical message service");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success,) = address(zkLink).call{value: _value}(_callData);
+        (bool success,) = zkLink.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

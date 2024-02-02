@@ -2,14 +2,13 @@
 pragma solidity ^0.8.0;
 
 import {IMessageService} from "../../interfaces/linea/IMessageService.sol";
-import {IZkLink} from "../../interfaces/IZkLink.sol";
 import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
 import {LineaGateway} from "./LineaGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
 contract LineaL2Gateway is L2BaseGateway, LineaGateway {
 
-    function initialize(IZkLink _zkLink, IMessageService _messageService) external initializer {
+    function initialize(address _zkLink, IMessageService _messageService) external initializer {
         __L2BaseGateway_init(_zkLink);
         __LineaGateway_init(_messageService);
     }
@@ -27,7 +26,7 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
         require(msg.value == _value, "Invalid value from canonical message service");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(zkLink).call{value: _value}(_callData);
+        (bool success, ) = zkLink.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

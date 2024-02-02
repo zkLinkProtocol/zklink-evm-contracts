@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IZkPolygon} from "../../interfaces/ZkPolygon/IZkPolygon.sol";
+import {IZkPolygon} from "../../interfaces/zkpolygon/IZkPolygon.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
-import {IZkPolygonL1Gateway} from "../../interfaces/ZkPolygon/IZkPolygonL1Gateway.sol";
-import {IZkPolygonL2Gateway} from "../../interfaces/ZkPolygon/IZkPolygonL2Gateway.sol";
+import {IZkPolygonL1Gateway} from "../../interfaces/zkpolygon/IZkPolygonL1Gateway.sol";
+import {IZkPolygonL2Gateway} from "../../interfaces/zkpolygon/IZkPolygonL2Gateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkPolygonL1Gateway is IZkPolygonL1Gateway, L1BaseGateway, BaseGateway {
@@ -24,7 +24,7 @@ contract ZkPolygonL1Gateway is IZkPolygonL1Gateway, L1BaseGateway, BaseGateway {
         messageService = _messageService;
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData, bytes memory _adapterParams) external payable onlyArbitrator {
+    function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
         require(msg.value == _value, "Invalid value");
         messageService.bridgeMessage{value: msg.value}(
             1,

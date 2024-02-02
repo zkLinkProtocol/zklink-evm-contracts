@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-interface IL1Gateway {
+import {IGateway} from "./IGateway.sol";
+
+interface IL1Gateway is IGateway {
     /// @notice Send message to remote gateway
     /// @param _value The msg value
     /// @param _callData The call data

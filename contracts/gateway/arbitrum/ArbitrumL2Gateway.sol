@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IZkLink} from "../../interfaces/IZkLink.sol";
 import "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../AddressAliasHelper.sol";
@@ -18,7 +17,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
         _;
     }
 
-    function initialize(IZkLink _zkLink) external initializer {
+    function initialize(address _zkLink) external initializer {
         __L2BaseGateway_init(_zkLink);
         __BaseGateway_init();
     }
@@ -36,7 +35,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
         require(msg.value == _value, "Invalid value from canonical message service");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = address(zkLink).call{value: _value}(_callData);
+        (bool success, ) = zkLink.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }
