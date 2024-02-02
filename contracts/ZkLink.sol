@@ -7,10 +7,11 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AddressAliasHelper} from "./AddressAliasHelper.sol";
+import {AddressAliasHelper} from "./libraries/AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
 import {IMailbox} from "./interfaces/IMailbox.sol";
+import {Merkle} from "./libraries/Merkle.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
@@ -40,31 +41,23 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         uint64 minimalL2GasPrice;
     }
 
-    /// @dev Internal structure that contains the parameters for the forwardRequestL2Transaction
-    /// @param gateway The secondary chain gateway;
-    /// @param isContractCall It's true when the request come from a contract.
-    /// @param sender The sender's address.
-    /// @param txId The id of the priority transaction.
-    /// @param contractAddressL2 The address of the contract on L2 to call.
-    /// @param l2Value The msg.value of the L2 transaction.
-    /// @param l2CallData The call data of the L2 transaction.
-    /// @param l2GasLimit The limit of the L2 gas for the L2 transaction
-    /// @param l2GasPrice The price of the L2 gas in Wei to be used for this transaction.
-    /// @param l2GasPricePerPubdata The price for a single pubdata byte in L2 gas.
-    /// @param refundRecipient The recipient of the refund for the transaction on L2. If the transaction fails, then
-    /// this address will receive the `l2Value`.
-    struct ForwardL2Request {
-        address gateway;
-        bool isContractCall;
+    /// @dev The log passed from L2
+    /// @param l2ShardId The shard identifier, 0 - rollup, 1 - porter. All other values are not used but are reserved for
+    /// the future
+    /// @param isService A boolean flag that is part of the log along with `key`, `value`, and `sender` address.
+    /// This field is required formally but does not have any special meaning.
+    /// @param txNumberInBatch The L2 transaction number in the batch, in which the log was sent
+    /// @param sender The L2 address which sent the log
+    /// @param key The 32 bytes of information that was sent in the log
+    /// @param value The 32 bytes of information that was sent in the log
+    // Both `key` and `value` are arbitrary 32-bytes selected by the log sender
+    struct L2Log {
+        uint8 l2ShardId;
+        bool isService;
+        uint16 txNumberInBatch;
         address sender;
-        uint256 txId;
-        address contractAddressL2;
-        uint256 l2Value;
-        bytes l2CallData;
-        uint256 l2GasLimit;
-        uint256 l2GasPricePerPubdata;
-        bytes[] factoryDeps;
-        address refundRecipient;
+        bytes32 key;
+        bytes32 value;
     }
 
     /// @dev The sync status for priority op
@@ -81,6 +74,14 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     uint256 public constant MAX_NEW_FACTORY_DEPS = 32;
     /// @dev Even though the price for 1 byte of pubdata is 16 L1 gas, we have a slightly increased value.
     uint256 public constant L1_GAS_PER_PUBDATA_BYTE = 17;
+    /// @dev The formal address of the initial program of the system: the bootloader
+    address public constant L2_BOOTLOADER_ADDRESS = address(0x8001);
+    /// @dev The address of the special smart contract that can send arbitrary length message as an L2 log
+    address public constant L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR = address(0x8008);
+    /// @dev The value of default leaf hash for L2 -> L1 logs Merkle tree
+    /// @dev An incomplete fixed-size tree is filled with this value to be a full binary tree
+    /// @dev Actually equal to the `keccak256(new bytes(L2_TO_L1_LOG_SERIALIZE_SIZE))`
+    bytes32 public constant L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH = 0x72abee45b59e344af8a6e520241c4744aff26ed411f4c4b00f8af09adada43ba;
 
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
@@ -97,11 +98,18 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     uint256 public totalSyncedPriorityTxs;
     /// @dev The sync status for each priority operation
     mapping(uint256 priorityOpId => SyncStatus) public priorityOpSyncStatus;
+    /// @notice Total number of executed batches i.e. batches[totalBatchesExecuted] points at the latest executed batch
+    /// (batch 0 is genesis)
+    uint256 public totalBatchesExecuted;
     /// @dev Stored root hashes of L2 -> L1 logs
     mapping(uint256 batchNumber => bytes32 l2LogsRootHash) public l2LogsRootHashes;
+    /// @dev Stored the l2 tx hash map from secondary chain to primary chain
+    mapping(bytes32 l2TxHash => bytes32 primaryChainL2TxHash) public l2TxHashMap;
 
-    event NewPriorityRequest(uint256 indexed priorityOpId, ForwardL2Request l2Request);
-    event SyncL2Requests(uint256 indexed totalSyncedPriorityTxs, bytes32 indexed syncHash, uint256 indexed forwardEthAmount);
+    event NewPriorityRequest(uint256 priorityOpId, ForwardL2Request l2Request);
+    event SyncL2Requests(uint256 totalSyncedPriorityTxs, bytes32 syncHash, uint256 forwardEthAmount);
+    event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash);
+    event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
@@ -214,6 +222,48 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         emit NewPriorityRequest(request.txId, request);
     }
 
+    function proveL2MessageInclusion(
+        uint256 _batchNumber,
+        uint256 _index,
+        L2Message memory _message,
+        bytes32[] calldata _proof
+    ) public view returns (bool) {
+        return _proveL2LogInclusion(_batchNumber, _index, _L2MessageToLog(_message), _proof);
+    }
+
+    function proveL1ToL2TransactionStatus(
+        bytes32 _l2TxHash,
+        uint256 _l2BatchNumber,
+        uint256 _l2MessageIndex,
+        uint16 _l2TxNumberInBatch,
+        bytes32[] calldata _merkleProof,
+        TxStatus _status
+    ) public view returns (bool) {
+        // Get l2 tx hash on primary chain
+        bytes32 primaryChainL2TxHash = l2TxHashMap[_l2TxHash];
+        require(primaryChainL2TxHash != bytes32(0), "Invalid l2 tx hash");
+
+        // Bootloader sends an L2 -> L1 log only after processing the L1 -> L2 transaction.
+        // Thus, we can verify that the L1 -> L2 transaction was included in the L2 batch with specified status.
+        //
+        // The semantics of such L2 -> L1 log is always:
+        // - sender = L2_BOOTLOADER_ADDRESS
+        // - key = hash(L1ToL2Transaction)
+        // - value = status of the processing transaction (1 - success & 0 - fail)
+        // - isService = true (just a conventional value)
+        // - l2ShardId = 0 (means that L1 -> L2 transaction was processed in a rollup shard, other shards are not available yet anyway)
+        // - txNumberInBatch = number of transaction in the batch
+        L2Log memory l2Log = L2Log({
+            l2ShardId: 0,
+            isService: true,
+            txNumberInBatch: _l2TxNumberInBatch,
+            sender: L2_BOOTLOADER_ADDRESS,
+            key: primaryChainL2TxHash,
+            value: bytes32(uint256(_status))
+        });
+        return _proveL2LogInclusion(_l2BatchNumber, _l2MessageIndex, l2Log, _merkleProof);
+    }
+
     function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable onlyValidator {
         // Check newTotalSyncedPriorityTxs
         require(_newTotalSyncedPriorityTxs <= totalPriorityTxs && _newTotalSyncedPriorityTxs > totalSyncedPriorityTxs, "Invalid newTotalSyncedPriorityTxs");
@@ -237,7 +287,15 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     }
 
     function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external onlyGateway {
+        require(_batchNumber > totalBatchesExecuted, "Invalid batch number");
+        totalBatchesExecuted = _batchNumber;
         l2LogsRootHashes[_batchNumber] = _l2LogsRootHash;
+        emit SyncBatchRoot(_batchNumber, _l2LogsRootHash);
+    }
+
+    function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
+        l2TxHashMap[_l2TxHash] = _primaryChainL2TxHash;
+        emit SyncL2TxHash(_l2TxHash, _primaryChainL2TxHash);
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
@@ -259,5 +317,44 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         uint256 minL2GasPriceETH = (fullPubdataPriceETH + _gasPerPubdata - 1) / _gasPerPubdata;
 
         return Math.max(l2GasPrice, minL2GasPriceETH);
+    }
+
+    /// @dev Convert arbitrary-length message to the raw l2 log
+    function _L2MessageToLog(L2Message memory _message) internal pure returns (L2Log memory) {
+        return
+            L2Log({
+            l2ShardId: 0,
+            isService: true,
+            txNumberInBatch: _message.txNumberInBatch,
+            sender: L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR,
+            key: bytes32(uint256(uint160(_message.sender))),
+            value: keccak256(_message.data)
+        });
+    }
+
+    /// @dev Prove that a specific L2 log was sent in a specific L2 batch number
+    function _proveL2LogInclusion(
+        uint256 _batchNumber,
+        uint256 _index,
+        L2Log memory _log,
+        bytes32[] calldata _proof
+    ) internal view returns (bool) {
+        require(_batchNumber <= totalBatchesExecuted, "xx");
+
+        bytes32 hashedLog = keccak256(
+            abi.encodePacked(_log.l2ShardId, _log.isService, _log.txNumberInBatch, _log.sender, _log.key, _log.value)
+        );
+        // Check that hashed log is not the default one,
+        // otherwise it means that the value is out of range of sent L2 -> L1 logs
+        require(hashedLog != L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH, "tw");
+
+        // It is ok to not check length of `_proof` array, as length
+        // of leaf preimage (which is `L2_TO_L1_LOG_SERIALIZE_SIZE`) is not
+        // equal to the length of other nodes preimages (which are `2 * 32`)
+
+        bytes32 calculatedRootHash = Merkle.calculateRoot(_proof, _index, hashedLog);
+        bytes32 actualRootHash = l2LogsRootHashes[_batchNumber];
+
+        return actualRootHash == calculatedRootHash;
     }
 }

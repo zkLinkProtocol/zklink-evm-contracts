@@ -5,6 +5,52 @@ pragma solidity ^0.8.0;
 /// @title ZkLink interface contract
 /// @author zk.link
 interface IZkLink {
+    /// @dev Internal structure that contains the parameters for the forwardRequestL2Transaction
+    /// @param gateway The secondary chain gateway;
+    /// @param isContractCall It's true when the request come from a contract.
+    /// @param sender The sender's address.
+    /// @param txId The id of the priority transaction.
+    /// @param contractAddressL2 The address of the contract on L2 to call.
+    /// @param l2Value The msg.value of the L2 transaction.
+    /// @param l2CallData The call data of the L2 transaction.
+    /// @param l2GasLimit The limit of the L2 gas for the L2 transaction
+    /// @param l2GasPrice The price of the L2 gas in Wei to be used for this transaction.
+    /// @param l2GasPricePerPubdata The price for a single pubdata byte in L2 gas.
+    /// @param refundRecipient The recipient of the refund for the transaction on L2. If the transaction fails, then
+    /// this address will receive the `l2Value`.
+    struct ForwardL2Request {
+        address gateway;
+        bool isContractCall;
+        address sender;
+        uint256 txId;
+        address contractAddressL2;
+        uint256 l2Value;
+        bytes l2CallData;
+        uint256 l2GasLimit;
+        uint256 l2GasPricePerPubdata;
+        bytes[] factoryDeps;
+        address refundRecipient;
+    }
+
+    /// @dev The enum that represents the transaction execution status
+    /// @param Failure The transaction execution failed
+    /// @param Success The transaction execution succeeded
+    enum TxStatus {
+        Failure,
+        Success
+    }
+
+    /// @dev An arbitrary length message passed from L2
+    /// @notice Under the hood it is `L2Log` sent from the special system L2 contract
+    /// @param txNumberInBatch The L2 transaction number in the batch, in which the message was sent
+    /// @param sender The address of the L2 account from which the message was passed
+    /// @param data An arbitrary length message
+    struct L2Message {
+        uint16 txNumberInBatch;
+        address sender;
+        bytes data;
+    }
+
     /// @notice Request execution of L2 transaction from L1.
     /// @param _contractL2 The L2 receiver address
     /// @param _l2Value `msg.value` of L2 transaction
@@ -44,6 +90,37 @@ interface IZkLink {
         uint256 _l2GasPerPubdataByteLimit
     ) external view returns (uint256);
 
+    /// @notice Prove that a specific arbitrary-length message was sent in a specific L2 batch number
+    /// @param _l2BatchNumber The executed L2 batch number in which the message appeared
+    /// @param _index The position in the L2 logs Merkle tree of the l2Log that was sent with the message
+    /// @param _message Information about the sent message: sender address, the message itself, tx index in the L2 batch where the message was sent
+    /// @param _proof Merkle proof for inclusion of L2 log that was sent with the message
+    /// @return Whether the proof is valid
+    function proveL2MessageInclusion(
+        uint256 _l2BatchNumber,
+        uint256 _index,
+        L2Message calldata _message,
+        bytes32[] calldata _proof
+    ) external view returns (bool);
+
+    /// @notice Prove that the L1 -> L2 transaction was processed with the specified status.
+    /// @param _l2TxHash The L2 canonical transaction hash
+    /// @param _l2BatchNumber The L2 batch number where the transaction was processed
+    /// @param _l2MessageIndex The position in the L2 logs Merkle tree of the l2Log that was sent with the message
+    /// @param _l2TxNumberInBatch The L2 transaction number in the batch, in which the log was sent
+    /// @param _merkleProof The Merkle proof of the processing L1 -> L2 transaction
+    /// @param _status The execution status of the L1 -> L2 transaction (true - success & 0 - fail)
+    /// @return Whether the proof is correct and the transaction was actually executed with provided status
+    /// NOTE: It may return `false` for incorrect proof, but it doesn't mean that the L1 -> L2 transaction has an opposite status!
+    function proveL1ToL2TransactionStatus(
+        bytes32 _l2TxHash,
+        uint256 _l2BatchNumber,
+        uint256 _l2MessageIndex,
+        uint16 _l2TxNumberInBatch,
+        bytes32[] calldata _merkleProof,
+        TxStatus _status
+    ) external view returns (bool);
+
     /// @notice Send l2 requests sync status to primary chain
     /// @param _newTotalSyncedPriorityTxs New sync point
     function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable;
@@ -52,4 +129,9 @@ interface IZkLink {
     /// @param _batchNumber The batch number
     /// @param _l2LogsRootHash The L2 to L1 log root hash
     function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external;
+
+    /// @notice Receive l2 tx hash from primary chain
+    /// @param _l2TxHash The l2 tx hash on local chain
+    /// @param _primaryChainL2TxHash The l2 tx hash on primary chain
+    function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external;
 }
