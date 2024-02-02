@@ -41,6 +41,8 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     }
 
     /// @dev Internal structure that contains the parameters for the forwardRequestL2Transaction
+    /// @param gateway The secondary chain gateway;
+    /// @param isContractCall It's true when the request come from a contract.
     /// @param sender The sender's address.
     /// @param txId The id of the priority transaction.
     /// @param contractAddressL2 The address of the contract on L2 to call.
@@ -52,6 +54,8 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     /// @param refundRecipient The recipient of the refund for the transaction on L2. If the transaction fails, then
     /// this address will receive the `l2Value`.
     struct ForwardL2Request {
+        address gateway;
+        bool isContractCall;
         address sender;
         uint256 txId;
         address contractAddressL2;
@@ -151,8 +155,10 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         // Change the sender address if it is a smart contract to prevent address collision between L1 and L2.
         // Please note, currently zkSync address derivation is different from Ethereum one, but it may be changed in the future.
         address sender = msg.sender;
+        bool isContractCall = false;
         if (sender != tx.origin) {
             sender = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
+            isContractCall = true;
         }
 
         // Enforcing that `_l2GasPerPubdataByteLimit` equals to a certain constant number. This is needed
@@ -178,6 +184,8 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         // Build l2 request params
         uint256 _totalPriorityTxs = totalPriorityTxs;
         ForwardL2Request memory request = ForwardL2Request(
+            gateway.getRemoteGateway(),
+            isContractCall,
             sender,
             _totalPriorityTxs,
             _contractL2,
