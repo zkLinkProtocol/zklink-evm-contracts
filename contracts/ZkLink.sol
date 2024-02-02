@@ -7,13 +7,15 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AddressAliasHelper} from "./zksync/libraries/AddressAliasHelper.sol";
+import {AddressAliasHelper} from "./zksync/l1-contracts/vendor/AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
-import {IMailbox, TxStatus} from "./zksync/interfaces/IMailbox.sol";
-import {IZkSync} from "./zksync/interfaces/IZkSync.sol";
-import {Merkle} from "./zksync/libraries/Merkle.sol";
-import "./zksync/Storage.sol";
+import {IMailbox, TxStatus} from "./zksync/l1-contracts/zksync/interfaces/IMailbox.sol";
+import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
+import {Merkle} from "./zksync/l1-contracts/zksync/libraries/Merkle.sol";
+import "./zksync/l1-contracts/zksync/Storage.sol";
+import "./zksync/l1-contracts/zksync/Config.sol";
+import "./zksync/l1-contracts/common/L2ContractAddresses.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
@@ -25,21 +27,6 @@ contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, Reent
         bytes32 hash;
         uint256 amount;
     }
-
-    /// @dev The L2 gasPricePerPubdata required to be used in bridges.
-    uint256 public constant REQUIRED_L2_GAS_PRICE_PER_PUBDATA = 800;
-    /// @dev The number of pubdata an L1->L2 transaction requires with each new factory dependency
-    uint256 public constant MAX_NEW_FACTORY_DEPS = 32;
-    /// @dev Even though the price for 1 byte of pubdata is 16 L1 gas, we have a slightly increased value.
-    uint256 public constant L1_GAS_PER_PUBDATA_BYTE = 17;
-    /// @dev The formal address of the initial program of the system: the bootloader
-    address public constant L2_BOOTLOADER_ADDRESS = address(0x8001);
-    /// @dev The address of the special smart contract that can send arbitrary length message as an L2 log
-    address public constant L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR = address(0x8008);
-    /// @dev The value of default leaf hash for L2 -> L1 logs Merkle tree
-    /// @dev An incomplete fixed-size tree is filled with this value to be a full binary tree
-    /// @dev Actually equal to the `keccak256(new bytes(L2_TO_L1_LOG_SERIALIZE_SIZE))`
-    bytes32 public constant L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH = 0x72abee45b59e344af8a6e520241c4744aff26ed411f4c4b00f8af09adada43ba;
 
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
