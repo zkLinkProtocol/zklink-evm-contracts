@@ -1,11 +1,11 @@
 {
-  "name": "zklink-contracts",
+  "name": "zklink-evm-contracts",
   "version": "1.0.0",
   "license": "MIT",
   "homepage": "https://zk.link",
   "keywords": [
     "zklink",
-    "zk-rollup",
+    "zkevm-rollup",
     "cross chain"
   ],
   "devDependencies": {

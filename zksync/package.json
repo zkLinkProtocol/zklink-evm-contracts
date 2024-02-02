@@ -5,7 +5,7 @@
   "homepage": "https://zk.link",
   "keywords": [
     "zklink",
-    "zk-rollup",
+    "zkevm-rollup",
     "cross chain"
   ],
   "devDependencies": {
@@ -18,8 +18,7 @@
     "zksync-ethers": "^6.0.0"
   },
   "scripts": {
-    "compile-master": "MASTER_UNITTEST=true npx hardhat compile",
-    "compile-slaver": "SLAVER_UNITTEST=true npx hardhat compile"
+    "compile": "npx hardhat compile"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.5",

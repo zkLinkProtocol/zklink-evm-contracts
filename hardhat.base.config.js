@@ -33,4 +33,18 @@ const hardhatUserConfig = {
   },
 };
 
+// custom hardhat user config for different net
+if (process.env.NET !== undefined) {
+  const netName = process.env.NET;
+  hardhatUserConfig.defaultNetwork = netName;
+
+  const netConfig = require(`./etc/${netName}.json`);
+  hardhatUserConfig.networks[netName] = netConfig.network;
+
+  // config contract verify key if exist
+  if (netConfig.etherscan !== undefined) {
+    hardhatUserConfig.etherscan = netConfig.etherscan;
+  }
+}
+
 module.exports = hardhatUserConfig;
