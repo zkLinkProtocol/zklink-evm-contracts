@@ -3,6 +3,11 @@
 pragma solidity ^0.8.0;
 
 interface IZkSync {
+    /// @notice Update secondary chain status
+    /// @param _gateway The secondary chain gateway
+    /// @param _active Active flag
+    function setSecondaryChainGateway(address _gateway, bool _active) external;
+
     /// @notice Receive sync status from secondary chain
     /// @param _secondaryChainGateway The secondary chain gateway address
     /// @param _newTotalSyncedPriorityTxs New sync point

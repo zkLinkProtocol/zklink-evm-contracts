@@ -56,3 +56,11 @@ struct FeeParams {
     uint32 priorityTxMaxPubdata;
     uint64 minimalL2GasPrice;
 }
+
+/// @dev The sync status for priority op of secondary chain
+/// @param hash The cumulative canonicalTxHash
+/// @param amount The cumulative l2 value
+struct SecondaryChainSyncStatus {
+    bytes32 hash;
+    uint256 amount;
+}

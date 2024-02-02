@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IZkSync} from "../../interfaces/zksync/IZkSync.sol";
+import {IMailbox} from "../../zksync/l1-contracts/zksync/interfaces/IMailbox.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {IZkSyncL1Gateway} from "../../interfaces/zksync/IZkSyncL1Gateway.sol";
 import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
+import "../../zksync/l1-contracts/zksync/Storage.sol";
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @notice ZkSync message service on local chain
-    IZkSync public messageService;
+    IMailbox public messageService;
 
     /// @dev A mapping L2 batch number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
@@ -20,7 +21,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     receive() external payable {
     }
 
-    function initialize(IArbitrator _arbitrator, IZkSync _messageService) external initializer {
+    function initialize(IArbitrator _arbitrator, IMailbox _messageService) external initializer {
         __L1BaseGateway_init(_arbitrator);
         __BaseGateway_init();
 
@@ -36,7 +37,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     function finalizeMessage(uint256 _l2BatchNumber, uint256 _l2MessageIndex, uint16 _l2TxNumberInBatch, bytes memory _message, bytes32[] calldata _merkleProof) external nonReentrant {
         require(!isMessageFinalized[_l2BatchNumber][_l2MessageIndex], "Message was finalized");
 
-        IZkSync.L2Message memory l2ToL1Message = IZkSync.L2Message({
+        L2Message memory l2ToL1Message = L2Message({
             txNumberInBatch: _l2TxNumberInBatch,
             sender: remoteGateway,
             data: _message

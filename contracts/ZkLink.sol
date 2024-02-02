@@ -11,6 +11,7 @@ import {AddressAliasHelper} from "./zksync/l1-contracts/vendor/AddressAliasHelpe
 import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
 import {IMailbox, TxStatus} from "./zksync/l1-contracts/zksync/interfaces/IMailbox.sol";
+import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {Merkle} from "./zksync/l1-contracts/zksync/libraries/Merkle.sol";
 import "./zksync/l1-contracts/zksync/Storage.sol";
@@ -19,15 +20,7 @@ import "./zksync/l1-contracts/common/L2ContractAddresses.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
-contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
-    /// @dev The sync status for priority op
-    /// @param hash The cumulative canonicalTxHash
-    /// @param amount The cumulative l2 value
-    struct SyncStatus {
-        bytes32 hash;
-        uint256 amount;
-    }
-
+contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
     /// @notice List of permitted validators
@@ -44,7 +37,7 @@ contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, Reent
     /// @dev The total number of synced priority operations
     uint256 public totalSyncedPriorityTxs;
     /// @dev The sync status for each priority operation
-    mapping(uint256 priorityOpId => SyncStatus) public priorityOpSyncStatus;
+    mapping(uint256 priorityOpId => SecondaryChainSyncStatus) public priorityOpSyncStatus;
     /// @notice Total number of executed batches i.e. batches[totalBatchesExecuted] points at the latest executed batch
     /// (batch 0 is genesis)
     uint256 public totalBatchesExecuted;
@@ -53,9 +46,21 @@ contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, Reent
     /// @dev Stored the l2 tx hash map from secondary chain to primary chain
     mapping(bytes32 l2TxHash => bytes32 primaryChainL2TxHash) public l2TxHashMap;
 
+    /// @notice Gateway init
+    event InitGateway(IL2Gateway gateway);
+    /// @notice Contract's permit status changed
+    event ContractAllowStatusUpdate(address contractAddress, bool isPermit);
+    /// @notice Validator's status changed
+    event ValidatorStatusUpdate(address validatorAddress, bool isActive);
+    /// @notice Fee params for L1->L2 transactions changed
+    event NewFeeParams(FeeParams oldFeeParams, FeeParams newFeeParams);
+    /// @notice New priority request event. Emitted when a request is placed into the priority queue
     event NewPriorityRequest(uint256 priorityOpId, ForwardL2Request l2Request);
+    /// @notice Emitted send sync status to primary chain.
     event SyncL2Requests(uint256 totalSyncedPriorityTxs, bytes32 syncHash, uint256 forwardEthAmount);
+    /// @notice Emitted when receive batch root from primary chain.
     event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash);
+    /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
 
     /// @notice Check if msg sender is gateway
@@ -87,6 +92,35 @@ contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, Reent
     /// @dev Unpause the contract, can only be called by the owner
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    /// @dev Init gateway, can only be called by the owner
+    function setGateway(IL2Gateway _gateway) external onlyOwner {
+        require(address(gateway) == address(0), "Duplicate init gateway");
+        gateway = _gateway;
+        emit InitGateway(_gateway);
+    }
+
+    /// @dev Update the permit status of contract, can only be called by the owner
+    function setAllowList(address _contractAddress, bool _permitted) external onlyOwner {
+        allowLists[_contractAddress] = _permitted;
+        emit ContractAllowStatusUpdate(_contractAddress, _permitted);
+    }
+
+    function setValidator(address _validator, bool _active) external onlyGateway {
+        validators[_validator] = _active;
+        emit ValidatorStatusUpdate(_validator, _active);
+    }
+
+    function changeFeeParams(FeeParams calldata _newFeeParams) external onlyGateway {
+        // Double checking that the new fee params are valid, i.e.
+        // the maximal pubdata per batch is not less than the maximal pubdata per priority transaction.
+        require(_newFeeParams.maxPubdataPerBatch >= _newFeeParams.priorityTxMaxPubdata, "n6");
+
+        FeeParams memory oldFeeParams = feeParams;
+        feeParams = _newFeeParams;
+
+        emit NewFeeParams(oldFeeParams, _newFeeParams);
     }
 
     function l2TransactionBaseCost(
@@ -159,7 +193,7 @@ contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, Reent
         canonicalTxHash = keccak256(abi.encode(request));
 
         // Accumulate sync status
-        SyncStatus memory syncStatus;
+        SecondaryChainSyncStatus memory syncStatus;
         if (_totalPriorityTxs == 0) {
             syncStatus.hash = canonicalTxHash;
             syncStatus.amount = _l2Value;
@@ -221,11 +255,11 @@ contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, Reent
         require(_newTotalSyncedPriorityTxs <= totalPriorityTxs && _newTotalSyncedPriorityTxs > totalSyncedPriorityTxs, "Invalid newTotalSyncedPriorityTxs");
 
         // Forward eth amount is the difference of two accumulate amount
-        SyncStatus memory lastSyncStatus;
+        SecondaryChainSyncStatus memory lastSyncStatus;
         if (totalSyncedPriorityTxs > 0) {
             lastSyncStatus = priorityOpSyncStatus[totalSyncedPriorityTxs - 1];
         }
-        SyncStatus memory currentSyncStatus = priorityOpSyncStatus[_newTotalSyncedPriorityTxs - 1];
+        SecondaryChainSyncStatus memory currentSyncStatus = priorityOpSyncStatus[_newTotalSyncedPriorityTxs - 1];
         uint256 forwardAmount = currentSyncStatus.amount - lastSyncStatus.amount;
 
         // Update synced priority txs
