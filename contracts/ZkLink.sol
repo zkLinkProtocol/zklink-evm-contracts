@@ -87,6 +87,8 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
     IL2Gateway public gateway;
     /// @notice List of permitted validators
     mapping(address validatorAddress => bool isValidator) public validators;
+    /// @dev The white list allow to send request L2 request
+    mapping(address contractAddress => bool isPermitToSendL2Request) public allowLists;
     /// @dev Gas price of primary chain
     uint256 public txGasPrice;
     /// @dev Fee params used to derive gasPrice for the L1->L2 transactions. For L2 transactions,
@@ -165,8 +167,13 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         address sender = msg.sender;
         bool isContractCall = false;
         if (sender != tx.origin) {
+            // Check contract call is allowed for safe reasons
+            require(allowLists[sender], "Not allow to send L2 request");
             sender = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
             isContractCall = true;
+        } else {
+            // Temporarily prohibit contract calls from EOA address for safe reasons
+            require(_calldata.length == 0, "Not allow to call contract");
         }
 
         // Enforcing that `_l2GasPerPubdataByteLimit` equals to a certain constant number. This is needed
