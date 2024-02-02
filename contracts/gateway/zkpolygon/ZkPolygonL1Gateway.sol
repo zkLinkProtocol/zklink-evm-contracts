@@ -10,14 +10,15 @@ import {BaseGateway} from "../BaseGateway.sol";
 contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public messageService;
+
+    uint32 public constant ETH_NETWORK_ID = 0;
+    // Default to true
+    bool public constant FORCE_UPDATE_GLOBAL_EXIT_ROOT = true;
+
     modifier onlyMessageService() {
         require(msg.sender == address(messageService), "Not remote gateway");
         _;
     }
-    uint32 constant ethNetworkid=0;
-    uint32 constant zkpolygonNetworkid=1;
-    // Default to true
-    bool constant forceUpdateGlobalExitRoot=true;
 
     /// @dev A mapping L2 batch number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
@@ -36,14 +37,11 @@ contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
-        bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (
-            msg.value,
-            _callData
-            ));
+        bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (_value, _callData));
         messageService.bridgeMessage{value: msg.value}(
-            zkpolygonNetworkid,
+            ETH_NETWORK_ID,
             remoteGateway,
-            forceUpdateGlobalExitRoot,
+            FORCE_UPDATE_GLOBAL_EXIT_ROOT,
             executeData
         );
     }
