@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
-import {AddressAliasHelper} from "../../libraries/AddressAliasHelper.sol";
+import {AddressAliasHelper} from "../../zksync/libraries/AddressAliasHelper.sol";
 import {IArbitrumGateway} from "../../interfaces/arbitrum/IArbitrumGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 

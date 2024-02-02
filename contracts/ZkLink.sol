@@ -7,59 +7,17 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {AddressAliasHelper} from "./libraries/AddressAliasHelper.sol";
+import {AddressAliasHelper} from "./zksync/libraries/AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
-import {IMailbox} from "./interfaces/IMailbox.sol";
-import {Merkle} from "./libraries/Merkle.sol";
+import {IMailbox, TxStatus} from "./zksync/interfaces/IMailbox.sol";
+import {IZkSync} from "./zksync/interfaces/IZkSync.sol";
+import {Merkle} from "./zksync/libraries/Merkle.sol";
+import "./zksync/Storage.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
-contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
-    /// @notice The struct that describes whether users will be charged for pubdata for L1->L2 transactions.
-    /// @param Rollup The users are charged for pubdata & it is priced based on the gas price on Ethereum.
-    /// @param Validium The pubdata is considered free with regard to the L1 gas price.
-    enum PubdataPricingMode {
-        Rollup,
-        Validium
-    }
-
-    /// @notice The fee params for L1->L2 transactions for the network.
-    /// @param pubdataPricingMode How the users will charged for pubdata in L1->L2 transactions.
-    /// @param batchOverheadL1Gas The amount of L1 gas required to process the batch (except for the calldata).
-    /// @param maxPubdataPerBatch The maximal number of pubdata that can be emitted per batch.
-    /// @param priorityTxMaxPubdata The maximal amount of pubdata a priority transaction is allowed to publish.
-    /// It can be slightly less than maxPubdataPerBatch in order to have some margin for the bootloader execution.
-    /// @param minimalL2GasPrice The minimal L2 gas price to be used by L1->L2 transactions. It should represent
-    /// the price that a single unit of compute costs.`
-    struct FeeParams {
-        PubdataPricingMode pubdataPricingMode;
-        uint32 batchOverheadL1Gas;
-        uint32 maxPubdataPerBatch;
-        uint32 maxL2GasPerBatch;
-        uint32 priorityTxMaxPubdata;
-        uint64 minimalL2GasPrice;
-    }
-
-    /// @dev The log passed from L2
-    /// @param l2ShardId The shard identifier, 0 - rollup, 1 - porter. All other values are not used but are reserved for
-    /// the future
-    /// @param isService A boolean flag that is part of the log along with `key`, `value`, and `sender` address.
-    /// This field is required formally but does not have any special meaning.
-    /// @param txNumberInBatch The L2 transaction number in the batch, in which the log was sent
-    /// @param sender The L2 address which sent the log
-    /// @param key The 32 bytes of information that was sent in the log
-    /// @param value The 32 bytes of information that was sent in the log
-    // Both `key` and `value` are arbitrary 32-bytes selected by the log sender
-    struct L2Log {
-        uint8 l2ShardId;
-        bool isService;
-        uint16 txNumberInBatch;
-        address sender;
-        bytes32 key;
-        bytes32 value;
-    }
-
+contract ZkLink is IZkLink, IMailbox, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
     /// @dev The sync status for priority op
     /// @param hash The cumulative canonicalTxHash
     /// @param amount The cumulative l2 value
@@ -287,7 +245,7 @@ contract ZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuard
         totalSyncedPriorityTxs = _newTotalSyncedPriorityTxs;
 
         // Send sync status to L1 gateway
-        bytes memory callData = abi.encodeCall(IMailbox.syncL2Requests, (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
+        bytes memory callData = abi.encodeCall(IZkSync.syncL2Requests, (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
         gateway.sendMessage{value: msg.value + forwardAmount}(forwardAmount, callData);
 
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
