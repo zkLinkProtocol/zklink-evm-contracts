@@ -4,11 +4,10 @@ pragma solidity ^0.8.0;
 import {IZkPolygon} from "../../interfaces/zkpolygon/IZkPolygon.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
-import {IZkPolygonL1Gateway} from "../../interfaces/zkpolygon/IZkPolygonL1Gateway.sol";
-import {IZkPolygonL2Gateway} from "../../interfaces/zkpolygon/IZkPolygonL2Gateway.sol";
+import {IZkPolygonGateway} from "../../interfaces/zkpolygon/IZkPolygonGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-contract ZkPolygonL1Gateway is IZkPolygonL1Gateway, L1BaseGateway, BaseGateway {
+contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public messageService;
     modifier onlyMessageService() {
@@ -37,7 +36,7 @@ contract ZkPolygonL1Gateway is IZkPolygonL1Gateway, L1BaseGateway, BaseGateway {
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
-        bytes memory executeData = abi.encodeCall(IZkPolygonL2Gateway.claimMessageCallback, (
+        bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (
             msg.value,
             _callData
             ));
@@ -49,7 +48,7 @@ contract ZkPolygonL1Gateway is IZkPolygonL1Gateway, L1BaseGateway, BaseGateway {
         );
     }
 
-    function finalizeMessage(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
+    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
         require(msg.value == _value, "Invalid value from canonical message service");
         arbitrator.receiveMessage{value: _value}(_value, _callData);
     }

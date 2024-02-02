@@ -2,12 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {IZkPolygon} from "../../interfaces/zkpolygon/IZkPolygon.sol";
-import {IZkPolygonL1Gateway} from "../../interfaces/zkpolygon/IZkPolygonL1Gateway.sol";
-import {IZkPolygonL2Gateway} from "../../interfaces/zkpolygon/IZkPolygonL2Gateway.sol";
+import {IZkPolygonGateway} from "../../interfaces/zkpolygon/IZkPolygonGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-contract ZkPolygonL2Gateway is IZkPolygonL2Gateway, L2BaseGateway, BaseGateway {
+contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public messageService;
 
@@ -28,7 +27,7 @@ contract ZkPolygonL2Gateway is IZkPolygonL2Gateway, L2BaseGateway, BaseGateway {
     }
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable onlyZkLink {
-        bytes memory executeData = abi.encodeCall(IZkPolygonL1Gateway.finalizeMessage, (
+        bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (
             msg.value,
             _callData
             ));
