@@ -50,6 +50,8 @@ contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeabl
     event InitGateway(IL2Gateway gateway);
     /// @notice Contract's permit status changed
     event ContractAllowStatusUpdate(address contractAddress, bool isPermit);
+    /// @notice Tx gas price changed
+    event TxGasPriceUpdate(uint256 oldTxGasPrice, uint256 newTxGasPrice);
     /// @notice Validator's status changed
     event ValidatorStatusUpdate(address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
@@ -105,6 +107,13 @@ contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeabl
     function setAllowList(address _contractAddress, bool _permitted) external onlyOwner {
         allowLists[_contractAddress] = _permitted;
         emit ContractAllowStatusUpdate(_contractAddress, _permitted);
+    }
+
+    /// @dev Update the tx gas price
+    function setTxGasPrice(uint256 _newTxGasPrice) external onlyOwner {
+        uint256 oldTxGasPrice = txGasPrice;
+        txGasPrice = _newTxGasPrice;
+        emit TxGasPriceUpdate(oldTxGasPrice, _newTxGasPrice);
     }
 
     function setValidator(address _validator, bool _active) external onlyGateway {
