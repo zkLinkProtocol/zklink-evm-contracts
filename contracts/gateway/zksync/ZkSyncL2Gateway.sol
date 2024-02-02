@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {IL2Messenger} from "../../interfaces/zksync/IL2Messenger.sol";
 import {IL2ETHToken} from "../../interfaces/zksync/IL2ETHToken.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
-import {AddressAliasHelper} from "../../zksync/libraries/AddressAliasHelper.sol";
+import {AddressAliasHelper} from "../../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
 import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
