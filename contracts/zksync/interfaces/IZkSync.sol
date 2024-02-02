@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IMailbox {
+interface IZkSync {
     /// @notice Receive sync status from secondary chain
     /// @param _secondaryChainGateway The secondary chain gateway address
     /// @param _newTotalSyncedPriorityTxs New sync point

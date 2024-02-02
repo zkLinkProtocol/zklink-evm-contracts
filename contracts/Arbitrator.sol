@@ -35,10 +35,22 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         _;
     }
 
-    function initialize() external initializer {
+    function initialize(
+        IL1Gateway _primaryChainGateway,
+        IL1Gateway[] memory _secondaryChainGateways,
+        address[] memory _relayers
+    ) external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
+
+        primaryChainGateway = _primaryChainGateway;
+        for(uint i = 0; i < _secondaryChainGateways.length; ++i) {
+            secondaryChainGateways[_secondaryChainGateways[i]] = true;
+        }
+        for(uint i = 0; i < _relayers.length; ++i) {
+            relayers[_relayers[i]] = true;
+        }
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
