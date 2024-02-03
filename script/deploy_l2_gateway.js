@@ -1,6 +1,6 @@
 const fs = require("fs");
 const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
-const { verifyContractCode, getDeployTx, createOrGetDeployLog, readDeployLogField, ChainContractDeployer} = require("./utils");
+const { verifyContractCode, getDeployTx, createOrGetDeployLog, readDeployContract, readDeployLogField, ChainContractDeployer} = require("./utils");
 const logName = require("./deploy_log_name");
 const {zkLinkConfig} = require("./zklink_config");
 
@@ -88,7 +88,7 @@ task("deployL2Gateway", "Deploy L2 Gateway")
 
 task("upgradeL2Gateway","Upgrade L2 gateway")
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
-    .setAction(async (taskArgs,hardhat)=>{
+    .setAction(async (taskArgs, hardhat)=>{
         let skipVerify = taskArgs.skipVerify;
         console.log("skipVerify", skipVerify);
 
@@ -135,4 +135,52 @@ task("upgradeL2Gateway","Upgrade L2 gateway")
             deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
             fs.writeFileSync(deployLogPath,JSON.stringify(deployLog, null, 2));
         }
+    })
+
+task("setL2GatewayRemoteGateway","Set remote gateway for L2 gateway")
+    .setAction(async (taskArgs, hardhat)=>{
+        const chainInfo = zkLinkConfig[process.env.NET];
+        if (chainInfo === undefined) {
+            console.log('current net not support');
+            return;
+        }
+
+        const l1GatewayInfo = chainInfo.l1Gateway;
+        if (l1GatewayInfo === undefined) {
+            console.log('l1 gateway config not exist');
+            return;
+        }
+
+        const l2GatewayInfo = chainInfo.l2Gateway;
+        if (l2GatewayInfo === undefined) {
+            console.log('l2 gateway config not exist');
+            return;
+        }
+
+        const l2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY);
+        if (l2GatewayAddr === undefined) {
+            console.log('l2 gateway address not exist');
+            return;
+        }
+        console.log('l2 gateway', l2GatewayAddr);
+
+        const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + "_" + process.env.NET;
+        const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, l1GatewayInfo.netName);
+        if (l1GatewayAddr === undefined) {
+            console.log('l1 gateway address not exist');
+            return;
+        }
+        console.log('l1 gateway', l1GatewayAddr);
+
+        const l2Gateway = await hardhat.ethers.getContractAt(l2GatewayInfo.contractName, l2GatewayAddr);
+        const existL1GatewayAddr = await l2Gateway.getRemoteGateway();
+        if (existL1GatewayAddr !== hardhat.ethers.ZeroAddress) {
+            console.log('l1 gateway has been set to', existL1GatewayAddr);
+            return;
+        }
+
+        console.log('set remote gateway...');
+        const tx = await l2Gateway.setRemoteGateway(l1GatewayAddr);
+        await tx.wait();
+        console.log("tx:", tx.hash);
     })

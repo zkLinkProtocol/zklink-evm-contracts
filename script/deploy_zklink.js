@@ -1,6 +1,6 @@
 const fs = require("fs");
 const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
-const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx} = require("./utils");
+const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx, readDeployContract} = require("./utils");
 const logName = require("./deploy_log_name");
 
 function getZkLinkContractName(dummy) {
@@ -115,4 +115,33 @@ task("upgradeZkLink","Upgrade zkLink")
             deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
             fs.writeFileSync(deployLogPath,JSON.stringify(deployLog, null, 2));
         }
+    })
+
+task("setGateway","Set gateway for zkLink")
+    .setAction(async (taskArgs, hardhat)=>{
+        const l2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY);
+        if (l2GatewayAddr === undefined) {
+            console.log('l2 gateway address not exist');
+            return;
+        }
+        console.log('l2 gateway', l2GatewayAddr);
+
+        const zkLinkAddr = readDeployContract(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+        if (zkLinkAddr === undefined) {
+            console.log('zkLink address not exist');
+            return;
+        }
+        console.log('zkLink', zkLinkAddr);
+
+        const zkLink = await hardhat.ethers.getContractAt("ZkLink", zkLinkAddr);
+        const existGatewayAddr = await zkLink.gateway();
+        if (existGatewayAddr !== hardhat.ethers.ZeroAddress) {
+            console.log('gateway has been set to', existGatewayAddr);
+            return;
+        }
+
+        console.log('set gateway...');
+        const tx = await zkLink.setGateway(l2GatewayAddr);
+        await tx.wait();
+        console.log("tx:", tx.hash);
     })

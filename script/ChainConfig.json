@@ -1,23 +1,19 @@
 {
   "SCROLL": {
-    "mainnet": true
   },
   "LINEA": {
-    "mainnet": true
   },
   "ZKPOLYGON": {
-    "mainnet": true
   },
   "ARBITRUM": {
-    "mainnet": true
   },
   "ZKSYNCTEST": {
-    "mainnet": false,
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
       "initializeParams": []
     },
     "l1Gateway": {
+      "netName": "SEPOLIA",
       "contractName": "ZkSyncL1Gateway",
       "initializeParams": [
         "0x9A6DE0f62Aa270A8bCB1e2610078650D539B1Ef9"
@@ -25,18 +21,16 @@
     }
   },
   "SCROLLTEST": {
-    "mainnet": false
   },
   "ZKPOLYGONTEST": {
-    "mainnet": false
   },
   "ARBITRUMTEST": {
-    "mainnet": false,
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
       "initializeParams": []
     },
     "l1Gateway": {
+      "netName": "SEPOLIA",
       "contractName": "ArbitrumL1Gateway",
       "initializeParams": [
         "0xaAe29B0366299461418F5324a79Afc425BE5ae21"

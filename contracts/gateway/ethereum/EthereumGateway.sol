@@ -21,7 +21,7 @@ contract EthereumGateway is L1BaseGateway, L2BaseGateway, OwnableUpgradeable, Re
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function getRemoteGateway() external view returns (address) {
-        return address(this);
+        return address(0);
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
