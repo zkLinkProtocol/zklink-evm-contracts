@@ -34,8 +34,7 @@ async function getDeployTx(contract) {
         return await contract.deployTransaction.wait();
     } else if (contract.deploymentTransaction !== undefined) {
         // ethers v6
-        const deploymentTransaction = await contract.deploymentTransaction();
-        return await deploymentTransaction.getTransaction();
+        return contract.deploymentTransaction().wait();
     } else {
         return undefined;
     }
@@ -118,15 +117,6 @@ class ChainContractDeployer {
         console.log('deployer', this.deployerWallet.address);
         const balance = await  this.hardhat.ethers.provider.getBalance(this.deployerWallet.address);
         console.log('deployer balance', this.hardhat.ethers.formatEther(balance));
-    }
-
-    // To avoid proxy name conflict with '@openzeppelin/contracts/proxy/Proxy.sol:Proxy'
-    getProxyContractName() {
-        if (this.zksync) {
-            return "cache-zk/solpp-generated-contracts/zksync/Proxy.sol:Proxy";
-        } else {
-            return "cache/solpp-generated-contracts/zksync/Proxy.sol:Proxy";
-        }
     }
 
     async deployContract(contractName, deployArgs) {
