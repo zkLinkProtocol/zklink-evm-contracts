@@ -63,17 +63,17 @@ task("deployETHGateway", "Deploy ETH Gateway")
         }
         console.log("eth gateway target", gatewayTargetAddr);
 
-        // verify proxy contract
-        if ((!(logName.DEPLOY_GATEWAY_VERIFIED in deployLog) || force) && !skipVerify) {
-            await verifyContractCode(hardhat, gatewayAddr, []);
-            deployLog[logName.DEPLOY_GATEWAY_VERIFIED] = true;
-            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
-        }
-
         // verify target contract
         if ((!(logName.DEPLOY_GATEWAY_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
             await verifyContractCode(hardhat, gatewayTargetAddr, []);
             deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
+            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+        }
+
+        // verify proxy contract
+        if ((!(logName.DEPLOY_GATEWAY_VERIFIED in deployLog) || force) && !skipVerify) {
+            await verifyContractCode(hardhat, gatewayAddr, []);
+            deployLog[logName.DEPLOY_GATEWAY_VERIFIED] = true;
             fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         }
     });

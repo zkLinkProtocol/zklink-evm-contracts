@@ -3,14 +3,21 @@ const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
 const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx} = require("./utils");
 const logName = require("./deploy_log_name");
 
+function getArbitratorContractName(dummy) {
+    return dummy ? "DummyArbitrator": "Arbitrator";
+}
+
 task("deployArbitrator", "Deploy arbitrator")
     .addParam("force", "Fore redeploy all contracts", false, types.boolean, true)
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
+    .addParam("dummy", "Deploy dummy contract for test", false, types.boolean, true)
     .setAction(async (taskArgs, hardhat) => {
         let force = taskArgs.force;
         let skipVerify = taskArgs.skipVerify;
+        let dummy = taskArgs.dummy;
         console.log('force redeploy all contracts?', force);
         console.log('skip verify contracts?', skipVerify);
+        console.log('deploy dummy contracts?', dummy);
 
         const contractDeployer = new ChainContractDeployer(hardhat);
         await contractDeployer.init();
@@ -24,7 +31,8 @@ task("deployArbitrator", "Deploy arbitrator")
         let arbitratorAddr;
         if (!(logName.DEPLOY_LOG_ARBITRATOR in deployLog) || force) {
             console.log('deploy arbitrator...');
-            const contract = await contractDeployer.deployProxy("Arbitrator");
+            const contractName = getArbitratorContractName(dummy);
+            const contract = await contractDeployer.deployProxy(contractName);
             const transaction = await getDeployTx(contract);
             arbitratorAddr = await contract.getAddress();
             deployLog[logName.DEPLOY_LOG_ARBITRATOR] = arbitratorAddr;
@@ -67,9 +75,12 @@ task("deployArbitrator", "Deploy arbitrator")
 
 task("upgradeArbitrator","Upgrade arbitrator")
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
+    .addParam("dummy", "Deploy dummy contract for test", false, types.boolean, true)
     .setAction(async (taskArgs,hardhat)=>{
         let skipVerify = taskArgs.skipVerify;
+        let dummy = taskArgs.dummy;
         console.log("skipVerify", skipVerify);
+        console.log('deploy dummy contracts?', dummy);
 
         const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ARBITRATOR_LOG_PREFIX);
         const contractAddr = deployLog[logName.DEPLOY_LOG_ARBITRATOR];
@@ -89,7 +100,8 @@ task("upgradeArbitrator","Upgrade arbitrator")
         await contractDeployer.init();
 
         console.log("upgrade arbitrator...");
-        const contract = await contractDeployer.upgradeProxy("Arbitrator", contractAddr);
+        const contractName = getArbitratorContractName(dummy);
+        const contract = await contractDeployer.upgradeProxy(contractName, contractAddr);
         const tx = await getDeployTx(contract);
         console.log('upgrade tx', tx.hash);
         const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);

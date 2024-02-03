@@ -3,14 +3,21 @@ const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
 const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx} = require("./utils");
 const logName = require("./deploy_log_name");
 
+function getZkLinkContractName(dummy) {
+    return dummy ? "DummyZkLink": "ZkLink";
+}
+
 task("deployZkLink", "Deploy zkLink")
     .addParam("force", "Fore redeploy all contracts", false, types.boolean, true)
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
+    .addParam("dummy", "Deploy dummy contract for test", false, types.boolean, true)
     .setAction(async (taskArgs, hardhat) => {
         let force = taskArgs.force;
         let skipVerify = taskArgs.skipVerify;
+        let dummy = taskArgs.dummy;
         console.log('force redeploy all contracts?', force);
         console.log('skip verify contracts?', skipVerify);
+        console.log('deploy dummy contracts?', dummy);
 
         const contractDeployer = new ChainContractDeployer(hardhat);
         await contractDeployer.init();
@@ -24,7 +31,8 @@ task("deployZkLink", "Deploy zkLink")
         let zkLinkAddr;
         if (!(logName.DEPLOY_LOG_ZKLINK_PROXY in deployLog) || force) {
             console.log('deploy zkLink...');
-            const contract = await contractDeployer.deployProxy("ZkLink");
+            const contractName = getZkLinkContractName(dummy);
+            const contract = await contractDeployer.deployProxy(contractName);
             const transaction = await getDeployTx(contract);
             zkLinkAddr = await contract.getAddress();
             deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY] = zkLinkAddr;
@@ -50,26 +58,29 @@ task("deployZkLink", "Deploy zkLink")
         }
         console.log("zkLink target", zkLinkTargetAddr);
 
-        // verify proxy contract
-        if ((!(logName.DEPLOY_LOG_ZKLINK_PROXY_VERIFIED in deployLog) || force) && !skipVerify) {
-            await verifyContractCode(hardhat, zkLinkAddr, []);
-            deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY_VERIFIED] = true;
-            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
-        }
-
         // verify target contract
         if ((!(logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
             await verifyContractCode(hardhat, zkLinkTargetAddr, []);
             deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
             fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         }
+
+        // verify proxy contract
+        if ((!(logName.DEPLOY_LOG_ZKLINK_PROXY_VERIFIED in deployLog) || force) && !skipVerify) {
+            await verifyContractCode(hardhat, zkLinkAddr, []);
+            deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY_VERIFIED] = true;
+            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+        }
     });
 
 task("upgradeZkLink","Upgrade zkLink")
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
+    .addParam("dummy", "Deploy dummy contract for test", false, types.boolean, true)
     .setAction(async (taskArgs,hardhat)=>{
         let skipVerify = taskArgs.skipVerify;
+        let dummy = taskArgs.dummy;
         console.log("skipVerify", skipVerify);
+        console.log('deploy dummy contracts?', dummy);
 
         const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ZKLINK_LOG_PREFIX);
         const contractAddr = deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY];
@@ -89,7 +100,8 @@ task("upgradeZkLink","Upgrade zkLink")
         await contractDeployer.init();
 
         console.log("upgrade zkLink...");
-        const contract = await contractDeployer.upgradeProxy("ZkLink", contractAddr);
+        const contractName = getZkLinkContractName(dummy);
+        const contract = await contractDeployer.upgradeProxy(contractName, contractAddr);
         const tx = await getDeployTx(contract);
         console.log('upgrade tx', tx.hash);
         const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
