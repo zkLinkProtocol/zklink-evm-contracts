@@ -3,7 +3,7 @@ const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
 const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx} = require("./utils");
 const logName = require("./deploy_log_name");
 
-task("deployZkLink", "Deploy zkLink")
+task("deployArbitrator", "Deploy arbitrator")
     .addParam("force", "Fore redeploy all contracts", false, types.boolean, true)
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
     .setAction(async (taskArgs, hardhat) => {
@@ -16,91 +16,91 @@ task("deployZkLink", "Deploy zkLink")
         await contractDeployer.init();
         const deployerWallet = contractDeployer.deployerWallet;
 
-        const {deployLogPath,deployLog} = createOrGetDeployLog(logName.DEPLOY_ZKLINK_LOG_PREFIX);
+        const {deployLogPath,deployLog} = createOrGetDeployLog(logName.DEPLOY_ARBITRATOR_LOG_PREFIX);
         deployLog[logName.DEPLOY_LOG_GOVERNOR] = deployerWallet.address;
         fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
 
-        // deploy zkLink
-        let zkLinkAddr;
-        if (!(logName.DEPLOY_LOG_ZKLINK_PROXY in deployLog) || force) {
-            console.log('deploy zkLink...');
-            const contract = await contractDeployer.deployProxy("ZkLink");
+        // deploy arbitrator
+        let arbitratorAddr;
+        if (!(logName.DEPLOY_LOG_ARBITRATOR in deployLog) || force) {
+            console.log('deploy arbitrator...');
+            const contract = await contractDeployer.deployProxy("Arbitrator");
             const transaction = await getDeployTx(contract);
-            zkLinkAddr = await contract.getAddress();
-            deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY] = zkLinkAddr;
+            arbitratorAddr = await contract.getAddress();
+            deployLog[logName.DEPLOY_LOG_ARBITRATOR] = arbitratorAddr;
             deployLog[logName.DEPLOY_LOG_DEPLOY_TX_HASH] = transaction.hash;
             deployLog[logName.DEPLOY_LOG_DEPLOY_BLOCK_NUMBER] = transaction.blockNumber;
             fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         } else {
-            zkLinkAddr = deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY];
+            arbitratorAddr = deployLog[logName.DEPLOY_LOG_ARBITRATOR];
         }
-        console.log('zkLink', zkLinkAddr);
+        console.log('arbitrator', arbitratorAddr);
 
-        let zkLinkTargetAddr;
-        if (!(logName.DEPLOY_LOG_ZKLINK_TARGET in deployLog) || force) {
-            console.log('get zkLink target...');
-            zkLinkTargetAddr = await getImplementationAddress(
+        let arbitratorTargetAddr;
+        if (!(logName.DEPLOY_LOG_ARBITRATOR_TARGET in deployLog) || force) {
+            console.log('get arbitrator target...');
+            arbitratorTargetAddr = await getImplementationAddress(
                 hardhat.ethers.provider,
-                zkLinkAddr
+                arbitratorAddr
             );
-            deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET] = zkLinkTargetAddr;
+            deployLog[logName.DEPLOY_LOG_ARBITRATOR_TARGET] = arbitratorTargetAddr;
             fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         } else {
-            zkLinkTargetAddr = deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET];
+            arbitratorTargetAddr = deployLog[logName.DEPLOY_LOG_ARBITRATOR_TARGET];
         }
-        console.log("zkLink target", zkLinkTargetAddr);
+        console.log("arbitrator target", arbitratorTargetAddr);
 
-        // verify proxy contract
-        if ((!(logName.DEPLOY_LOG_ZKLINK_PROXY_VERIFIED in deployLog) || force) && !skipVerify) {
-            await verifyContractCode(hardhat, zkLinkAddr, []);
-            deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY_VERIFIED] = true;
+        // verify target contract
+        if ((!(logName.DEPLOY_LOG_ARBITRATOR_VERIFIED in deployLog) || force) && !skipVerify) {
+            await verifyContractCode(hardhat, arbitratorTargetAddr, []);
+            deployLog[logName.DEPLOY_LOG_ARBITRATOR_VERIFIED] = true;
             fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         }
 
-        // verify target contract
-        if ((!(logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
-            await verifyContractCode(hardhat, zkLinkTargetAddr, []);
-            deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
+        // verify proxy contract
+        if ((!(logName.DEPLOY_LOG_ARBITRATOR_VERIFIED in deployLog) || force) && !skipVerify) {
+            await verifyContractCode(hardhat, arbitratorAddr, []);
+            deployLog[logName.DEPLOY_LOG_ARBITRATOR_VERIFIED] = true;
             fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         }
     });
 
-task("upgradeZkLink","Upgrade zkLink")
+task("upgradeArbitrator","Upgrade arbitrator")
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
     .setAction(async (taskArgs,hardhat)=>{
         let skipVerify = taskArgs.skipVerify;
         console.log("skipVerify", skipVerify);
 
-        const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ZKLINK_LOG_PREFIX);
-        const contractAddr = deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY];
+        const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ARBITRATOR_LOG_PREFIX);
+        const contractAddr = deployLog[logName.DEPLOY_LOG_ARBITRATOR];
         if (contractAddr === undefined) {
-            console.log('zkLink address not exist');
+            console.log('arbitrator address not exist');
             return;
         }
-        console.log('zkLink', contractAddr);
-        const oldContractTargetAddr = deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET];
+        console.log('arbitrator', contractAddr);
+        const oldContractTargetAddr = deployLog[logName.DEPLOY_LOG_ARBITRATOR_TARGET];
         if (oldContractTargetAddr === undefined) {
-            console.log('zkLink target address not exist');
+            console.log('arbitrator target address not exist');
             return;
         }
-        console.log('zkLink old target', oldContractTargetAddr);
+        console.log('arbitrator old target', oldContractTargetAddr);
 
         const contractDeployer = new ChainContractDeployer(hardhat);
         await contractDeployer.init();
 
-        console.log("upgrade zkLink...");
-        const contract = await contractDeployer.upgradeProxy("ZkLink", contractAddr);
+        console.log("upgrade arbitrator...");
+        const contract = await contractDeployer.upgradeProxy("Arbitrator", contractAddr);
         const tx = await getDeployTx(contract);
         console.log('upgrade tx', tx.hash);
         const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
-        deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET] = newContractTargetAddr;
-        console.log("zkLink new target", newContractTargetAddr);
+        deployLog[logName.DEPLOY_LOG_ARBITRATOR_TARGET] = newContractTargetAddr;
+        console.log("arbitrator new target", newContractTargetAddr);
         fs.writeFileSync(deployLogPath,JSON.stringify(deployLog, null, 2));
 
         // verify target contract
         if (!skipVerify) {
             await verifyContractCode(hardhat, newContractTargetAddr, []);
-            deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
+            deployLog[logName.DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED] = true;
             fs.writeFileSync(deployLogPath,JSON.stringify(deployLog, null, 2));
         }
     })

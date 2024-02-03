@@ -2,11 +2,10 @@ const fs = require("fs");
 const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
 const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx, readDeployLogField} = require("./utils");
 const logName = require("./deploy_log_name");
-const {zkLinkConfig} = require("./zklink_config");
 
-task("deployL1Gateway", "Deploy L1 Gateway")
+task("deployETHGateway", "Deploy ETH Gateway")
     .addParam("arbitrator", "The arbitrator address (default get from arbitrator deploy log)", undefined, types.string, true)
-    .addParam("targetNetwork", "L2 network name", undefined, types.string, false)
+    .addParam("zklink", "The zklink address (default get from zkLink deploy log)", undefined, types.string, true)
     .addParam("force", "Fore redeploy all contracts", false, types.boolean, true)
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
     .setAction(async (taskArgs, hardhat) => {
@@ -14,41 +13,31 @@ task("deployL1Gateway", "Deploy L1 Gateway")
         if (arbitrator === undefined) {
             arbitrator = readDeployLogField(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
         }
-        let targetNetwork = taskArgs.targetNetwork;
+        let zklink = taskArgs.zklink;
+        if (zklink === undefined) {
+            zklink = readDeployLogField(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+        }
         let force = taskArgs.force;
         let skipVerify = taskArgs.skipVerify;
         console.log('arbitrator', arbitrator);
-        console.log('target network', targetNetwork);
+        console.log('zklink', zklink);
         console.log('force redeploy all contracts?', force);
         console.log('skip verify contracts?', skipVerify);
 
-        const l2ChainInfo = zkLinkConfig[targetNetwork];
-        if (l2ChainInfo === undefined) {
-          console.log('l2 chain info not exist');
-          return;
-        }
-        const l1GatewayInfo = l2ChainInfo.l1Gateway;
-        if (l1GatewayInfo === undefined) {
-          console.log('l1 gateway info of l2 chain not exist');
-          return;
-        }
-
-        const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + "_" + targetNetwork;
-        const { deployLogPath, deployLog } = createOrGetDeployLog(l1GatewayLogName);
 
         const contractDeployer = new ChainContractDeployer(hardhat);
         await contractDeployer.init();
         const deployerWallet = contractDeployer.deployerWallet;
+
+        const {deployLogPath,deployLog} = createOrGetDeployLog(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX);
         deployLog[logName.DEPLOY_LOG_GOVERNOR] = deployerWallet.address;
         fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
 
-        // deploy l1 gateway
+        // deploy eth gateway
         let gatewayAddr;
         if (!(logName.DEPLOY_GATEWAY in deployLog) || force) {
-            console.log('deploy l1 gateway...');
-            const { contractName, initializeParams } = l1GatewayInfo;
-            const allParams = [arbitrator].concat(initializeParams);
-            const contract = await contractDeployer.deployProxy(contractName, allParams);
+            console.log('deploy eth gateway...');
+            const contract = await contractDeployer.deployProxy("EthereumGateway", [arbitrator, zklink]);
             const transaction = await getDeployTx(contract);
             gatewayAddr = await contract.getAddress();
             deployLog[logName.DEPLOY_GATEWAY] = gatewayAddr;
@@ -58,21 +47,21 @@ task("deployL1Gateway", "Deploy L1 Gateway")
         } else {
             gatewayAddr = deployLog[logName.DEPLOY_GATEWAY];
         }
-        console.log('l1 gateway', gatewayAddr);
+        console.log('eth gateway', gatewayAddr);
 
         let gatewayTargetAddr;
         if (!(logName.DEPLOY_GATEWAY_TARGET in deployLog) || force) {
-          console.log('get l1 gateway target...');
-          gatewayTargetAddr = await getImplementationAddress(
-              hardhat.ethers.provider,
-              gatewayAddr
-          );
-          deployLog[logName.DEPLOY_GATEWAY_TARGET] = gatewayTargetAddr;
-          fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+            console.log('get eth gateway target...');
+            gatewayTargetAddr = await getImplementationAddress(
+                hardhat.ethers.provider,
+                gatewayAddr
+            );
+            deployLog[logName.DEPLOY_GATEWAY_TARGET] = gatewayTargetAddr;
+            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         } else {
-          gatewayTargetAddr = deployLog[logName.DEPLOY_GATEWAY_TARGET];
+            gatewayTargetAddr = deployLog[logName.DEPLOY_GATEWAY_TARGET];
         }
-        console.log("l1 gateway target", gatewayTargetAddr);
+        console.log("eth gateway target", gatewayTargetAddr);
 
         // verify proxy contract
         if ((!(logName.DEPLOY_GATEWAY_VERIFIED in deployLog) || force) && !skipVerify) {
@@ -83,57 +72,42 @@ task("deployL1Gateway", "Deploy L1 Gateway")
 
         // verify target contract
         if ((!(logName.DEPLOY_GATEWAY_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
-          await verifyContractCode(hardhat, gatewayTargetAddr, []);
-          deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
-          fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+            await verifyContractCode(hardhat, gatewayTargetAddr, []);
+            deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
+            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
         }
     });
 
-task("upgradeL1Gateway","Upgrade l1 gateway")
+task("upgradeETHGateway","Upgrade ETH gateway")
     .addParam("skipVerify", "Skip verify", false, types.boolean, true)
-    .addParam("targetNetwork", "L2 network name", undefined, types.string, false)
     .setAction(async (taskArgs,hardhat)=>{
         let skipVerify = taskArgs.skipVerify;
-        let targetNetwork = taskArgs.targetNetwork;
         console.log("skipVerify", skipVerify);
-        console.log("targetNetwork", targetNetwork);
 
-        const l2ChainInfo = zkLinkConfig[targetNetwork];
-        if (l2ChainInfo === undefined) {
-            console.log('l2 chain info not exist');
-            return;
-        }
-        const l1GatewayInfo = l2ChainInfo.l1Gateway;
-        if (l1GatewayInfo === undefined) {
-            console.log('l1 gateway info of l2 chain not exist');
-            return;
-        }
-
-        const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + "_" + targetNetwork;
-        const { deployLogPath, deployLog } = createOrGetDeployLog(l1GatewayLogName);
+        const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX);
         const contractAddr = deployLog[logName.DEPLOY_GATEWAY];
         if (contractAddr === undefined) {
-            console.log('l1 gateway address not exist');
+            console.log('eth gateway address not exist');
             return;
         }
-        console.log('l1 gateway', contractAddr);
+        console.log('eth gateway', contractAddr);
         const oldContractTargetAddr = deployLog[logName.DEPLOY_GATEWAY_TARGET];
         if (oldContractTargetAddr === undefined) {
-            console.log('l1 gateway target address not exist');
+            console.log('eth gateway target address not exist');
             return;
         }
-        console.log('l1 gateway old target', oldContractTargetAddr);
+        console.log('eth gateway old target', oldContractTargetAddr);
 
         const contractDeployer = new ChainContractDeployer(hardhat);
         await contractDeployer.init();
 
-        console.log("upgrade l1 gateway...");
-        const contract = await contractDeployer.upgradeProxy(l1GatewayInfo.contractName, contractAddr);
+        console.log("upgrade eth gateway...");
+        const contract = await contractDeployer.upgradeProxy("EthereumGateway", contractAddr);
         const tx = await getDeployTx(contract);
         console.log('upgrade tx', tx.hash);
         const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
         deployLog[logName.DEPLOY_GATEWAY_TARGET] = newContractTargetAddr;
-        console.log("l1 gateway new target", newContractTargetAddr);
+        console.log("eth gateway new target", newContractTargetAddr);
         fs.writeFileSync(deployLogPath,JSON.stringify(deployLog, null, 2));
 
         if (!skipVerify) {

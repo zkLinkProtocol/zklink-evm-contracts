@@ -31,8 +31,6 @@ task("deployL2Gateway", "Deploy L2 Gateway")
             return;
         }
 
-        const { contractName, initializeParams } = l2GatewayInfo;
-        const allParams = [zklink].concat(initializeParams);
         const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX);
 
         const contractDeployer = new ChainContractDeployer(hardhat);
@@ -45,6 +43,8 @@ task("deployL2Gateway", "Deploy L2 Gateway")
         let gatewayAddr;
         if (!(logName.DEPLOY_GATEWAY in deployLog) || force) {
             console.log('deploy l2 gateway...');
+            const { contractName, initializeParams } = l2GatewayInfo;
+            const allParams = [zklink].concat(initializeParams);
             const contract = await contractDeployer.deployProxy(contractName, allParams);
             const transaction = await getDeployTx(contract);
             gatewayAddr = await contract.getAddress();
@@ -71,7 +71,14 @@ task("deployL2Gateway", "Deploy L2 Gateway")
         }
         console.log("l2 gateway target", gatewayTargetAddr);
 
-        // verify contract
+        // verify proxy contract
+        if ((!(logName.DEPLOY_GATEWAY_VERIFIED in deployLog) || force) && !skipVerify) {
+            await verifyContractCode(hardhat, gatewayAddr, []);
+            deployLog[logName.DEPLOY_GATEWAY_VERIFIED] = true;
+            fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+        }
+
+        // verify target contract
         if ((!(logName.DEPLOY_GATEWAY_TARGET_VERIFIED in deployLog) || force) && !taskArgs.skipVerify) {
             await verifyContractCode(hardhat, gatewayTargetAddr, []);
             deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
