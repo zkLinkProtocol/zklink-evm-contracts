@@ -1,4 +1,4 @@
-require('@nomicfoundation/hardhat-toolbox');
+require('@nomiclabs/hardhat-ethers');
 
 const BaseConfig = require('../../hardhat.base.config');
 

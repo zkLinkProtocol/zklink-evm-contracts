@@ -77,7 +77,7 @@ function readDeployContract(logName, contractName, env = process.env.NET) {
 function readDeployLogField(logName, fieldName, env = process.env.NET) {
   const deployLogPath = getDeployLogPath(logName, env);
   if (!fs.existsSync(deployLogPath)) {
-    throw 'deploy log not exist';
+    throw 'deploy log not exist: ' + deployLogPath;
   }
   const data = fs.readFileSync(deployLogPath, 'utf8');
   const deployLog = JSON.parse(data);
