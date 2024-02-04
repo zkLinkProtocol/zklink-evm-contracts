@@ -8,6 +8,7 @@ const {
   readDeployLogField,
 } = require('./utils');
 const logName = require('./deploy_log_name');
+const { task, types } = require('hardhat/config');
 
 task('deployETHGateway', 'Deploy ETH Gateway')
   .addParam(

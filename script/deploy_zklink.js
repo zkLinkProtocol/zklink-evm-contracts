@@ -8,6 +8,7 @@ const {
   readDeployContract,
 } = require('./utils');
 const logName = require('./deploy_log_name');
+const { task, types } = require('hardhat/config');
 
 function getZkLinkContractName(dummy) {
   return dummy ? 'DummyZkLink' : 'ZkLink';

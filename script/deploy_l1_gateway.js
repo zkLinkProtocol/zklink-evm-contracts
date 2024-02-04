@@ -10,6 +10,7 @@ const {
 } = require('./utils');
 const logName = require('./deploy_log_name');
 const { zkLinkConfig } = require('./zklink_config');
+const { task, types } = require('hardhat/config');
 
 task('deployL1Gateway', 'Deploy L1 Gateway')
   .addParam(

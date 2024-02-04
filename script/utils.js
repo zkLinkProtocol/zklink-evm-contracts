@@ -5,6 +5,8 @@ async function verifyContractCode(hardhat, address, constructorArguments) {
   // contract code may be not exist after tx send to chain
   // try every one minutes if verify failed
   console.log('verify %s code...', address);
+
+  /*eslint no-constant-condition: ["error", { "checkLoops": false }]*/
   while (true) {
     try {
       await hardhat.run('verify:verify', {

@@ -2,6 +2,7 @@ const fs = require('fs');
 const { getImplementationAddress } = require('@openzeppelin/upgrades-core');
 const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx } = require('./utils');
 const logName = require('./deploy_log_name');
+const { task, types } = require('hardhat/config');
 
 function getArbitratorContractName(dummy) {
   return dummy ? 'DummyArbitrator' : 'Arbitrator';

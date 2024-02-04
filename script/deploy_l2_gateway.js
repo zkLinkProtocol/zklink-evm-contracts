@@ -10,6 +10,7 @@ const {
 } = require('./utils');
 const logName = require('./deploy_log_name');
 const { zkLinkConfig } = require('./zklink_config');
+const { task, types } = require('hardhat/config');
 
 task('deployL2Gateway', 'Deploy L2 Gateway')
   .addParam('zklink', 'The zklink address (default get from zkLink deploy log)', undefined, types.string, true)
