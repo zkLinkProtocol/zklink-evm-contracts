@@ -21,6 +21,19 @@
     }
   },
   "SCROLLTEST": {
+    "l2Gateway": {
+      "contractName": "ScrollL2Gateway",
+      "initializeParams": [
+        "0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d"
+      ]
+    },
+    "l1Gateway": {
+      "netName": "SEPOLIA",
+      "contractName": "ScrollL1Gateway",
+      "initializeParams": [
+        "0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A"
+      ]
+    }
   },
   "ZKPOLYGONTEST": {
   },
