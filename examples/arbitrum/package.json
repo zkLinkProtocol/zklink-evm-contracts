@@ -2,9 +2,7 @@
   "name": "arbitrum-example",
   "license": "MIT",
   "version": "1.0.0",
-  "scripts": {
-    "syncL2Requests": "hardhat run scripts/syncL2Requests.js"
-  },
+  "scripts": {},
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "hardhat": "^2.9.1",

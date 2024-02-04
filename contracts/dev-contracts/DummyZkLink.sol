@@ -34,7 +34,7 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
 
     function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable {
         bytes memory callData = abi.encode(msg.value, _newTotalSyncedPriorityTxs);
-        gateway.sendMessage(msg.value, callData);
+        gateway.sendMessage{value: msg.value}(msg.value, callData);
     }
 
     function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external onlyGateway {
