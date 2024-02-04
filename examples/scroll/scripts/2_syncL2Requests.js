@@ -53,46 +53,90 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     // send txs
     const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
-    let tx = await zkLink.syncL2Requests(txs, { value: utils.parseEther(msgValue), gasLimit: 1000000, gasPrice: 100000000 });
+    let tx = await zkLink.syncL2Requests(txs, {
+      value: utils.parseEther(msgValue),
+      gasLimit: 1000000,
+      gasPrice: 100000000,
+    });
     await tx.wait();
     console.log(`The tx hash: ${tx.hash}`);
 
     // Wait for Scroll to package the transaction and poll for results via the following API.
     let claimInfo;
+
+    /*eslint no-constant-condition: ["error", { "checkLoops": false }]*/
     while (true) {
       console.log('Polling for claimable...');
-      claimInfo = await fetch(`https://sepolia-api-bridge.scroll.io/api/claimable?page_size=10&page=1&address=${scrollL2GatewayAddr}`).then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('Request failed!');
-      }, networkError => {
-        console.log(networkError.message);
-      }).then(resp => {
-        const dataInfos = resp.data;
-        if (dataInfos.total > 0) {
-          for (let i = 0; i < dataInfos.total; i++) {
-            const result = dataInfos.result.pop();
-            return result.claimInfo;
+      claimInfo = await fetch(
+        `https://sepolia-api-bridge.scroll.io/api/claimable?page_size=10&page=1&address=${scrollL2GatewayAddr}`,
+      )
+        .then(
+          response => {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Request failed!');
+          },
+          networkError => {
+            console.log(networkError.message);
+          },
+        )
+        .then(resp => {
+          const dataInfos = resp.data;
+          if (dataInfos.total > 0) {
+            for (let i = 0; i < dataInfos.total; i++) {
+              const result = dataInfos.result.pop();
+              return result.claimInfo;
+            }
           }
-        }
-      });
+        });
       if (claimInfo) {
         break;
       }
-      await sleep(90 * 60 * 1000);  // wait for Batch finalized
+      await sleep(90 * 60 * 1000); // wait for Batch finalized
     }
     console.log(`The claimInfo: ${JSON.stringify(claimInfo)}`);
 
-    const abi = [{ "inputs": [{ "internalType": "address", "name": "_from", "type": "address" }, { "internalType": "address", "name": "_to", "type": "address" }, { "internalType": "uint256", "name": "_value", "type": "uint256" }, { "internalType": "uint256", "name": "_nonce", "type": "uint256" }, { "internalType": "bytes", "name": "_message", "type": "bytes" }, { "components": [{ "internalType": "uint256", "name": "batchIndex", "type": "uint256" }, { "internalType": "bytes", "name": "merkleProof", "type": "bytes" }], "internalType": "struct IL1ScrollMessenger.L2MessageProof", "name": "_proof", "type": "tuple" }], "name": "relayMessageWithProof", "outputs": [], "stateMutability": "nonpayable", "type": "function" }]
+    const abi = [
+      {
+        inputs: [
+          { internalType: 'address', name: '_from', type: 'address' },
+          { internalType: 'address', name: '_to', type: 'address' },
+          { internalType: 'uint256', name: '_value', type: 'uint256' },
+          { internalType: 'uint256', name: '_nonce', type: 'uint256' },
+          { internalType: 'bytes', name: '_message', type: 'bytes' },
+          {
+            components: [
+              { internalType: 'uint256', name: 'batchIndex', type: 'uint256' },
+              { internalType: 'bytes', name: 'merkleProof', type: 'bytes' },
+            ],
+            internalType: 'struct IL1ScrollMessenger.L2MessageProof',
+            name: '_proof',
+            type: 'tuple',
+          },
+        ],
+        name: 'relayMessageWithProof',
+        outputs: [],
+        stateMutability: 'nonpayable',
+        type: 'function',
+      },
+    ];
 
-    const l1Messager = await hre.ethers.getContractAt(abi, "0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A", l1Wallet);
-    console.log("L1 Messager:", l1Messager.address);
+    const l1Messager = await hre.ethers.getContractAt(abi, '0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A', l1Wallet);
+    console.log('L1 Messager:', l1Messager.address);
 
     /**
-    * Now that its confirmed and not executed, we can execute our message in its outbox entry.
-    */
-    tx = await l1Messager.relayMessageWithProof(claimInfo.from, claimInfo.to, claimInfo.value, claimInfo.nonce, claimInfo.message, [claimInfo.batch_index, claimInfo.proof], { gasLimit: 1000000 });
+     * Now that its confirmed and not executed, we can execute our message in its outbox entry.
+     */
+    tx = await l1Messager.relayMessageWithProof(
+      claimInfo.from,
+      claimInfo.to,
+      claimInfo.value,
+      claimInfo.nonce,
+      claimInfo.message,
+      [claimInfo.batch_index, claimInfo.proof],
+      { gasLimit: 1000000 },
+    );
     console.log(`The tx hash: ${tx.hash}`);
     const rec = await tx.wait();
     console.log('Done! Your transaction is executed', rec);
