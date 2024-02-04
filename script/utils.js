@@ -88,6 +88,10 @@ function readDeployLogField(logName, fieldName, env = process.env.NET) {
   return fieldValue;
 }
 
+function getLogName(prefix, netName) {
+  return prefix + '_' + netName;
+}
+
 function getDeployLogPath(logName, env = process.env.NET) {
   const zkLinkRoot = path.resolve(__dirname, '..');
   return `${zkLinkRoot}/log/${logName}_${env}.log`;
@@ -168,6 +172,7 @@ module.exports = {
   getDeployTx,
   createOrGetDeployLog,
   getDeployLog,
+  getLogName,
   readDeployContract,
   readDeployLogField,
   ChainContractDeployer,

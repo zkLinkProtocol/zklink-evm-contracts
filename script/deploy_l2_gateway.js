@@ -7,6 +7,7 @@ const {
   readDeployContract,
   readDeployLogField,
   ChainContractDeployer,
+  getLogName,
 } = require('./utils');
 const logName = require('./deploy_log_name');
 const { zkLinkConfig } = require('./zklink_config');
@@ -168,7 +169,7 @@ task('setL2GatewayRemoteGateway', 'Set remote gateway for L2 gateway').setAction
   }
   console.log('l2 gateway', l2GatewayAddr);
 
-  const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + '_' + process.env.NET;
+  const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, process.env.NET);
   const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, l1GatewayInfo.netName);
   if (l1GatewayAddr === undefined) {
     console.log('l1 gateway address not exist');

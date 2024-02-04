@@ -6,7 +6,7 @@ const { task, types } = require('hardhat/config');
 
 require('dotenv').config();
 
-task('syncL2Requests', 'Send sync point to arbitrator')
+task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
   .addParam('value', 'Send msg value in ether', 0, types.string, true)
   .addParam('txs', 'New sync point', 100, types.int, true)
   .setAction(async (taskArgs, hre) => {
@@ -36,18 +36,17 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     }
     console.log(`The zkLink address: ${zkLinkAddr}`);
 
-    const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
+    const zkLink = await hre.ethers.getContractAt('DummyZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
-    const tx = await zkLink.syncL2Requests(txs, { value: utils.parseEther(msgValue) });
-    await tx.wait();
-    const txHash = tx.hash;
-    console.log(`The tx hash: ${tx.hash}`);
+    const l2Tx = await zkLink.syncL2Requests(txs, { value: utils.parseEther(msgValue) });
+    const txHash = l2Tx.hash;
+    console.log(`The l2 tx hash: ${txHash}`);
+    const syncL2RequestsReceipt = await l2Tx.wait();
 
     /**
      * First, let's find the Arbitrum txn from the txn hash provided
      */
-    const receipt = await l2Provider.getTransactionReceipt(txHash);
-    const l2Receipt = new L2TransactionReceipt(receipt);
+    const l2Receipt = new L2TransactionReceipt(syncL2RequestsReceipt);
 
     /**
      * Note that in principle, a single transaction could trigger any number of outgoing messages; the common case will be there's only one.

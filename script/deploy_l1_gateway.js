@@ -7,6 +7,7 @@ const {
   getDeployTx,
   readDeployLogField,
   readDeployContract,
+  getLogName,
 } = require('./utils');
 const logName = require('./deploy_log_name');
 const { zkLinkConfig } = require('./zklink_config');
@@ -47,7 +48,7 @@ task('deployL1Gateway', 'Deploy L1 Gateway')
       return;
     }
 
-    const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + '_' + targetNetwork;
+    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, targetNetwork);
     const { deployLogPath, deployLog } = createOrGetDeployLog(l1GatewayLogName);
 
     const contractDeployer = new ChainContractDeployer(hardhat);
@@ -120,7 +121,7 @@ task('upgradeL1Gateway', 'Upgrade l1 gateway')
       return;
     }
 
-    const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + '_' + targetNetwork;
+    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, targetNetwork);
     const { deployLogPath, deployLog } = createOrGetDeployLog(l1GatewayLogName);
     const contractAddr = deployLog[logName.DEPLOY_GATEWAY];
     if (contractAddr === undefined) {
@@ -178,7 +179,7 @@ task('setL1GatewayRemoteGateway', 'Set remote gateway for L1 gateway')
       return;
     }
 
-    const l1GatewayLogName = logName.DEPLOY_L1_GATEWAY_LOG_PREFIX + '_' + targetNetwork;
+    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, targetNetwork);
     const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY);
     if (l1GatewayAddr === undefined) {
       console.log('l1 gateway address not exist');

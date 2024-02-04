@@ -28,7 +28,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
 
         // send message to ArbitrumL1Gateway
         bytes memory message = abi.encodeCall(IArbitrumGateway.claimMessageCallback, (_value, _callData));
-        ARB_SYS.sendTxToL1(remoteGateway, message);
+        ARB_SYS.sendTxToL1{value: _value}(remoteGateway, message);
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
