@@ -1,0 +1,14 @@
+{
+  "name": "scroll-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "ethers": "^5.1.2",
+    "hardhat": "^2.9.1"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}
