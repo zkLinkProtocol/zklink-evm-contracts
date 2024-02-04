@@ -80,7 +80,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
       if (claimInfo) {
         break;
       }
-      await sleep(60 * 60 * 1000);
+      await sleep(90 * 60 * 1000);  // wait for Batch finalized
     }
     console.log(`The claimInfo: ${JSON.stringify(claimInfo)}`);
 
@@ -96,4 +96,8 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     console.log(`The tx hash: ${tx.hash}`);
     const rec = await tx.wait();
     console.log('Done! Your transaction is executed', rec);
+
+    // Example txs:
+    // https://sepolia.scrollscan.com/tx/0x94fdabbe147cd519859331ce2d6ca0b43878e5f6af9140ae677d98359e694f67
+    // https://sepolia.etherscan.io/tx/0x5d1a5922309e939255789ec3872cb9b97b85fb5095672589bc1b8898570e791f
   });
