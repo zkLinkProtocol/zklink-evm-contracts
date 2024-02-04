@@ -1,8 +1,8 @@
-require("./script/deploy_zklink");
-require("./script/deploy_arbitrator");
-require("./script/deploy_l1_gateway");
-require("./script/deploy_l2_gateway");
-require("./script/deploy_eth_gateway");
+require('./script/deploy_zklink');
+require('./script/deploy_arbitrator');
+require('./script/deploy_l1_gateway');
+require('./script/deploy_l2_gateway');
+require('./script/deploy_eth_gateway');
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -11,7 +11,7 @@ const hardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.18",
+        version: '0.8.18',
         settings: {
           viaIR: true,
           optimizer: {
@@ -19,8 +19,8 @@ const hardhatUserConfig = {
             runs: 200,
           },
         },
-      }
-    ]
+      },
+    ],
   },
   networks: {
     hardhat: {

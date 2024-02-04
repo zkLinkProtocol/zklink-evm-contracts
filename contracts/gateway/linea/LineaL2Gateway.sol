@@ -7,7 +7,6 @@ import {LineaGateway} from "./LineaGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
 contract LineaL2Gateway is L2BaseGateway, LineaGateway {
-
     function initialize(address _zkLink, IMessageService _messageService) external initializer {
         __L2BaseGateway_init(_zkLink);
         __LineaGateway_init(_messageService);
@@ -22,8 +21,11 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
         messageService.sendMessage{value: msg.value}(address(remoteGateway), coinbaseFee, message);
     }
 
-    function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable onlyMessageService onlyRemoteGateway {
-        require(msg.value == _value, "Invalid value from canonical message service");
+    function claimMessageCallback(
+        uint256 _value,
+        bytes calldata _callData
+    ) external payable onlyMessageService onlyRemoteGateway {
+        require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = zkLink.call{value: _value}(_callData);

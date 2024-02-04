@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
+import {ArbSys} from "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
 import {IArbitrumGateway} from "../../interfaces/arbitrum/IArbitrumGateway.sol";
@@ -32,7 +32,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
-        require(msg.value == _value, "Invalid value from canonical message service");
+        require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = zkLink.call{value: _value}(_callData);

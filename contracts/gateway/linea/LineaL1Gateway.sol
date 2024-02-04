@@ -8,7 +8,6 @@ import {LineaGateway} from "./LineaGateway.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 
 contract LineaL1Gateway is L1BaseGateway, LineaGateway {
-
     function initialize(IArbitrator _arbitrator, IMessageService _messageService) external initializer {
         __L1BaseGateway_init(_arbitrator);
         __LineaGateway_init(_messageService);
@@ -20,8 +19,11 @@ contract LineaL1Gateway is L1BaseGateway, LineaGateway {
         messageService.sendMessage{value: _value}(remoteGateway, 0, message);
     }
 
-    function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable onlyMessageService onlyRemoteGateway {
-        require(msg.value == _value, "Invalid value from canonical message service");
+    function claimMessageCallback(
+        uint256 _value,
+        bytes calldata _callData
+    ) external payable onlyMessageService onlyRemoteGateway {
+        require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
         arbitrator.receiveMessage{value: _value}(_value, _callData);
     }

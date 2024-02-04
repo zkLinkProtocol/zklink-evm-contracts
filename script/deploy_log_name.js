@@ -1,29 +1,29 @@
 // consumed in deploy_zklink.js
-const DEPLOY_ZKLINK_LOG_PREFIX = "deploy";
-const DEPLOY_LOG_DEPLOYER = "deployer";
-const DEPLOY_LOG_GOVERNOR = "governor";
-const DEPLOY_LOG_ZKLINK_TARGET = "zkLinkTarget";
-const DEPLOY_LOG_ZKLINK_TARGET_VERIFIED = "zkLinkTargetVerified";
-const DEPLOY_LOG_ZKLINK_PROXY = "zkLinkProxy";
-const DEPLOY_LOG_ZKLINK_PROXY_VERIFIED = "zkLinkProxyVerified";
-const DEPLOY_LOG_DEPLOY_TX_HASH = "deployTxHash";
-const DEPLOY_LOG_DEPLOY_BLOCK_NUMBER = "deployBlockNumber";
+const DEPLOY_ZKLINK_LOG_PREFIX = 'deploy';
+const DEPLOY_LOG_DEPLOYER = 'deployer';
+const DEPLOY_LOG_GOVERNOR = 'governor';
+const DEPLOY_LOG_ZKLINK_TARGET = 'zkLinkTarget';
+const DEPLOY_LOG_ZKLINK_TARGET_VERIFIED = 'zkLinkTargetVerified';
+const DEPLOY_LOG_ZKLINK_PROXY = 'zkLinkProxy';
+const DEPLOY_LOG_ZKLINK_PROXY_VERIFIED = 'zkLinkProxyVerified';
+const DEPLOY_LOG_DEPLOY_TX_HASH = 'deployTxHash';
+const DEPLOY_LOG_DEPLOY_BLOCK_NUMBER = 'deployBlockNumber';
 
 // consumed in deploy_l1_gateway.js or deploy_l2_gateway.js or deploy_eth_gateway.js
-const DEPLOY_L1_GATEWAY_LOG_PREFIX = "deploy_l1_gateway";
-const DEPLOY_L2_GATEWAY_LOG_PREFIX = "deploy_l2_gateway";
-const DEPLOY_ETH_GATEWAY_LOG_PREFIX = "deploy_eth_gateway";
-const DEPLOY_GATEWAY = "gateway";
-const DEPLOY_GATEWAY_VERIFIED = "gatewayVerified";
-const DEPLOY_GATEWAY_TARGET = "gatewayTarget";
-const DEPLOY_GATEWAY_TARGET_VERIFIED = "gatewayTargetVerified";
+const DEPLOY_L1_GATEWAY_LOG_PREFIX = 'deploy_l1_gateway';
+const DEPLOY_L2_GATEWAY_LOG_PREFIX = 'deploy_l2_gateway';
+const DEPLOY_ETH_GATEWAY_LOG_PREFIX = 'deploy_eth_gateway';
+const DEPLOY_GATEWAY = 'gateway';
+const DEPLOY_GATEWAY_VERIFIED = 'gatewayVerified';
+const DEPLOY_GATEWAY_TARGET = 'gatewayTarget';
+const DEPLOY_GATEWAY_TARGET_VERIFIED = 'gatewayTargetVerified';
 
 // consumed in deploy_arbitrator.js
-const DEPLOY_ARBITRATOR_LOG_PREFIX = "deploy_arbitrator";
-const DEPLOY_LOG_ARBITRATOR = "arbitrator";
-const DEPLOY_LOG_ARBITRATOR_VERIFIED = "arbitratorVerified";
-const DEPLOY_LOG_ARBITRATOR_TARGET = "arbitratorTarget";
-const DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED = "arbitratorTargetVerified";
+const DEPLOY_ARBITRATOR_LOG_PREFIX = 'deploy_arbitrator';
+const DEPLOY_LOG_ARBITRATOR = 'arbitrator';
+const DEPLOY_LOG_ARBITRATOR_VERIFIED = 'arbitratorVerified';
+const DEPLOY_LOG_ARBITRATOR_TARGET = 'arbitratorTarget';
+const DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED = 'arbitratorTargetVerified';
 
 module.exports = {
   DEPLOY_ZKLINK_LOG_PREFIX,
@@ -46,5 +46,5 @@ module.exports = {
   DEPLOY_LOG_ARBITRATOR,
   DEPLOY_LOG_ARBITRATOR_VERIFIED,
   DEPLOY_LOG_ARBITRATOR_TARGET,
-  DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED
+  DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED,
 };

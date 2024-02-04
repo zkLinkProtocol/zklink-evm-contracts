@@ -14,13 +14,21 @@ import {IMailbox, TxStatus} from "./zksync/l1-contracts/zksync/interfaces/IMailb
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {Merkle} from "./zksync/l1-contracts/zksync/libraries/Merkle.sol";
-import "./zksync/l1-contracts/zksync/Storage.sol";
-import "./zksync/l1-contracts/zksync/Config.sol";
-import "./zksync/l1-contracts/common/L2ContractAddresses.sol";
+import {L2Log, L2Message, PubdataPricingMode, FeeParams, SecondaryChainSyncStatus} from "./zksync/l1-contracts/zksync/Storage.sol";
+import {REQUIRED_L2_GAS_PRICE_PER_PUBDATA, MAX_NEW_FACTORY_DEPS, L1_GAS_PER_PUBDATA_BYTE, L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH} from "./zksync/l1-contracts/zksync/Config.sol";
+import {L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR, L2_BOOTLOADER_ADDRESS} from "./zksync/l1-contracts/common/L2ContractAddresses.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
-contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract ZkLink is
+    IZkLink,
+    IMailbox,
+    IAdmin,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable,
+    PausableUpgradeable
+{
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
     /// @notice List of permitted validators
@@ -149,11 +157,12 @@ contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeabl
         uint256 _l2GasPerPubdataByteLimit,
         bytes[] calldata _factoryDeps,
         address _refundRecipient
-    ) external payable nonReentrant whenNotPaused returns (bytes32 canonicalTxHash){
+    ) external payable nonReentrant whenNotPaused returns (bytes32 canonicalTxHash) {
         // Change the sender address if it is a smart contract to prevent address collision between L1 and L2.
         // Please note, currently zkSync address derivation is different from Ethereum one, but it may be changed in the future.
         address sender = msg.sender;
         bool isContractCall = false;
+        // solhint-disable-next-line avoid-tx-origin
         if (sender != tx.origin) {
             // Check contract call is allowed for safe reasons
             require(allowLists[sender], "Not allow to send L2 request");
@@ -261,7 +270,10 @@ contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeabl
 
     function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable onlyValidator {
         // Check newTotalSyncedPriorityTxs
-        require(_newTotalSyncedPriorityTxs <= totalPriorityTxs && _newTotalSyncedPriorityTxs > totalSyncedPriorityTxs, "Invalid newTotalSyncedPriorityTxs");
+        require(
+            _newTotalSyncedPriorityTxs <= totalPriorityTxs && _newTotalSyncedPriorityTxs > totalSyncedPriorityTxs,
+            "Invalid sync point"
+        );
 
         // Forward eth amount is the difference of two accumulate amount
         SecondaryChainSyncStatus memory lastSyncStatus;
@@ -275,7 +287,10 @@ contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeabl
         totalSyncedPriorityTxs = _newTotalSyncedPriorityTxs;
 
         // Send sync status to L1 gateway
-        bytes memory callData = abi.encodeCall(IZkSync.syncL2Requests, (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount));
+        bytes memory callData = abi.encodeCall(
+            IZkSync.syncL2Requests,
+            (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount)
+        );
         gateway.sendMessage{value: msg.value + forwardAmount}(forwardAmount, callData);
 
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
@@ -318,13 +333,13 @@ contract ZkLink is IZkLink, IMailbox, IAdmin, OwnableUpgradeable, UUPSUpgradeabl
     function _L2MessageToLog(L2Message memory _message) internal pure returns (L2Log memory) {
         return
             L2Log({
-            l2ShardId: 0,
-            isService: true,
-            txNumberInBatch: _message.txNumberInBatch,
-            sender: L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR,
-            key: bytes32(uint256(uint160(_message.sender))),
-            value: keccak256(_message.data)
-        });
+                l2ShardId: 0,
+                isService: true,
+                txNumberInBatch: _message.txNumberInBatch,
+                sender: L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR,
+                key: bytes32(uint256(uint160(_message.sender))),
+                value: keccak256(_message.data)
+            });
     }
 
     /// @dev Prove that a specific L2 log was sent in a specific L2 batch number

@@ -1,8 +1,8 @@
-require("@nomicfoundation/hardhat-ethers");
-require("@matterlabs/hardhat-zksync-deploy");
-require("@matterlabs/hardhat-zksync-solc");
-require("@matterlabs/hardhat-zksync-verify");
-require("@matterlabs/hardhat-zksync-upgradable");
+require('@nomicfoundation/hardhat-ethers');
+require('@matterlabs/hardhat-zksync-deploy');
+require('@matterlabs/hardhat-zksync-solc');
+require('@matterlabs/hardhat-zksync-verify');
+require('@matterlabs/hardhat-zksync-upgradable');
 const fs = require('fs');
 
 if (!fs.existsSync('contracts')) {
@@ -17,12 +17,11 @@ if (!fs.existsSync('script')) {
   console.log('Create script soft link success!');
 }
 
-const BaseConfig = require("../hardhat.base.config");
+const BaseConfig = require('../hardhat.base.config');
 
 module.exports = Object.assign({}, BaseConfig, {
   zksolc: {
-    version: "1.3.22",
+    version: '1.3.22',
     settings: {},
-  }
-})
-
+  },
+});

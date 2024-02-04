@@ -34,17 +34,15 @@ contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
         bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (_value, _callData));
         messageService.bridgeMessage{value: msg.value}(
-            ETH_NETWORK_ID, remoteGateway, FORCE_UPDATE_GLOBAL_EXIT_ROOT, executeData
+            ETH_NETWORK_ID,
+            remoteGateway,
+            FORCE_UPDATE_GLOBAL_EXIT_ROOT,
+            executeData
         );
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData)
-        external
-        payable
-        override
-        onlyMessageService
-    {
-        require(msg.value == _value, "Invalid value from canonical message service");
+    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
+        require(msg.value == _value, "Invalid value");
         arbitrator.receiveMessage{value: _value}(_value, _callData);
     }
 }

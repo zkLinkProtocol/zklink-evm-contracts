@@ -22,7 +22,15 @@ interface IMessageService {
      * @param _calldata The calldata used by the destination message service to call/forward to the destination contract.
      * @param _nonce Unique message number.
      */
-    function claimMessage(address _from, address _to, uint256 _fee, uint256 _value, address payable _feeRecipient, bytes calldata _calldata, uint256 _nonce) external;
+    function claimMessage(
+        address _from,
+        address _to,
+        uint256 _fee,
+        uint256 _value,
+        address payable _feeRecipient,
+        bytes calldata _calldata,
+        uint256 _nonce
+    ) external;
 
     /**
      * @notice Returns the original sender of the message on the origin layer.

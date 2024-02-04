@@ -5,6 +5,8 @@ node_modules
 #Hardhat files
 cache-zk
 artifacts-zk
+
+# Openzeppelin upgrade
 .upgradable
 
 #Soft links

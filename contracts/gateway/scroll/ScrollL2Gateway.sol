@@ -8,7 +8,6 @@ import {ScrollGateway} from "./ScrollGateway.sol";
 
 contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
     function initialize(address _zkLink, IScrollMessenger _messageService) external initializer {
-
         __L2BaseGateway_init(_zkLink);
         __ScrollGateway_init(_messageService);
     }
@@ -27,16 +26,11 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
         );
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData)
-        external
-        payable
-        override
-        onlyMessageService
-    {
-        require(msg.value == _value, "Invalid value from canonical message service");
+    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
+        require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success,) = zkLink.call{value: _value}(_callData);
+        (bool success, ) = zkLink.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

@@ -8,7 +8,9 @@ tmp
 etc/*
 !etc/EXAMPLE.json
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
+
+# Openzeppelin upgrade
 .openzeppelin

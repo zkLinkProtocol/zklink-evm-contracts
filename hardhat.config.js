@@ -1,6 +1,6 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@openzeppelin/hardhat-upgrades");
+require('@nomicfoundation/hardhat-toolbox');
+require('@openzeppelin/hardhat-upgrades');
 
-const BaseConfig = require("./hardhat.base.config");
+const BaseConfig = require('./hardhat.base.config');
 
-module.exports = Object.assign({}, BaseConfig, {})
+module.exports = Object.assign({}, BaseConfig, {});

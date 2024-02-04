@@ -37,8 +37,8 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyMessageService {
-        require(msg.value == _value, "Invalid value from canonical message service");
-        (bool success,) = zkLink.call{value: _value}(_callData);
+        require(msg.value == _value, "Invalid value");
+        (bool success, ) = zkLink.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

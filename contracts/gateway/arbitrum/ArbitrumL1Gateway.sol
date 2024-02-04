@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import "@arbitrum/nitro-contracts/src/bridge/Inbox.sol";
-import "@arbitrum/nitro-contracts/src/bridge/Outbox.sol";
+import {Inbox, IBridge} from "@arbitrum/nitro-contracts/src/bridge/Inbox.sol";
+import {IOutbox} from "@arbitrum/nitro-contracts/src/bridge/Outbox.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
@@ -29,13 +29,21 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
         inbox = _inbox;
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData, bytes memory _adapterParams) external payable onlyArbitrator {
-        (uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas) = abi.decode(_adapterParams, (uint256, uint256, uint256));
+    function sendMessage(
+        uint256 _value,
+        bytes memory _callData,
+        bytes memory _adapterParams
+    ) external payable onlyArbitrator {
+        (uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas) = abi.decode(
+            _adapterParams,
+            (uint256, uint256, uint256)
+        );
         bytes memory data = abi.encodeCall(IArbitrumGateway.claimMessageCallback, (_value, _callData));
         inbox.createRetryableTicket{value: msg.value}(
             remoteGateway,
             _value,
             maxSubmissionCost,
+            // solhint-disable-next-line avoid-tx-origin
             tx.origin,
             remoteGateway,
             gasLimit,
@@ -45,7 +53,7 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
-        require(msg.value == _value, "Invalid value from canonical message service");
+        require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
         arbitrator.receiveMessage{value: _value}(_value, _callData);
     }

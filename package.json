@@ -11,15 +11,20 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@openzeppelin/hardhat-upgrades": "^3.0.0",
-    "hardhat": "^2.19.3"
+    "eslint": "^8.30.0",
+    "eslint-config-prettier": "^9.0.0",
+    "hardhat": "^2.19.3",
+    "prettier": "^3.0.0",
+    "prettier-plugin-solidity": "^1.1.0",
+    "solhint": "^4.1.1"
   },
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test"
   },
   "dependencies": {
+    "@arbitrum/nitro-contracts": "^1.1.0",
     "@openzeppelin/contracts": "^4.9.5",
-    "@openzeppelin/contracts-upgradeable": "^4.9.5",
-    "@arbitrum/nitro-contracts": "^1.1.0"
+    "@openzeppelin/contracts-upgradeable": "^4.9.5"
   }
 }
