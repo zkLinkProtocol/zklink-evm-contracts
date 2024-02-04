@@ -24,9 +24,6 @@ contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
-    /// @dev Receive eth from ZkPolygon canonical bridge
-    receive() external payable {}
-
     function initialize(IArbitrator _arbitrator, IZkPolygon _messageService) external initializer {
         __L1BaseGateway_init(_arbitrator);
         __BaseGateway_init();
