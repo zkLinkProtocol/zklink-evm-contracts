@@ -18,11 +18,18 @@ jobs:
       - name: Clone repo
         uses: actions/checkout@v3
       - name: Setup node environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 20.x
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: '**/node_modules'
+          key: npm-v3-${{ hashFiles('**/package-lock.json') }}
       - name: Install dependencies
         run: npm ci
+        shell: bash
+        if: steps.cache.outputs.cache-hit != 'true'
       - name: Lint check
         run: npm run lint
       - name: Compile contracts
