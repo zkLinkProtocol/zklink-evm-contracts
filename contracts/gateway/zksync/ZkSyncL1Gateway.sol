@@ -11,20 +11,21 @@ import {L2Message} from "../../zksync/l1-contracts/zksync/Storage.sol";
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @notice ZkSync message service on local chain
-    IMailbox public messageService;
+    IMailbox public immutable messageService;
 
     /// @dev A mapping L2 batch number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
+    constructor(IArbitrator _arbitrator, IMailbox _messageService) L1BaseGateway(_arbitrator) {
+        messageService = _messageService;
+    }
+
     /// @dev Receive eth from zkSync canonical bridge
     receive() external payable {}
 
-    function initialize(IArbitrator _arbitrator, IMailbox _messageService) external initializer {
-        __L1BaseGateway_init(_arbitrator);
+    function initialize() external initializer {
         __BaseGateway_init();
-
-        messageService = _messageService;
     }
 
     function sendMessage(

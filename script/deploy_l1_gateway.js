@@ -59,11 +59,10 @@ task('deployL1Gateway', 'Deploy L1 Gateway')
 
     // deploy l1 gateway
     let gatewayAddr;
+    const allConstructParams = [arbitrator].concat(l1GatewayInfo.constructParams);
     if (!(logName.DEPLOY_GATEWAY in deployLog) || force) {
       console.log('deploy l1 gateway...');
-      const { contractName, initializeParams } = l1GatewayInfo;
-      const allParams = [arbitrator].concat(initializeParams);
-      const contract = await contractDeployer.deployProxy(contractName, allParams);
+      const contract = await contractDeployer.deployProxy(l1GatewayInfo.contractName, [], allConstructParams);
       const transaction = await getDeployTx(contract);
       gatewayAddr = await contract.getAddress();
       deployLog[logName.DEPLOY_GATEWAY] = gatewayAddr;
@@ -88,7 +87,7 @@ task('deployL1Gateway', 'Deploy L1 Gateway')
 
     // verify target contract
     if ((!(logName.DEPLOY_GATEWAY_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
-      await verifyContractCode(hardhat, gatewayTargetAddr, []);
+      await verifyContractCode(hardhat, gatewayTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
@@ -102,11 +101,23 @@ task('deployL1Gateway', 'Deploy L1 Gateway')
   });
 
 task('upgradeL1Gateway', 'Upgrade l1 gateway')
+  .addParam(
+    'arbitrator',
+    'The arbitrator address (default get from arbitrator deploy log)',
+    undefined,
+    types.string,
+    true,
+  )
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .addParam('targetNetwork', 'L2 network name', undefined, types.string, false)
   .setAction(async (taskArgs, hardhat) => {
+    let arbitrator = taskArgs.arbitrator;
+    if (arbitrator === undefined) {
+      arbitrator = readDeployLogField(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
+    }
     let skipVerify = taskArgs.skipVerify;
     let targetNetwork = taskArgs.targetNetwork;
+    console.log('arbitrator', arbitrator);
     console.log('skipVerify', skipVerify);
     console.log('targetNetwork', targetNetwork);
 
@@ -140,7 +151,8 @@ task('upgradeL1Gateway', 'Upgrade l1 gateway')
     await contractDeployer.init();
 
     console.log('upgrade l1 gateway...');
-    const contract = await contractDeployer.upgradeProxy(l1GatewayInfo.contractName, contractAddr);
+    const allConstructParams = [arbitrator].concat(l1GatewayInfo.constructParams);
+    const contract = await contractDeployer.upgradeProxy(l1GatewayInfo.contractName, contractAddr, allConstructParams);
     const tx = await getDeployTx(contract);
     console.log('upgrade tx', tx.hash);
     const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
@@ -149,7 +161,7 @@ task('upgradeL1Gateway', 'Upgrade l1 gateway')
     fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
 
     if (!skipVerify) {
-      await verifyContractCode(hardhat, newContractTargetAddr, []);
+      await verifyContractCode(hardhat, newContractTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }

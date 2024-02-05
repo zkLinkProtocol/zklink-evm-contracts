@@ -47,9 +47,10 @@ task('deployETHGateway', 'Deploy ETH Gateway')
 
     // deploy eth gateway
     let gatewayAddr;
+    const allConstructParams = [arbitrator, zklink];
     if (!(logName.DEPLOY_GATEWAY in deployLog) || force) {
       console.log('deploy eth gateway...');
-      const contract = await contractDeployer.deployProxy('EthereumGateway', [arbitrator, zklink]);
+      const contract = await contractDeployer.deployProxy('EthereumGateway', [], allConstructParams);
       const transaction = await getDeployTx(contract);
       gatewayAddr = await contract.getAddress();
       deployLog[logName.DEPLOY_GATEWAY] = gatewayAddr;
@@ -74,7 +75,7 @@ task('deployETHGateway', 'Deploy ETH Gateway')
 
     // verify target contract
     if ((!(logName.DEPLOY_GATEWAY_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
-      await verifyContractCode(hardhat, gatewayTargetAddr, []);
+      await verifyContractCode(hardhat, gatewayTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
@@ -88,9 +89,27 @@ task('deployETHGateway', 'Deploy ETH Gateway')
   });
 
 task('upgradeETHGateway', 'Upgrade ETH gateway')
+  .addParam(
+    'arbitrator',
+    'The arbitrator address (default get from arbitrator deploy log)',
+    undefined,
+    types.string,
+    true,
+  )
+  .addParam('zklink', 'The zklink address (default get from zkLink deploy log)', undefined, types.string, true)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
+    let arbitrator = taskArgs.arbitrator;
+    if (arbitrator === undefined) {
+      arbitrator = readDeployLogField(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
+    }
+    let zklink = taskArgs.zklink;
+    if (zklink === undefined) {
+      zklink = readDeployLogField(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+    }
     let skipVerify = taskArgs.skipVerify;
+    console.log('arbitrator', arbitrator);
+    console.log('zklink', zklink);
     console.log('skipVerify', skipVerify);
 
     const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX);
@@ -111,7 +130,8 @@ task('upgradeETHGateway', 'Upgrade ETH gateway')
     await contractDeployer.init();
 
     console.log('upgrade eth gateway...');
-    const contract = await contractDeployer.upgradeProxy('EthereumGateway', contractAddr);
+    const allConstructParams = [arbitrator, zklink];
+    const contract = await contractDeployer.upgradeProxy('EthereumGateway', contractAddr, allConstructParams);
     const tx = await getDeployTx(contract);
     console.log('upgrade tx', tx.hash);
     const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
@@ -120,7 +140,7 @@ task('upgradeETHGateway', 'Upgrade ETH gateway')
     fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
 
     if (!skipVerify) {
-      await verifyContractCode(hardhat, newContractTargetAddr, []);
+      await verifyContractCode(hardhat, newContractTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }

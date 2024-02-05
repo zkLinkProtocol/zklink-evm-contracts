@@ -9,7 +9,7 @@ import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
-    IZkPolygon public messageService;
+    IZkPolygon public immutable messageService;
 
     uint32 public constant ETH_NETWORK_ID = 1;
     // Default to true
@@ -24,11 +24,12 @@ contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
-    function initialize(IArbitrator _arbitrator, IZkPolygon _messageService) external initializer {
-        __L1BaseGateway_init(_arbitrator);
-        __BaseGateway_init();
-
+    constructor(IArbitrator _arbitrator, IZkPolygon _messageService) L1BaseGateway(_arbitrator) {
         messageService = _messageService;
+    }
+
+    function initialize() external initializer {
+        __BaseGateway_init();
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {

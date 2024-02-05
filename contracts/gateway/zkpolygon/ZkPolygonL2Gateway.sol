@@ -8,7 +8,7 @@ import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
-    IZkPolygon public messageService;
+    IZkPolygon public immutable messageService;
 
     uint32 public constant ETH_NETWORK_ID = 0;
     // Default to true
@@ -19,11 +19,13 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
         require(msg.sender == address(messageService), "Not remote gateway");
         _;
     }
-    function initialize(address _zkLink, IZkPolygon _messageService) external initializer {
-        __L2BaseGateway_init(_zkLink);
-        __BaseGateway_init();
 
+    constructor(address _zkLink, IZkPolygon _messageService) L2BaseGateway(_zkLink) {
         messageService = _messageService;
+    }
+
+    function initialize() external initializer {
+        __BaseGateway_init();
     }
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable onlyZkLink {

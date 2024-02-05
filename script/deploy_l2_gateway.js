@@ -49,12 +49,11 @@ task('deployL2Gateway', 'Deploy L2 Gateway')
     fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
 
     // deploy l2 gateway
+    const allConstructParams = [zklink].concat(l2GatewayInfo.constructParams);
     let gatewayAddr;
     if (!(logName.DEPLOY_GATEWAY in deployLog) || force) {
       console.log('deploy l2 gateway...');
-      const { contractName, initializeParams } = l2GatewayInfo;
-      const allParams = [zklink].concat(initializeParams);
-      const contract = await contractDeployer.deployProxy(contractName, allParams);
+      const contract = await contractDeployer.deployProxy(l2GatewayInfo.contractName, [], allConstructParams);
       const transaction = await getDeployTx(contract);
       gatewayAddr = await contract.getAddress();
       deployLog[logName.DEPLOY_GATEWAY] = gatewayAddr;
@@ -79,7 +78,7 @@ task('deployL2Gateway', 'Deploy L2 Gateway')
 
     // verify target contract
     if ((!(logName.DEPLOY_GATEWAY_TARGET_VERIFIED in deployLog) || force) && !taskArgs.skipVerify) {
-      await verifyContractCode(hardhat, gatewayTargetAddr, []);
+      await verifyContractCode(hardhat, gatewayTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
@@ -93,9 +92,15 @@ task('deployL2Gateway', 'Deploy L2 Gateway')
   });
 
 task('upgradeL2Gateway', 'Upgrade L2 gateway')
+  .addParam('zklink', 'The zklink address (default get from zkLink deploy log)', undefined, types.string, true)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
+    let zklink = taskArgs.zklink;
+    if (zklink === undefined) {
+      zklink = readDeployLogField(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+    }
     let skipVerify = taskArgs.skipVerify;
+    console.log('zklink', zklink);
     console.log('skipVerify', skipVerify);
 
     const chainInfo = zkLinkConfig[process.env.NET];
@@ -128,7 +133,8 @@ task('upgradeL2Gateway', 'Upgrade L2 gateway')
     await contractDeployer.init();
 
     console.log('upgrade l2 gateway...');
-    const contract = await contractDeployer.upgradeProxy(l2GatewayInfo.contractName, contractAddr);
+    const allConstructParams = [zklink].concat(l2GatewayInfo.constructParams);
+    const contract = await contractDeployer.upgradeProxy(l2GatewayInfo.contractName, contractAddr, allConstructParams);
     const tx = await getDeployTx(contract);
     console.log('upgrade tx', tx.hash);
     const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
@@ -137,7 +143,7 @@ task('upgradeL2Gateway', 'Upgrade L2 gateway')
     fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
 
     if (!skipVerify) {
-      await verifyContractCode(hardhat, newContractTargetAddr, []);
+      await verifyContractCode(hardhat, newContractTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }

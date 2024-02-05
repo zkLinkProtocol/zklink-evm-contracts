@@ -8,9 +8,13 @@ import {LineaGateway} from "./LineaGateway.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 
 contract LineaL1Gateway is L1BaseGateway, LineaGateway {
-    function initialize(IArbitrator _arbitrator, IMessageService _messageService) external initializer {
-        __L1BaseGateway_init(_arbitrator);
-        __LineaGateway_init(_messageService);
+    constructor(
+        IArbitrator _arbitrator,
+        IMessageService _messageService
+    ) L1BaseGateway(_arbitrator) LineaGateway(_messageService) {}
+
+    function initialize() external initializer {
+        __LineaGateway_init();
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {

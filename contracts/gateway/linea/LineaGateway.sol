@@ -7,14 +7,14 @@ import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
 
 abstract contract LineaGateway is BaseGateway, ILineaGateway {
     /// @notice Linea message service on local chain
-    IMessageService public messageService;
+    IMessageService public immutable messageService;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 
     /// @dev Modifier to make sure the caller is the known message service.
     modifier onlyMessageService() {
@@ -28,13 +28,12 @@ abstract contract LineaGateway is BaseGateway, ILineaGateway {
         _;
     }
 
-    function __LineaGateway_init(IMessageService _messageService) internal onlyInitializing {
-        __BaseGateway_init();
-        __LineaGateway_init_unchained(_messageService);
+    constructor(IMessageService _messageService) {
+        messageService = _messageService;
     }
 
-    function __LineaGateway_init_unchained(IMessageService _messageService) internal onlyInitializing {
-        messageService = _messageService;
+    function __LineaGateway_init() internal onlyInitializing {
+        __BaseGateway_init();
     }
 
     function claimMessage(uint256 _value, bytes calldata _callData, uint256 _nonce) external nonReentrant {

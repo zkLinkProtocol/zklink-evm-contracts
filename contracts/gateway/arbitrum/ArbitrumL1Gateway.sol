@@ -10,7 +10,7 @@ import {IArbitrumGateway} from "../../interfaces/arbitrum/IArbitrumGateway.sol";
 
 contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
     /// @notice Arbitrum inbox on local chain
-    Inbox public inbox;
+    Inbox public immutable inbox;
 
     /// @dev Modifier to make sure the original sender is gateway on remote chain.
     modifier onlyRemoteGateway() {
@@ -22,11 +22,12 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
         _;
     }
 
-    function initialize(IArbitrator _arbitrator, Inbox _inbox) external initializer {
-        __L1BaseGateway_init(_arbitrator);
-        __BaseGateway_init();
-
+    constructor(IArbitrator _arbitrator, Inbox _inbox) L1BaseGateway(_arbitrator) {
         inbox = _inbox;
+    }
+
+    function initialize() external initializer {
+        __BaseGateway_init();
     }
 
     function sendMessage(

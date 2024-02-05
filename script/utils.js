@@ -18,6 +18,7 @@ async function verifyContractCode(hardhat, address, constructorArguments) {
     } catch (e) {
       if (
         e.message.includes('Already Verified') ||
+        e.message.includes('already verified') ||
         e.message.includes('Contract source code already verified') ||
         e.message.includes('Smart-contract already verified')
       ) {
@@ -138,29 +139,44 @@ class ChainContractDeployer {
     return contract;
   }
 
-  async deployProxy(contractName, deployArgs) {
+  async deployProxy(contractName, initArgs, constructorArgs) {
+    if (constructorArgs === undefined) {
+      constructorArgs = [];
+    }
     let contract;
     if (this.zksync) {
       const artifact = await this.zkSyncDeployer.loadArtifact(contractName);
-      contract = await this.hardhat.zkUpgrades.deployProxy(this.deployerWallet, artifact, deployArgs, {
+      contract = await this.hardhat.zkUpgrades.deployProxy(this.deployerWallet, artifact, initArgs, {
         initializer: 'initialize',
+        constructorArgs: constructorArgs,
+        unsafeAllow: ['state-variable-immutable', 'constructor'],
       });
     } else {
       const factory = await this.hardhat.ethers.getContractFactory(contractName, this.deployerWallet);
-      contract = await this.hardhat.upgrades.deployProxy(factory, deployArgs, { kind: 'uups' });
+      contract = await this.hardhat.upgrades.deployProxy(factory, initArgs, {
+        kind: 'uups',
+        constructorArgs: constructorArgs,
+        unsafeAllow: ['state-variable-immutable', 'constructor'],
+      });
     }
     await contract.waitForDeployment();
     return contract;
   }
 
-  async upgradeProxy(contractName, contractAddr) {
+  async upgradeProxy(contractName, contractAddr, constructorArgs) {
     let contract;
     if (this.zksync) {
       const artifact = await this.zkSyncDeployer.loadArtifact(contractName);
-      contract = await this.hardhat.zkUpgrades.upgradeProxy(this.deployerWallet, contractAddr, artifact);
+      contract = await this.hardhat.zkUpgrades.upgradeProxy(this.deployerWallet, contractAddr, artifact, {
+        constructorArgs: constructorArgs,
+        unsafeAllow: ['state-variable-immutable', 'constructor'],
+      });
     } else {
       const factory = await this.hardhat.ethers.getContractFactory(contractName, this.deployerWallet);
-      contract = await this.hardhat.upgrades.upgradeProxy(contractAddr, factory);
+      contract = await this.hardhat.upgrades.upgradeProxy(contractAddr, factory, {
+        constructorArgs: constructorArgs,
+        unsafeAllow: ['state-variable-immutable', 'constructor'],
+      });
     }
     await contract.waitForDeployment();
     return contract;

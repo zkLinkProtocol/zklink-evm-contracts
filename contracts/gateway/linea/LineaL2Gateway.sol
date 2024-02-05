@@ -7,9 +7,13 @@ import {LineaGateway} from "./LineaGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
 contract LineaL2Gateway is L2BaseGateway, LineaGateway {
-    function initialize(address _zkLink, IMessageService _messageService) external initializer {
-        __L2BaseGateway_init(_zkLink);
-        __LineaGateway_init(_messageService);
+    constructor(
+        address _zkLink,
+        IMessageService _messageService
+    ) L2BaseGateway(_zkLink) LineaGateway(_messageService) {}
+
+    function initialize() external initializer {
+        __LineaGateway_init();
     }
 
     function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {

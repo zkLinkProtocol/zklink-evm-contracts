@@ -7,14 +7,14 @@ import {BaseGateway} from "../BaseGateway.sol";
 
 abstract contract ScrollGateway is BaseGateway, IScrollGateway {
     /// @notice Linea message service on local chain
-    IScrollMessenger public messageService;
+    IScrollMessenger public immutable messageService;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 
     /// @dev Modifier to make sure the caller is the known message service.
     modifier onlyMessageService() {
@@ -22,12 +22,11 @@ abstract contract ScrollGateway is BaseGateway, IScrollGateway {
         _;
     }
 
-    function __ScrollGateway_init(IScrollMessenger _messageService) internal onlyInitializing {
-        __BaseGateway_init();
-        __ScrollGateway_init_unchained(_messageService);
+    constructor(IScrollMessenger _messageService) {
+        messageService = _messageService;
     }
 
-    function __ScrollGateway_init_unchained(IScrollMessenger _messageService) internal onlyInitializing {
-        messageService = _messageService;
+    function __ScrollGateway_init() internal onlyInitializing {
+        __BaseGateway_init();
     }
 }

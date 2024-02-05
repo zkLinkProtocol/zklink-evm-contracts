@@ -10,29 +10,27 @@
   "ZKSYNCTEST": {
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
+      "constructParams": [],
       "initializeParams": []
     },
     "l1Gateway": {
       "netName": "SEPOLIA",
       "contractName": "ZkSyncL1Gateway",
-      "initializeParams": [
-        "0x9A6DE0f62Aa270A8bCB1e2610078650D539B1Ef9"
-      ]
+      "constructParams": ["0x9A6DE0f62Aa270A8bCB1e2610078650D539B1Ef9"],
+      "initializeParams": []
     }
   },
   "SCROLLTEST": {
     "l2Gateway": {
       "contractName": "ScrollL2Gateway",
-      "initializeParams": [
-        "0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d"
-      ]
+      "constructParams": ["0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d"],
+      "initializeParams": []
     },
     "l1Gateway": {
       "netName": "SEPOLIA",
       "contractName": "ScrollL1Gateway",
-      "initializeParams": [
-        "0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A"
-      ]
+      "constructParams": ["0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A"],
+      "initializeParams": []
     }
   },
   "ZKPOLYGONTEST": {
@@ -40,14 +38,14 @@
   "ARBITRUMTEST": {
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
+      "constructParams": [],
       "initializeParams": []
     },
     "l1Gateway": {
       "netName": "SEPOLIA",
       "contractName": "ArbitrumL1Gateway",
-      "initializeParams": [
-        "0xaAe29B0366299461418F5324a79Afc425BE5ae21"
-      ]
+      "constructParams": ["0xaAe29B0366299461418F5324a79Afc425BE5ae21"],
+      "initializeParams": []
     }
   }
 }

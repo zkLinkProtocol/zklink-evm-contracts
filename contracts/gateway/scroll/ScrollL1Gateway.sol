@@ -8,9 +8,13 @@ import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {ScrollGateway} from "./ScrollGateway.sol";
 
 contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
-    function initialize(IArbitrator _arbitrator, IScrollMessenger _messageService) external initializer {
-        __L1BaseGateway_init(_arbitrator);
-        __ScrollGateway_init(_messageService);
+    constructor(
+        IArbitrator _arbitrator,
+        IScrollMessenger _messageService
+    ) L1BaseGateway(_arbitrator) ScrollGateway(_messageService) {}
+
+    function initialize() external initializer {
+        __ScrollGateway_init();
     }
 
     function sendMessage(
