@@ -1,4 +1,4 @@
-const { Provider, Wallet, utils } = require('zksync-ethers');
+const { Provider, Wallet } = require('zksync-ethers');
 const { ethers } = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
@@ -62,10 +62,10 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
     await txHandle.waitFinalize();
 
     const proof = await l2Provider.getLogProof(txHash);
-    console.log("Proof :>> ", proof);
+    console.log('Proof :>> ', proof);
     const { l1BatchNumber, l1BatchTxIndex } = await l2Provider.getTransactionReceipt(txHash);
-    console.log("L1 Index for Tx in block :>> ", l1BatchTxIndex);
-    console.log("L1 Batch for block :>> ", l1BatchNumber);
+    console.log('L1 Index for Tx in block :>> ', l1BatchTxIndex);
+    console.log('L1 Batch for block :>> ', l1BatchNumber);
 
     /**
      * Now that its confirmed and not executed, we can execute our message in its outbox entry.
@@ -83,5 +83,4 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
      * https://sepolia.explorer.zksync.io/tx/0xea2da9a0bf26de481403976a49dab1cb13362a609370d8b175f52cd9c0e46bc3
      * https://sepolia.etherscan.io/tx/0xa1cee7b21085d3ee3e359aea3704f5ba15676db38d83a64be48e25cad716cab4
      */
-
   });

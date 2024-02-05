@@ -7,7 +7,7 @@ const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
 task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
-  .addParam('value', 'Send msg value in ether', "0", types.string, true)
+  .addParam('value', 'Send msg value in ether', '0', types.string, true)
   .addParam('number', 'The batch number', 50, types.int, true)
   .addParam(
     'hash',
@@ -69,11 +69,7 @@ task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
     }
     console.log(`The l1 gateway address: ${l1GatewayAddr}`);
 
-    const l2GatewayAddr = readDeployContract(
-      logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
-      logName.DEPLOY_GATEWAY,
-      zksyncName,
-    );
+    const l2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, zksyncName);
     if (l2GatewayAddr === undefined) {
       console.log('l2 gateway address not exist');
       return;
@@ -98,8 +94,8 @@ task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
       contractAddress: l2Addr,
       calldata: l2GatewayCallData,
       overrides: {
-        value: zkLinkCallValue
-      }
+        value: zkLinkCallValue,
+      },
     });
     console.log(`Estimate gasLimit on L1 is ${l2GasLimit.valueOf()}`);
 
@@ -126,10 +122,7 @@ task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
      */
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const l2GasPerPubdataByteLimit = 800;
-    const adapterParams = abiCoder.encode(
-      ['uint256', 'uint256'],
-      [l2GasLimit, l2GasPerPubdataByteLimit]
-    );
+    const adapterParams = abiCoder.encode(['uint256', 'uint256'], [l2GasLimit, l2GasPerPubdataByteLimit]);
 
     console.log(`Send a l1 message to l2...`);
     const l1Tx = await arbitrator.forwardMessage(l1GatewayAddr, zkLinkCallValue, zkLinkCallData, adapterParams, {
@@ -160,5 +153,4 @@ task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
      * https://sepolia.etherscan.io/tx/0x10fede986b8c3445db2a0ab2332a97b2b3b682ff79c9fd931898474deb00c86a
      * https://sepolia.explorer.zksync.io/tx/0x202a4975289136b3292bf7b1202e1b8bc540351571d7656d060a489bd7b3509f
      */
-
   });
