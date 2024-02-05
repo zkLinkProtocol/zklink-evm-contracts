@@ -3,8 +3,6 @@ require('@matterlabs/hardhat-zksync-deploy');
 require('@matterlabs/hardhat-zksync-solc');
 require('@matterlabs/hardhat-zksync-verify');
 require('@matterlabs/hardhat-zksync-upgradable');
-require('./script/deploy_zklink');
-require('./script/deploy_l2_gateway');
 
 const fs = require('fs');
 
@@ -19,6 +17,9 @@ if (!fs.existsSync('script')) {
   fs.symlinkSync('../script', 'script');
   console.log('Create script soft link success!');
 }
+
+require('./script/deploy_zklink');
+require('./script/deploy_l2_gateway');
 
 const BaseConfig = require('../hardhat.base.config');
 
