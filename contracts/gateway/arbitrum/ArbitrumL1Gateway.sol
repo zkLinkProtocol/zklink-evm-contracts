@@ -10,11 +10,11 @@ import {IArbitrumGateway} from "../../interfaces/arbitrum/IArbitrumGateway.sol";
 
 contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
     /// @notice Arbitrum inbox on local chain
-    Inbox public immutable inbox;
+    Inbox public immutable INBOX;
 
     /// @dev Modifier to make sure the original sender is gateway on remote chain.
     modifier onlyRemoteGateway() {
-        IBridge bridge = inbox.bridge();
+        IBridge bridge = INBOX.bridge();
         require(msg.sender == address(bridge), "Not bridge");
         IOutbox outbox = IOutbox(bridge.activeOutbox());
         address l2Sender = outbox.l2ToL1Sender();
@@ -23,7 +23,7 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
     }
 
     constructor(IArbitrator _arbitrator, Inbox _inbox) L1BaseGateway(_arbitrator) {
-        inbox = _inbox;
+        INBOX = _inbox;
     }
 
     function initialize() external initializer {
@@ -40,7 +40,7 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
             (uint256, uint256, uint256)
         );
         bytes memory data = abi.encodeCall(IArbitrumGateway.claimMessageCallback, (_value, _callData));
-        inbox.createRetryableTicket{value: msg.value}(
+        INBOX.createRetryableTicket{value: msg.value}(
             remoteGateway,
             _value,
             maxSubmissionCost,
@@ -56,6 +56,6 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
-        arbitrator.receiveMessage{value: _value}(_value, _callData);
+        ARBITRATOR.receiveMessage{value: _value}(_value, _callData);
     }
 }

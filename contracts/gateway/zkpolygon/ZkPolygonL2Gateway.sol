@@ -8,7 +8,7 @@ import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
-    IZkPolygon public immutable messageService;
+    IZkPolygon public immutable MESSAGE_SERVICE;
 
     uint32 public constant ETH_NETWORK_ID = 0;
     // Default to true
@@ -16,12 +16,12 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
 
     /// @dev Modifier to make sure the original sender is messageService on remote chain.
     modifier onlyMessageService() {
-        require(msg.sender == address(messageService), "Not remote gateway");
+        require(msg.sender == address(MESSAGE_SERVICE), "Not remote gateway");
         _;
     }
 
     constructor(address _zkLink, IZkPolygon _messageService) L2BaseGateway(_zkLink) {
-        messageService = _messageService;
+        MESSAGE_SERVICE = _messageService;
     }
 
     function initialize() external initializer {
@@ -30,7 +30,7 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable onlyZkLink {
         bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (_value, _callData));
-        messageService.bridgeMessage{value: msg.value}(
+        MESSAGE_SERVICE.bridgeMessage{value: msg.value}(
             ETH_NETWORK_ID,
             remoteGateway,
             FORCE_UPDATE_GLOBAL_EXIT_ROOT,
@@ -40,7 +40,7 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyMessageService {
         require(msg.value == _value, "Invalid value");
-        (bool success, ) = zkLink.call{value: _value}(_callData);
+        (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

@@ -25,7 +25,7 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
         uint256 _finalizeMessageGasLimit = abi.decode(_adapterParams, (uint256));
 
         bytes memory executeData = abi.encodeCall(IScrollGateway.claimMessageCallback, (_value, _callData));
-        messageService.sendMessage{value: msg.value}(
+        MESSAGE_SERVICE.sendMessage{value: msg.value}(
             remoteGateway,
             _value,
             executeData,
@@ -40,6 +40,6 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
         require(msg.value == _value, "Invalid value");
 
         // Forward message to arbitrator
-        arbitrator.receiveMessage{value: msg.value}(_value, _callData);
+        ARBITRATOR.receiveMessage{value: msg.value}(_value, _callData);
     }
 }

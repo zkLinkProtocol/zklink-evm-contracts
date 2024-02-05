@@ -11,14 +11,14 @@ import {L2Message} from "../../zksync/l1-contracts/zksync/Storage.sol";
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @notice ZkSync message service on local chain
-    IMailbox public immutable messageService;
+    IMailbox public immutable MESSAGE_SERVICE;
 
     /// @dev A mapping L2 batch number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
     constructor(IArbitrator _arbitrator, IMailbox _messageService) L1BaseGateway(_arbitrator) {
-        messageService = _messageService;
+        MESSAGE_SERVICE = _messageService;
     }
 
     /// @dev Receive eth from zkSync canonical bridge
@@ -35,7 +35,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     ) external payable onlyArbitrator {
         (uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) = abi.decode(_adapterParams, (uint256, uint256));
         bytes memory executeData = abi.encodeCall(IZkSyncL2Gateway.claimMessage, (_value, _callData));
-        messageService.requestL2Transaction{value: msg.value}(
+        MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
             remoteGateway,
             _value,
             executeData,
@@ -62,7 +62,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
             data: _message
         });
 
-        bool success = messageService.proveL2MessageInclusion(
+        bool success = MESSAGE_SERVICE.proveL2MessageInclusion(
             _l2BatchNumber,
             _l2MessageIndex,
             l2ToL1Message,
@@ -75,6 +75,6 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
         // Forward message to arbitrator
         (uint256 value, bytes memory callData) = abi.decode(_message, (uint256, bytes));
-        arbitrator.receiveMessage{value: value}(value, callData);
+        ARBITRATOR.receiveMessage{value: value}(value, callData);
     }
 }

@@ -5,7 +5,7 @@ import {IL2Gateway} from "../interfaces/IL2Gateway.sol";
 
 abstract contract L2BaseGateway is IL2Gateway {
     /// @notice The zkLink contract
-    address public immutable zkLink;
+    address public immutable ZKLINK;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -16,11 +16,11 @@ abstract contract L2BaseGateway is IL2Gateway {
 
     /// @dev Ensure withdraw come from zkLink
     modifier onlyZkLink() {
-        require(msg.sender == zkLink, "Not zkLink contract");
+        require(msg.sender == ZKLINK, "Not zkLink contract");
         _;
     }
 
     constructor(address _zkLink) {
-        zkLink = _zkLink;
+        ZKLINK = _zkLink;
     }
 }

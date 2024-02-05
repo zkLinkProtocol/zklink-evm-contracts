@@ -7,7 +7,7 @@ import {BaseGateway} from "../BaseGateway.sol";
 
 abstract contract ScrollGateway is BaseGateway, IScrollGateway {
     /// @notice Linea message service on local chain
-    IScrollMessenger public immutable messageService;
+    IScrollMessenger public immutable MESSAGE_SERVICE;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -18,12 +18,12 @@ abstract contract ScrollGateway is BaseGateway, IScrollGateway {
 
     /// @dev Modifier to make sure the caller is the known message service.
     modifier onlyMessageService() {
-        require(msg.sender == address(messageService), "Not message service");
+        require(msg.sender == address(MESSAGE_SERVICE), "Not message service");
         _;
     }
 
     constructor(IScrollMessenger _messageService) {
-        messageService = _messageService;
+        MESSAGE_SERVICE = _messageService;
     }
 
     function __ScrollGateway_init() internal onlyInitializing {

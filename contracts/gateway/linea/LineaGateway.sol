@@ -7,7 +7,7 @@ import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
 
 abstract contract LineaGateway is BaseGateway, ILineaGateway {
     /// @notice Linea message service on local chain
-    IMessageService public immutable messageService;
+    IMessageService public immutable MESSAGE_SERVICE;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -18,18 +18,18 @@ abstract contract LineaGateway is BaseGateway, ILineaGateway {
 
     /// @dev Modifier to make sure the caller is the known message service.
     modifier onlyMessageService() {
-        require(msg.sender == address(messageService), "Not message service");
+        require(msg.sender == address(MESSAGE_SERVICE), "Not message service");
         _;
     }
 
     /// @dev Modifier to make sure the original sender is gateway on remote chain.
     modifier onlyRemoteGateway() {
-        require(messageService.sender() == remoteGateway, "Not remote gateway");
+        require(MESSAGE_SERVICE.sender() == remoteGateway, "Not remote gateway");
         _;
     }
 
     constructor(IMessageService _messageService) {
-        messageService = _messageService;
+        MESSAGE_SERVICE = _messageService;
     }
 
     function __LineaGateway_init() internal onlyInitializing {
@@ -39,6 +39,6 @@ abstract contract LineaGateway is BaseGateway, ILineaGateway {
     function claimMessage(uint256 _value, bytes calldata _callData, uint256 _nonce) external nonReentrant {
         // `claimMessageCallback` will be called within `claimMessage`
         // no fee on remote chain
-        messageService.claimMessage(remoteGateway, address(this), 0, _value, payable(msg.sender), _callData, _nonce);
+        MESSAGE_SERVICE.claimMessage(remoteGateway, address(this), 0, _value, payable(msg.sender), _callData, _nonce);
     }
 }

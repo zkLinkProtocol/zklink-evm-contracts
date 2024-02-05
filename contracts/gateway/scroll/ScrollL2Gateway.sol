@@ -22,7 +22,7 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
 
         bytes memory callData = abi.encodeCall(IScrollGateway.claimMessageCallback, (_value, _callData));
         // transfer no fee to L1
-        messageService.sendMessage{value: _value}(
+        MESSAGE_SERVICE.sendMessage{value: _value}(
             remoteGateway,
             _value,
             callData,
@@ -34,7 +34,7 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = zkLink.call{value: _value}(_callData);
+        (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

@@ -18,11 +18,11 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
 
     function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {
         // msg value should include fee
-        uint256 coinbaseFee = messageService.minimumFeeInWei();
+        uint256 coinbaseFee = MESSAGE_SERVICE.minimumFeeInWei();
         require(msg.value == value + coinbaseFee, "Invalid fee");
 
         bytes memory message = abi.encodeCall(ILineaGateway.claimMessageCallback, (value, callData));
-        messageService.sendMessage{value: msg.value}(address(remoteGateway), coinbaseFee, message);
+        MESSAGE_SERVICE.sendMessage{value: msg.value}(address(remoteGateway), coinbaseFee, message);
     }
 
     function claimMessageCallback(
@@ -32,7 +32,7 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = zkLink.call{value: _value}(_callData);
+        (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

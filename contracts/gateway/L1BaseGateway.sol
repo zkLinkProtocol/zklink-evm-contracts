@@ -6,7 +6,7 @@ import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
 abstract contract L1BaseGateway is IL1Gateway {
     /// @notice The arbitrator to confirm synchronization
-    IArbitrator public immutable arbitrator;
+    IArbitrator public immutable ARBITRATOR;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -17,11 +17,11 @@ abstract contract L1BaseGateway is IL1Gateway {
 
     /// @dev Modifier to make sure the caller is the known arbitrator.
     modifier onlyArbitrator() {
-        require(msg.sender == address(arbitrator), "Not arbitrator");
+        require(msg.sender == address(ARBITRATOR), "Not arbitrator");
         _;
     }
 
     constructor(IArbitrator _arbitrator) {
-        arbitrator = _arbitrator;
+        ARBITRATOR = _arbitrator;
     }
 }

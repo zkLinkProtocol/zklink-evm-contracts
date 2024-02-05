@@ -36,7 +36,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = zkLink.call{value: _value}(_callData);
+        (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 }

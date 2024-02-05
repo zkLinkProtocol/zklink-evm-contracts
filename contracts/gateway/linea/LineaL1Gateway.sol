@@ -20,7 +20,7 @@ contract LineaL1Gateway is L1BaseGateway, LineaGateway {
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
         // transfer no fee to Linea
         bytes memory message = abi.encodeCall(ILineaGateway.claimMessageCallback, (_value, _callData));
-        messageService.sendMessage{value: _value}(remoteGateway, 0, message);
+        MESSAGE_SERVICE.sendMessage{value: _value}(remoteGateway, 0, message);
     }
 
     function claimMessageCallback(
@@ -29,6 +29,6 @@ contract LineaL1Gateway is L1BaseGateway, LineaGateway {
     ) external payable onlyMessageService onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
-        arbitrator.receiveMessage{value: _value}(_value, _callData);
+        ARBITRATOR.receiveMessage{value: _value}(_value, _callData);
     }
 }

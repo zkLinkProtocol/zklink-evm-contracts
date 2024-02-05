@@ -33,13 +33,13 @@ contract EthereumGateway is
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = zkLink.call{value: _value}(_callData);
+        (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
-        arbitrator.receiveMessage{value: _value}(_value, _callData);
+        ARBITRATOR.receiveMessage{value: _value}(_value, _callData);
     }
 }
