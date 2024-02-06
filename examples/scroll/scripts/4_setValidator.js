@@ -53,8 +53,9 @@ task('setValidator', 'Set validator for zkLink')
     let tx = await arbitrator.setValidator(scrollL1GatewayAddr, validatorAddr, isActive, adapterParams, {
       value: hre.ethers.utils.parseEther('0.001'),
     });
-    console.log(`The tx hash: ${tx.hash}`);
+    console.log(`The tx hash: ${tx.hash} , waiting confirm...`);
     await tx.wait();
+    console.log(`The tx confirmed`);
 
     // Waiting for the official Scroll bridge to forward the message to L2
     // No user action is required for follow-up.
