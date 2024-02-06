@@ -1,8 +1,15 @@
 const fs = require('fs');
 const { getImplementationAddress } = require('@openzeppelin/upgrades-core');
-const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx } = require('./utils');
+const {
+  verifyContractCode,
+  createOrGetDeployLog,
+  ChainContractDeployer,
+  getDeployTx,
+  readDeployContract,
+} = require('./utils');
 const logName = require('./deploy_log_name');
 const { task, types } = require('hardhat/config');
+const { INIT_FEE_PARAMS } = require('./zksync_era');
 
 function getArbitratorContractName(dummy) {
   return dummy ? 'DummyArbitrator' : 'Arbitrator';
@@ -114,3 +121,54 @@ task('upgradeArbitrator', 'Upgrade arbitrator')
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
   });
+
+task('setValidatorForEthereum', 'Set validator for ethereum')
+  .addParam('validator', 'Validator Address', undefined, types.string)
+  .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)
+  .setAction(async (taskArgs, hardhat) => {
+    const validatorAddr = taskArgs.validator;
+    const isActive = taskArgs.active;
+    console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
+
+    const arbitratorAddr = readDeployContract(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
+    if (arbitratorAddr === undefined) {
+      console.log('The arbitrator address not exist');
+      return;
+    }
+    console.log(`The arbitrator address: ${arbitratorAddr}`);
+
+    const ethGatewayAddr = readDeployContract(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY);
+    if (ethGatewayAddr === undefined) {
+      console.log('The eth gateway address not exist');
+      return;
+    }
+    console.log(`The eth gateway address: ${ethGatewayAddr}`);
+
+    const arbitrator = await hardhat.ethers.getContractAt('Arbitrator', arbitratorAddr);
+    let tx = await arbitrator.setValidator(ethGatewayAddr, validatorAddr, isActive, '0x');
+    console.log(`The tx hash: ${tx.hash} , waiting confirm...`);
+    await tx.wait();
+    console.log(`The tx confirmed`);
+  });
+
+task('setFeeParamsForEthereum', 'Set fee params for ethereum').setAction(async (taskArgs, hardhat) => {
+  const arbitratorAddr = readDeployContract(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
+  if (arbitratorAddr === undefined) {
+    console.log('The arbitrator address not exist');
+    return;
+  }
+  console.log(`The arbitrator address: ${arbitratorAddr}`);
+
+  const ethGatewayAddr = readDeployContract(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY);
+  if (ethGatewayAddr === undefined) {
+    console.log('The eth gateway address not exist');
+    return;
+  }
+  console.log(`The eth gateway address: ${ethGatewayAddr}`);
+
+  const arbitrator = await hardhat.ethers.getContractAt('Arbitrator', arbitratorAddr);
+  let tx = await arbitrator.changeFeeParams(ethGatewayAddr, INIT_FEE_PARAMS, '0x');
+  console.log(`The tx hash: ${tx.hash} , waiting confirm...`);
+  await tx.wait();
+  console.log(`The tx confirmed`);
+});
