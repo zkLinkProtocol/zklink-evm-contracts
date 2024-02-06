@@ -9,7 +9,6 @@ const {
 } = require('./utils');
 const logName = require('./deploy_log_name');
 const { task, types } = require('hardhat/config');
-const { INIT_FEE_PARAMS } = require('./zksync_era');
 
 function getArbitratorContractName(dummy) {
   return dummy ? 'DummyArbitrator' : 'Arbitrator';
@@ -167,6 +166,7 @@ task('setFeeParamsForEthereum', 'Set fee params for ethereum').setAction(async (
   console.log(`The eth gateway address: ${ethGatewayAddr}`);
 
   const arbitrator = await hardhat.ethers.getContractAt('Arbitrator', arbitratorAddr);
+  const { INIT_FEE_PARAMS } = require('./zksync_era');
   let tx = await arbitrator.changeFeeParams(ethGatewayAddr, INIT_FEE_PARAMS, '0x');
   console.log(`The tx hash: ${tx.hash} , waiting confirm...`);
   await tx.wait();
