@@ -1,0 +1,16 @@
+{
+  "name": "zksync-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@matterlabs/hardhat-zksync-verify": "^1.3.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.4",
+    "ethers": "^6.10.0",
+    "hardhat": "^2.19.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}
