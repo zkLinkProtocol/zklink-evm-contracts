@@ -3,6 +3,7 @@ require('@matterlabs/hardhat-zksync-verify');
 require('./scripts/syncL2Requests');
 require('./scripts/syncBatchRoot');
 require('./scripts/setValidator');
+require('./scripts/changeFeeParams');
 
 const BaseConfig = require('../../hardhat.base.config');
 
