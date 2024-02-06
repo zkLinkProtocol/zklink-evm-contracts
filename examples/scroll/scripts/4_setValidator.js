@@ -15,15 +15,13 @@ task('setValidator', 'Set validator for zkLink')
 
     const walletPrivateKey = process.env.DEVNET_PRIVKEY;
     const l1Provider = new providers.JsonRpcProvider(process.env.L1RPC);
-    const l2Provider = new providers.JsonRpcProvider(process.env.L2RPC);
     const ethereumName = process.env.ETHEREUM;
     const scrollName = process.env.SCROLL;
     const l1Wallet = new Wallet(walletPrivateKey, l1Provider);
-    const l2Wallet = new Wallet(walletPrivateKey, l2Provider);
 
-    const l2WalletAddress = await l2Wallet.getAddress();
-    const l2WalletBalance = utils.formatEther(await l2Wallet.getBalance());
-    console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
+    const l1WalletAddress = await l1Wallet.getAddress();
+    const l1WalletBalance = utils.formatEther(await l1Wallet.getBalance());
+    console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
     const arbitratorAddr = readDeployContract(
       logName.DEPLOY_ARBITRATOR_LOG_PREFIX,
@@ -54,10 +52,9 @@ task('setValidator', 'Set validator for zkLink')
     const adapterParams = hre.ethers.utils.defaultAbiCoder.encode(['uint256'], [finalizeMessageGasLimit]);
     let tx = await arbitrator.setValidator(scrollL1GatewayAddr, validatorAddr, isActive, adapterParams, {
       value: hre.ethers.utils.parseEther('0.001'),
-      gasPrice: 50000000000,
     });
-    await tx.wait();
     console.log(`The tx hash: ${tx.hash}`);
+    await tx.wait();
 
     // Waiting for the official Scroll bridge to forward the message to L2
     // No user action is required for follow-up.
