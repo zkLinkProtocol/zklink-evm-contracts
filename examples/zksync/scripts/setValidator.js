@@ -7,7 +7,7 @@ const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
 task('setValidator', 'Set validator for zkLink')
-  .addParam('validator', 'Validator Address', undefined, types.string, true)
+  .addParam('validator', 'Validator Address', undefined, types.string, false)
   .addParam('active', 'Whether to activate the validator address', true, types.boolean, true)
   .setAction(async (taskArgs, hre) => {
     const validatorAddr = taskArgs.validator;
