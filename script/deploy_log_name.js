@@ -9,6 +9,13 @@ const DEPLOY_LOG_ZKLINK_PROXY_VERIFIED = 'zkLinkProxyVerified';
 const DEPLOY_LOG_DEPLOY_TX_HASH = 'deployTxHash';
 const DEPLOY_LOG_DEPLOY_BLOCK_NUMBER = 'deployBlockNumber';
 
+// consumed in deploy_erc20_bridge.js
+const DEPLOY_ERC20_BRIDGE_LOG_PREFIX = 'deploy_erc20_bridge';
+const DEPLOY_ERC20_BRIDGE = 'erc20Bridge';
+const DEPLOY_ERC20_BRIDGE_VERIFIED = 'erc20BridgeVerified';
+const DEPLOY_ERC20_BRIDGE_TARGET = 'erc20BridgeTarget';
+const DEPLOY_ERC20_BRIDGE_TARGET_VERIFIED = 'erc20BridgeTargetVerified';
+
 // consumed in deploy_l1_gateway.js or deploy_l2_gateway.js or deploy_eth_gateway.js
 const DEPLOY_L1_GATEWAY_LOG_PREFIX = 'deploy_l1_gateway';
 const DEPLOY_L2_GATEWAY_LOG_PREFIX = 'deploy_l2_gateway';
@@ -47,4 +54,9 @@ module.exports = {
   DEPLOY_LOG_ARBITRATOR_VERIFIED,
   DEPLOY_LOG_ARBITRATOR_TARGET,
   DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED,
+  DEPLOY_ERC20_BRIDGE_LOG_PREFIX,
+  DEPLOY_ERC20_BRIDGE,
+  DEPLOY_ERC20_BRIDGE_VERIFIED,
+  DEPLOY_ERC20_BRIDGE_TARGET,
+  DEPLOY_ERC20_BRIDGE_TARGET_VERIFIED,
 };

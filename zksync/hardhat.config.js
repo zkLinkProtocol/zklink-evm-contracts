@@ -20,6 +20,7 @@ if (!fs.existsSync('script')) {
 
 require('./script/deploy_zklink');
 require('./script/deploy_l2_gateway');
+require('./script/deploy_erc20_bridge');
 
 const BaseConfig = require('../hardhat.base.config');
 

@@ -137,7 +137,7 @@ task('setGateway', 'Set gateway for zkLink').setAction(async (taskArgs, hardhat)
   console.log('zkLink', zkLinkAddr);
 
   const zkLink = await hardhat.ethers.getContractAt('ZkLink', zkLinkAddr);
-  const existGatewayAddr = await zkLink.gateway();
+  const existGatewayAddr = await zkLink.getGateway();
   if (existGatewayAddr !== hardhat.ethers.ZeroAddress) {
     console.log('gateway has been set to', existGatewayAddr);
     return;

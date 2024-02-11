@@ -69,6 +69,6 @@ task('initConfig', 'Init config')
     await zkLink.setGateway(scrollL2GatewayAddr, { gasLimit: 1000000, gasPrice: 100000000 });
     console.log(`The zkLink set gateway to ${scrollL2GatewayAddr}`);
 
-    const gateway = await zkLink.gateway();
+    const gateway = await zkLink.getGateway();
     console.log(`The gateway address: ${gateway}`);
   });

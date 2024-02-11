@@ -17,6 +17,7 @@ import {Merkle} from "./zksync/l1-contracts/zksync/libraries/Merkle.sol";
 import {L2Log, L2Message, PubdataPricingMode, FeeParams, SecondaryChainSyncStatus} from "./zksync/l1-contracts/zksync/Storage.sol";
 import {REQUIRED_L2_GAS_PRICE_PER_PUBDATA, MAX_NEW_FACTORY_DEPS, L1_GAS_PER_PUBDATA_BYTE, L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH} from "./zksync/l1-contracts/zksync/Config.sol";
 import {L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR, L2_BOOTLOADER_ADDRESS} from "./zksync/l1-contracts/common/L2ContractAddresses.sol";
+import {IGetters} from "./zksync/l1-contracts/zksync/interfaces/IGetters.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
@@ -24,6 +25,7 @@ contract ZkLink is
     IZkLink,
     IMailbox,
     IAdmin,
+    IGetters,
     OwnableUpgradeable,
     UUPSUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -102,6 +104,34 @@ contract ZkLink is
     /// @dev Unpause the contract, can only be called by the owner
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function getGateway() external view returns (IL2Gateway) {
+        return gateway;
+    }
+
+    function getGovernor() external view returns (address) {
+        return owner();
+    }
+
+    function getTotalBatchesExecuted() external view returns (uint256) {
+        return totalBatchesExecuted;
+    }
+
+    function getTotalPriorityTxs() external view returns (uint256) {
+        return totalPriorityTxs;
+    }
+
+    function isValidator(address _address) external view returns (bool) {
+        return validators[_address];
+    }
+
+    function l2LogsRootHash(uint256 _batchNumber) external view returns (bytes32 merkleRoot) {
+        return l2LogsRootHashes[_batchNumber];
+    }
+
+    function getPriorityTxMaxGasLimit() external pure returns (uint256) {
+        return 72000000;
     }
 
     /// @dev Init gateway, can only be called by the owner

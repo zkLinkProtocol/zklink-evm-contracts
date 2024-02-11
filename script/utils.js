@@ -139,24 +139,29 @@ class ChainContractDeployer {
     return contract;
   }
 
-  async deployProxy(contractName, initArgs, constructorArgs) {
+  async deployProxy(contractName, initArgs, constructorArgs, kind, initializer) {
     if (constructorArgs === undefined) {
       constructorArgs = [];
+    }
+    if (kind === undefined) {
+      kind = 'uups';
     }
     let contract;
     if (this.zksync) {
       const artifact = await this.zkSyncDeployer.loadArtifact(contractName);
       contract = await this.hardhat.zkUpgrades.deployProxy(this.deployerWallet, artifact, initArgs, {
-        initializer: 'initialize',
+        kind: kind,
         constructorArgs: constructorArgs,
         unsafeAllow: ['state-variable-immutable', 'constructor'],
+        initializer: initializer,
       });
     } else {
       const factory = await this.hardhat.ethers.getContractFactory(contractName, this.deployerWallet);
       contract = await this.hardhat.upgrades.deployProxy(factory, initArgs, {
-        kind: 'uups',
+        kind: kind,
         constructorArgs: constructorArgs,
         unsafeAllow: ['state-variable-immutable', 'constructor'],
+        initializer: initializer,
       });
     }
     await contract.waitForDeployment();

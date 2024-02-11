@@ -15,6 +15,9 @@ interface IGetters {
     /// @return The gateway on local chain
     function getGateway() external view returns (IL2Gateway);
 
+    /// @return The address of the current governor
+    function getGovernor() external view returns (address);
+
     /// @return The total number of batches that were committed & verified & executed
     function getTotalBatchesExecuted() external view returns (uint256);
 
@@ -26,4 +29,7 @@ interface IGetters {
 
     /// @return merkleRoot Merkle root of the tree with L2 logs for the selected batch
     function l2LogsRootHash(uint256 _batchNumber) external view returns (bytes32 merkleRoot);
+
+    /// @return The maximum number of L2 gas that a user can request for L1 -> L2 transactions
+    function getPriorityTxMaxGasLimit() external view returns (uint256);
 }
