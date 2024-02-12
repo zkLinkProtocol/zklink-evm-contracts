@@ -12,20 +12,24 @@ library L2ContractHelper {
     bytes32 private constant CREATE2_PREFIX = keccak256("zksyncCreate2");
 
     /// @notice Validate the bytecode format and calculate its hash.
-    /// @param _bytecode The bytecode to hash.
+    /// @param _bytecodeLength The bytecode length.
+    /// @param _bytecodeHash The bytecode hash.
     /// @return hashedBytecode The 32-byte hash of the bytecode.
     /// Note: The function reverts the execution if the bytecode has non expected format:
     /// - Bytecode bytes length is not a multiple of 32
     /// - Bytecode bytes length is not less than 2^21 bytes (2^16 words)
     /// - Bytecode words length is not odd
-    function hashL2Bytecode(bytes memory _bytecode) internal pure returns (bytes32 hashedBytecode) {
+    function hashL2Bytecode(
+        uint256 _bytecodeLength,
+        bytes32 _bytecodeHash
+    ) internal pure returns (bytes32 hashedBytecode) {
         // Note that the length of the bytecode must be provided in 32-byte words.
-        require(_bytecode.length % 32 == 0, "pq");
+        require(_bytecodeLength % 32 == 0, "pq");
 
-        uint256 bytecodeLenInWords = _bytecode.length / 32;
+        uint256 bytecodeLenInWords = _bytecodeLength / 32;
         require(bytecodeLenInWords < 2 ** 16, "pp"); // bytecode length must be less than 2^16 words
         require(bytecodeLenInWords % 2 == 1, "ps"); // bytecode length in words must be odd
-        hashedBytecode = sha256(_bytecode) & 0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
+        hashedBytecode = _bytecodeHash & 0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
         // Setting the version of the hash
         hashedBytecode = (hashedBytecode | bytes32(uint256(1 << 248)));
         // Setting the length

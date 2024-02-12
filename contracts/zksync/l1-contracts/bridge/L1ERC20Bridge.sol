@@ -71,6 +71,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
     /// @notice _factoryDeps[0] == a raw bytecode of L2 bridge implementation
     /// @notice _factoryDeps[1] == a raw bytecode of proxy that is used as L2 bridge
     /// @notice _factoryDeps[2] == a raw bytecode of token proxy
+    /// @param _factoryDepByteCodeHashes A list of raw bytecode sha256 hashes that are needed for deployment of the L2 bridge
     /// @param _l2TokenBeacon Pre-calculated address of the L2 token upgradeable beacon
     /// @notice At the time of the function call, it is not yet deployed in L2, but knowledge of its address
     /// @notice is necessary for determining L2 token address by L1 address, see `l2TokenAddress(address)` function
@@ -80,6 +81,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
     /// @param _deployBridgeProxyFee How much of the sent value should be allocated to deploying the L2 bridge proxy
     function initialize(
         bytes[] calldata _factoryDeps,
+        bytes32[] calldata _factoryDepByteCodeHashes,
         address _l2TokenBeacon,
         address _governor,
         uint256 _deployBridgeImplementationFee,
@@ -89,13 +91,23 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
         require(_governor != address(0), "nh");
         // We are expecting to see the exact three bytecodes that are needed to initialize the bridge
         require(_factoryDeps.length == 3, "mk");
+        require(_factoryDeps.length == _factoryDepByteCodeHashes.length, "mg");
         // The caller miscalculated deploy transactions fees
         require(msg.value == _deployBridgeImplementationFee + _deployBridgeProxyFee, "fee");
-        l2TokenProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(_factoryDeps[2]);
+        l2TokenProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
+            _factoryDeps[2].length,
+            _factoryDepByteCodeHashes[2]
+        );
         l2TokenBeacon = _l2TokenBeacon;
 
-        bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper.hashL2Bytecode(_factoryDeps[0]);
-        bytes32 l2BridgeProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(_factoryDeps[1]);
+        bytes32 l2BridgeImplementationBytecodeHash = L2ContractHelper.hashL2Bytecode(
+            _factoryDeps[0].length,
+            _factoryDepByteCodeHashes[0]
+        );
+        bytes32 l2BridgeProxyBytecodeHash = L2ContractHelper.hashL2Bytecode(
+            _factoryDeps[1].length,
+            _factoryDepByteCodeHashes[1]
+        );
 
         // Deploy L2 bridge implementation contract
         address bridgeImplementationAddr = BridgeInitializationHelper.requestDeployTransaction(
