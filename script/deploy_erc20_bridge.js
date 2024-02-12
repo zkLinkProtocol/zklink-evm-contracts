@@ -84,3 +84,49 @@ task('deployERC20Bridge', 'Deploy erc20 bridge')
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
   });
+
+task('upgradeERC20Bridge', 'Upgrade erc20 bridge')
+  .addParam('zklink', 'The zklink address (default get from zkLink deploy log)', undefined, types.string, true)
+  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
+  .setAction(async (taskArgs, hardhat) => {
+    let zklinkAddr = taskArgs.zklink;
+    if (zklinkAddr === undefined) {
+      zklinkAddr = readDeployLogField(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+    }
+    let skipVerify = taskArgs.skipVerify;
+    console.log('zklink', zklinkAddr);
+    console.log('skip verify contracts?', skipVerify);
+
+    const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ERC20_BRIDGE_LOG_PREFIX);
+    const contractAddr = deployLog[logName.DEPLOY_ERC20_BRIDGE];
+    if (contractAddr === undefined) {
+      console.log('erc20 bridge address not exist');
+      return;
+    }
+    console.log('erc20 bridge', contractAddr);
+    const oldContractTargetAddr = deployLog[logName.DEPLOY_ERC20_BRIDGE_TARGET];
+    if (oldContractTargetAddr === undefined) {
+      console.log('erc20 bridge target address not exist');
+      return;
+    }
+    console.log('erc20 bridge old target', oldContractTargetAddr);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+
+    console.log('upgrade erc20 bridge...');
+    const contract = await contractDeployer.upgradeProxy('L1ERC20Bridge', contractAddr, [zklinkAddr]);
+    const tx = await getDeployTx(contract);
+    console.log('upgrade tx', tx.hash);
+    const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
+    deployLog[logName.DEPLOY_ERC20_BRIDGE_TARGET] = newContractTargetAddr;
+    console.log('erc20 bridge new target', newContractTargetAddr);
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+
+    // verify target contract
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, newContractTargetAddr, [zklinkAddr]);
+      deployLog[logName.DEPLOY_ERC20_BRIDGE_TARGET_VERIFIED] = true;
+      fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    }
+  });
