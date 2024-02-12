@@ -55,6 +55,10 @@ contract ZkLink is
     mapping(uint256 batchNumber => bytes32 l2LogsRootHash) public l2LogsRootHashes;
     /// @dev Stored the l2 tx hash map from secondary chain to primary chain
     mapping(bytes32 l2TxHash => bytes32 primaryChainL2TxHash) public l2TxHashMap;
+    /// @dev The total forward fee payed to validator
+    uint256 public totalValidatorForwardFee;
+    /// @dev The total forward fee withdrawn by validator
+    uint256 public totalValidatorForwardFeeWithdrawn;
 
     /// @notice Gateway init
     event InitGateway(IL2Gateway gateway);
@@ -74,6 +78,8 @@ contract ZkLink is
     event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash);
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
+    /// @notice Emitted when validator withdraw forward fee
+    event WithdrawForwardFee(uint256 amount);
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
@@ -215,6 +221,7 @@ contract ZkLink is
         uint256 l2GasPrice = _deriveL2GasPrice(txGasPrice, _l2GasPerPubdataByteLimit);
         uint256 baseCost = l2GasPrice * _l2GasLimit;
         require(msg.value == baseCost + _l2Value, "Invalid msg value"); // The `msg.value` doesn't cover the transaction cost
+        totalValidatorForwardFee = totalValidatorForwardFee + baseCost;
 
         // If the `_refundRecipient` is not provided, we use the `sender` as the recipient.
         address refundRecipient = _refundRecipient == address(0) ? sender : _refundRecipient;
@@ -336,6 +343,19 @@ contract ZkLink is
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
         l2TxHashMap[_l2TxHash] = _primaryChainL2TxHash;
         emit SyncL2TxHash(_l2TxHash, _primaryChainL2TxHash);
+    }
+
+    function withdrawForwardFee(uint256 _amount) external nonReentrant onlyValidator {
+        require(_amount > 0, "Invalid amount");
+        uint256 newWithdrawnFee = totalValidatorForwardFeeWithdrawn + _amount;
+        require(totalValidatorForwardFee >= newWithdrawnFee, "Withdraw exceed");
+
+        // Update withdrawn fee
+        totalValidatorForwardFeeWithdrawn = newWithdrawnFee;
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, ) = msg.sender.call{value: _amount}("");
+        require(success, "Withdraw failed");
+        emit WithdrawForwardFee(_amount);
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.

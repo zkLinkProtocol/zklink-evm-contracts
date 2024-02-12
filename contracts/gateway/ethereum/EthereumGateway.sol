@@ -25,8 +25,8 @@ contract EthereumGateway is
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function getRemoteGateway() external pure returns (address) {
-        return address(0);
+    function getRemoteGateway() external view returns (address) {
+        return address(this);
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
