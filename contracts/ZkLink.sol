@@ -14,7 +14,9 @@ import {IMailbox, TxStatus} from "./zksync/l1-contracts/zksync/interfaces/IMailb
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {Merkle} from "./zksync/l1-contracts/zksync/libraries/Merkle.sol";
+import {TransactionValidator} from "./zksync/l1-contracts/zksync/libraries/TransactionValidator.sol";
 import {L2Log, L2Message, PubdataPricingMode, FeeParams, SecondaryChainSyncStatus} from "./zksync/l1-contracts/zksync/Storage.sol";
+import {UncheckedMath} from "./zksync/l1-contracts/common/libraries/UncheckedMath.sol";
 import {REQUIRED_L2_GAS_PRICE_PER_PUBDATA, MAX_NEW_FACTORY_DEPS, L1_GAS_PER_PUBDATA_BYTE, L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH} from "./zksync/l1-contracts/zksync/Config.sol";
 import {L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR, L2_BOOTLOADER_ADDRESS} from "./zksync/l1-contracts/common/L2ContractAddresses.sol";
 import {IGetters} from "./zksync/l1-contracts/zksync/interfaces/IGetters.sol";
@@ -31,6 +33,8 @@ contract ZkLink is
     ReentrancyGuardUpgradeable,
     PausableUpgradeable
 {
+    using UncheckedMath for uint256;
+
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
     /// @notice List of permitted validators
@@ -136,7 +140,7 @@ contract ZkLink is
         return l2LogsRootHashes[_batchNumber];
     }
 
-    function getPriorityTxMaxGasLimit() external pure returns (uint256) {
+    function getPriorityTxMaxGasLimit() public pure returns (uint256) {
         return 72000000;
     }
 
@@ -245,6 +249,17 @@ contract ZkLink is
             _factoryDeps,
             refundRecipient
         );
+        // Validate l2 transaction
+        {
+            L2CanonicalTransaction memory transaction = _serializeL2Transaction(request);
+            bytes memory transactionEncoding = abi.encode(transaction);
+            TransactionValidator.validateL1ToL2Transaction(
+                transaction,
+                transactionEncoding,
+                getPriorityTxMaxGasLimit(),
+                feeParams.priorityTxMaxPubdata
+            );
+        }
         canonicalTxHash = keccak256(abi.encode(request));
 
         // Accumulate sync status
@@ -377,6 +392,29 @@ contract ZkLink is
         uint256 minL2GasPriceETH = (fullPubdataPriceETH + _gasPerPubdata - 1) / _gasPerPubdata;
 
         return Math.max(l2GasPrice, minL2GasPriceETH);
+    }
+
+    function _serializeL2Transaction(
+        ForwardL2Request memory _request
+    ) internal pure returns (L2CanonicalTransaction memory transaction) {
+        transaction = L2CanonicalTransaction({
+            txType: uint256(0),
+            from: uint256(0),
+            to: uint256(0),
+            gasLimit: _request.l2GasLimit, // Used in validate l2 transaction
+            gasPerPubdataByteLimit: _request.l2GasPricePerPubdata, // Used in validate l2 transaction
+            maxFeePerGas: uint256(0),
+            maxPriorityFeePerGas: uint256(0),
+            paymaster: uint256(0),
+            nonce: uint256(0),
+            value: uint256(0),
+            reserved: [uint256(0), uint256(0), uint256(0), uint256(0)],
+            data: _request.l2CallData, // Length used in validate l2 transaction
+            signature: new bytes(0),
+            factoryDeps: new uint256[](_request.factoryDeps.length), // Length used in validate l2 transaction
+            paymasterInput: new bytes(0),
+            reservedDynamic: new bytes(0)
+        });
     }
 
     /// @dev Convert arbitrary-length message to the raw l2 log

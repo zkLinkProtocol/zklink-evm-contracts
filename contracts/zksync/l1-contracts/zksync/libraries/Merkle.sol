@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import {UncheckedMath} from "./UncheckedMath.sol";
+import {UncheckedMath} from "../../common/libraries/UncheckedMath.sol";
 
 /// @author Matter Labs
 /// @custom:security-contact security@matterlabs.dev
