@@ -23,6 +23,7 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
     }
 
     constructor(IArbitrator _arbitrator, Inbox _inbox) L1BaseGateway(_arbitrator) {
+        _disableInitializers();
         INBOX = _inbox;
     }
 

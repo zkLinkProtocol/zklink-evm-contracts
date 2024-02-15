@@ -7,10 +7,9 @@ import {LineaGateway} from "./LineaGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
 contract LineaL2Gateway is L2BaseGateway, LineaGateway {
-    constructor(
-        address _zkLink,
-        IMessageService _messageService
-    ) L2BaseGateway(_zkLink) LineaGateway(_messageService) {}
+    constructor(address _zkLink, IMessageService _messageService) L2BaseGateway(_zkLink) LineaGateway(_messageService) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __LineaGateway_init();

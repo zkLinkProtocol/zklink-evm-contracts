@@ -15,7 +15,9 @@ contract EthereumGateway is
     UUPSUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    constructor(IArbitrator _arbitrator, address _zkLink) L1BaseGateway(_arbitrator) L2BaseGateway(_zkLink) {}
+    constructor(IArbitrator _arbitrator, address _zkLink) L1BaseGateway(_arbitrator) L2BaseGateway(_zkLink) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __Ownable_init();

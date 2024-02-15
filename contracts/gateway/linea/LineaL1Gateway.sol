@@ -11,7 +11,9 @@ contract LineaL1Gateway is L1BaseGateway, LineaGateway {
     constructor(
         IArbitrator _arbitrator,
         IMessageService _messageService
-    ) L1BaseGateway(_arbitrator) LineaGateway(_messageService) {}
+    ) L1BaseGateway(_arbitrator) LineaGateway(_messageService) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __LineaGateway_init();

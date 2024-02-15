@@ -21,6 +21,7 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
     }
 
     constructor(address _zkLink, IZkPolygon _messageService) L2BaseGateway(_zkLink) {
+        _disableInitializers();
         MESSAGE_SERVICE = _messageService;
     }
 

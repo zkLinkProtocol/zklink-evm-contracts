@@ -20,6 +20,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
     constructor(address _zkLink) L2BaseGateway(_zkLink) {}
 
     function initialize() external initializer {
+        _disableInitializers();
         __BaseGateway_init();
     }
 

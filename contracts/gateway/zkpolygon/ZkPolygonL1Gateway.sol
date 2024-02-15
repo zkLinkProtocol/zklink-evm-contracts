@@ -25,6 +25,7 @@ contract ZkPolygonL1Gateway is IZkPolygonGateway, L1BaseGateway, BaseGateway {
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
     constructor(IArbitrator _arbitrator, IZkPolygon _messageService) L1BaseGateway(_arbitrator) {
+        _disableInitializers();
         MESSAGE_SERVICE = _messageService;
     }
 

@@ -10,7 +10,9 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
     constructor(
         address _zkLink,
         IScrollMessenger _messageService
-    ) L2BaseGateway(_zkLink) ScrollGateway(_messageService) {}
+    ) L2BaseGateway(_zkLink) ScrollGateway(_messageService) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __ScrollGateway_init();

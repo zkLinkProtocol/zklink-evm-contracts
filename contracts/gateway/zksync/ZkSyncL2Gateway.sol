@@ -23,7 +23,9 @@ contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway, BaseGateway {
         _;
     }
 
-    constructor(address _zkLink) L2BaseGateway(_zkLink) {}
+    constructor(address _zkLink) L2BaseGateway(_zkLink) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __BaseGateway_init();

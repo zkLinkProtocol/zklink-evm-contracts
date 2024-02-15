@@ -11,7 +11,9 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
     constructor(
         IArbitrator _arbitrator,
         IScrollMessenger _messageService
-    ) L1BaseGateway(_arbitrator) ScrollGateway(_messageService) {}
+    ) L1BaseGateway(_arbitrator) ScrollGateway(_messageService) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
         __ScrollGateway_init();

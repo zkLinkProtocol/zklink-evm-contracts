@@ -18,6 +18,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
     constructor(IArbitrator _arbitrator, IMailbox _messageService) L1BaseGateway(_arbitrator) {
+        _disableInitializers();
         MESSAGE_SERVICE = _messageService;
     }
 
