@@ -1,5 +1,6 @@
-const { providers, Wallet, utils } = require('ethers');
+const { JsonRpcProvider, Wallet, AbiCoder, formatEther } = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
+const { estimateGas } = require('./utils/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task } = require('hardhat/config');
 
@@ -7,13 +8,13 @@ require('dotenv').config();
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArgs, hre) => {
   const walletPrivateKey = process.env.DEVNET_PRIVKEY;
-  const l1Provider = new providers.JsonRpcProvider(process.env.L1RPC);
+  const l1Provider = new JsonRpcProvider(process.env.L1RPC);
   const ethereumName = process.env.ETHEREUM;
   const scrollName = process.env.SCROLL;
   const l1Wallet = new Wallet(walletPrivateKey, l1Provider);
 
   const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = utils.formatEther(await l1Wallet.getBalance());
+  const l1WalletBalance = formatEther(await l1Provider.getBalance(l1WalletAddress));
   console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
   const arbitratorAddr = readDeployContract(
@@ -43,9 +44,11 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
    */
   const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   const finalizeMessageGasLimit = 1000000;
-  const adapterParams = hre.ethers.utils.defaultAbiCoder.encode(['uint256'], [finalizeMessageGasLimit]);
+  const { gasValue } = await estimateGas(finalizeMessageGasLimit, l1Wallet, hre);
+  console.log(`The fee: ${gasValue}`);
+  const adapterParams = AbiCoder.defaultAbiCoder().encode(['uint256'], [finalizeMessageGasLimit]);
   let tx = await arbitrator.changeFeeParams(scrollL1GatewayAddr, INIT_FEE_PARAMS, adapterParams, {
-    value: hre.ethers.utils.parseEther('0.001'),
+    value: gasValue,
   });
   console.log(`The tx hash: ${tx.hash} , waiting confirm...`);
   await tx.wait();
