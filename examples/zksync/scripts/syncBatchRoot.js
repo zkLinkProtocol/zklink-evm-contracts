@@ -79,7 +79,7 @@ task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
     const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
     const zkLinkFactory = await hre.ethers.getContractFactory('DummyZkLink');
     const zkLinkCallValue = ethers.parseEther(msgValue);
-    const zkLinkCallData = zkLinkFactory.interface.encodeFunctionData('syncBatchRoot', [number, hash]);
+    const zkLinkCallData = zkLinkFactory.interface.encodeFunctionData('syncBatchRoot', [number, hash, 0]);
     const l2GatewayFactory = await hre.ethers.getContractFactory('ZkSyncL2Gateway');
     const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessage', [
       zkLinkCallValue,
