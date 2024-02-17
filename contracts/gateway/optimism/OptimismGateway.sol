@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IScrollMessenger} from "../../interfaces/scroll/IScrollMessenger.sol";
-import {IScrollGateway} from "../../interfaces/scroll/IScrollGateway.sol";
+import {IOptimismMessenger} from "../../interfaces/optimism/IOptimismMessenger.sol";
+import {IOptimismGateway} from "../../interfaces/optimism/IOptimismGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-abstract contract ScrollGateway is BaseGateway, IScrollGateway {
-    /// @notice Scroll message service on local chain
-    IScrollMessenger public immutable MESSAGE_SERVICE;
+abstract contract OptimismGateway is BaseGateway, IOptimismGateway {
+    /// @notice Optimism message service on local chain
+    IOptimismMessenger public immutable MESSAGE_SERVICE;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -22,11 +22,17 @@ abstract contract ScrollGateway is BaseGateway, IScrollGateway {
         _;
     }
 
-    constructor(IScrollMessenger _messageService) {
+    /// @dev Modifier to make sure the original sender is gateway on remote chain.
+    modifier onlyRemoteGateway() {
+        require(MESSAGE_SERVICE.xDomainMessageSender() == remoteGateway, "Not remote gateway");
+        _;
+    }
+
+    constructor(IOptimismMessenger _messageService) {
         MESSAGE_SERVICE = _messageService;
     }
 
-    function __ScrollGateway_init() internal onlyInitializing {
+    function __OptimismGateway_init() internal onlyInitializing {
         __BaseGateway_init();
     }
 }
