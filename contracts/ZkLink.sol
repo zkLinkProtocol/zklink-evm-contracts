@@ -391,9 +391,11 @@ contract ZkLink is
         bytes32 _l2LogsRootHash,
         uint256 _forwardEthAmount
     ) external payable onlyGateway {
-        require(_batchNumber > totalBatchesExecuted, "Invalid batch number");
         require(msg.value == _forwardEthAmount, "Invalid forward amount");
-        totalBatchesExecuted = _batchNumber;
+        // Allows repeated sending of the forward amount of the batch
+        if (_batchNumber > totalBatchesExecuted) {
+            totalBatchesExecuted = _batchNumber;
+        }
         l2LogsRootHashes[_batchNumber] = _l2LogsRootHash;
         emit SyncBatchRoot(_batchNumber, _l2LogsRootHash, _forwardEthAmount);
     }
