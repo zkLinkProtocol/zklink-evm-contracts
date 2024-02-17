@@ -34,7 +34,8 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
 
     function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable {
         bytes memory callData = abi.encode(msg.value, _newTotalSyncedPriorityTxs);
-        gateway.sendMessage{value: msg.value}(msg.value, callData);
+        uint256 coinbaseFee = _getBalance();
+        gateway.sendMessage{value: msg.value + coinbaseFee}(msg.value, callData);
     }
 
     function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external onlyGateway {
@@ -43,5 +44,11 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
 
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
         emit ReceiveL2TxHash(_l2TxHash, _primaryChainL2TxHash);
+    }
+
+    receive () external payable {}
+
+    function _getBalance() internal view returns (uint256) {
+        return address(this).balance;
     }
 }
