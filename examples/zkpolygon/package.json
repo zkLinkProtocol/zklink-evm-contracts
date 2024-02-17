@@ -1,0 +1,15 @@
+{
+  "name": "zksync-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@maticnetwork/maticjs": "^3.8.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "ethers": "^6.10.0",
+    "hardhat": "^2.19.5"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}
