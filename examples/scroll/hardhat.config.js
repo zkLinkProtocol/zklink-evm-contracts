@@ -1,9 +1,8 @@
-require('@nomiclabs/hardhat-ethers');
-require('./scripts/1_initConfig');
-require('./scripts/2_syncL2Requests');
-require('./scripts/3_syncBatchRoot');
-require('./scripts/4_setValidator');
-require('./scripts/5_changeFeeParams');
+require('@nomicfoundation/hardhat-toolbox');
+require('./scripts/syncL2Requests');
+require('./scripts/syncBatchRoot');
+require('./scripts/setValidator');
+require('./scripts/changeFeeParams');
 
 const BaseConfig = require('../../hardhat.base.config');
 
