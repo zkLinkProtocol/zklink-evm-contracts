@@ -3,6 +3,7 @@
   "LINEA": {},
   "ZKPOLYGON": {},
   "ARBITRUM": {},
+  "OPTIMISM": {},
   "ZKSYNCTEST": {
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
@@ -53,6 +54,19 @@
       "netName": "SEPOLIA",
       "contractName": "ArbitrumL1Gateway",
       "constructParams": ["0xaAe29B0366299461418F5324a79Afc425BE5ae21"],
+      "initializeParams": []
+    }
+  },
+  "OPTIMISMTEST": {
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "SEPOLIA",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x58Cc85b8D04EA49cC6DBd3CbFFd00B4B8D6cb3ef"],
       "initializeParams": []
     }
   }

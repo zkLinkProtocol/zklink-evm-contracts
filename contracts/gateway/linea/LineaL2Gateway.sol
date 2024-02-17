@@ -21,7 +21,7 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
         require(msg.value == value + coinbaseFee, "Invalid fee");
 
         bytes memory message = abi.encodeCall(ILineaGateway.claimMessageCallback, (value, callData));
-        MESSAGE_SERVICE.sendMessage{value: msg.value}(address(remoteGateway), coinbaseFee, message);
+        MESSAGE_SERVICE.sendMessage{value: msg.value}(remoteGateway, coinbaseFee, message);
     }
 
     function claimMessageCallback(
