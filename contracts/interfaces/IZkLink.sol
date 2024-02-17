@@ -12,7 +12,8 @@ interface IZkLink {
     /// @notice Receive batch root from primary chain
     /// @param _batchNumber The batch number
     /// @param _l2LogsRootHash The L2 to L1 log root hash
-    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external;
+    /// @param _forwardEthAmount The forward eth amount
+    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash, uint256 _forwardEthAmount) external payable;
 
     /// @notice Receive l2 tx hash from primary chain
     /// @param _l2TxHash The l2 tx hash on local chain

@@ -17,8 +17,9 @@ import {Merkle} from "./zksync/l1-contracts/zksync/libraries/Merkle.sol";
 import {TransactionValidator} from "./zksync/l1-contracts/zksync/libraries/TransactionValidator.sol";
 import {L2Log, L2Message, PubdataPricingMode, FeeParams, SecondaryChainSyncStatus} from "./zksync/l1-contracts/zksync/Storage.sol";
 import {UncheckedMath} from "./zksync/l1-contracts/common/libraries/UncheckedMath.sol";
+import {UnsafeBytes} from "./zksync/l1-contracts/common/libraries/UnsafeBytes.sol";
 import {REQUIRED_L2_GAS_PRICE_PER_PUBDATA, MAX_NEW_FACTORY_DEPS, L1_GAS_PER_PUBDATA_BYTE, L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH} from "./zksync/l1-contracts/zksync/Config.sol";
-import {L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR, L2_BOOTLOADER_ADDRESS} from "./zksync/l1-contracts/common/L2ContractAddresses.sol";
+import {L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR, L2_BOOTLOADER_ADDRESS, L2_ETH_TOKEN_SYSTEM_CONTRACT_ADDR} from "./zksync/l1-contracts/common/L2ContractAddresses.sol";
 import {IGetters} from "./zksync/l1-contracts/zksync/interfaces/IGetters.sol";
 
 /// @title ZkLink contract
@@ -63,6 +64,12 @@ contract ZkLink is
     uint256 public totalValidatorForwardFee;
     /// @dev The total forward fee withdrawn by validator
     uint256 public totalValidatorForwardFeeWithdrawn;
+    /// @dev A mapping L2 batch number => message number => flag.
+    /// @dev The L2 -> L1 log is sent for every withdrawal, so this mapping is serving as
+    /// a flag to indicate that the message was already processed.
+    /// @dev Used to indicate that eth withdrawal was already processed
+    mapping(uint256 l2BatchNumber => mapping(uint256 l2ToL1MessageNumber => bool isFinalized))
+        public isEthWithdrawalFinalized;
 
     /// @notice Gateway init
     event InitGateway(IL2Gateway gateway);
@@ -79,11 +86,15 @@ contract ZkLink is
     /// @notice Emitted send sync status to primary chain.
     event SyncL2Requests(uint256 totalSyncedPriorityTxs, bytes32 syncHash, uint256 forwardEthAmount);
     /// @notice Emitted when receive batch root from primary chain.
-    event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash);
+    event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash, uint256 forwardEthAmount);
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
     event WithdrawForwardFee(uint256 amount);
+    /// @notice Emitted when the withdrawal is finalized on L1 and funds are released.
+    /// @param to The address to which the funds were sent
+    /// @param amount The amount of funds that were sent
+    event EthWithdrawalFinalized(address indexed to, uint256 amount);
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
@@ -278,6 +289,33 @@ contract ZkLink is
         emit NewPriorityRequest(request.txId, request);
     }
 
+    function finalizeEthWithdrawal(
+        uint256 _l2BatchNumber,
+        uint256 _l2MessageIndex,
+        uint16 _l2TxNumberInBatch,
+        bytes calldata _message,
+        bytes32[] calldata _merkleProof
+    ) external nonReentrant {
+        require(!isEthWithdrawalFinalized[_l2BatchNumber][_l2MessageIndex], "jj");
+
+        L2Message memory l2ToL1Message = L2Message({
+            txNumberInBatch: _l2TxNumberInBatch,
+            sender: L2_ETH_TOKEN_SYSTEM_CONTRACT_ADDR,
+            data: _message
+        });
+
+        (address _l1Gateway, uint256 _amount, address _l1WithdrawReceiver) = _parseL2WithdrawalMessage(_message);
+        require(_l1Gateway == gateway.getRemoteGateway(), "rg");
+
+        bool proofValid = proveL2MessageInclusion(_l2BatchNumber, _l2MessageIndex, l2ToL1Message, _merkleProof);
+        require(proofValid, "pi"); // Failed to verify that withdrawal was actually initialized on L2
+
+        isEthWithdrawalFinalized[_l2BatchNumber][_l2MessageIndex] = true;
+        _withdrawFunds(_l1WithdrawReceiver, _amount);
+
+        emit EthWithdrawalFinalized(_l1WithdrawReceiver, _amount);
+    }
+
     function proveL2MessageInclusion(
         uint256 _batchNumber,
         uint256 _index,
@@ -348,11 +386,16 @@ contract ZkLink is
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
     }
 
-    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external onlyGateway {
+    function syncBatchRoot(
+        uint256 _batchNumber,
+        bytes32 _l2LogsRootHash,
+        uint256 _forwardEthAmount
+    ) external payable onlyGateway {
         require(_batchNumber > totalBatchesExecuted, "Invalid batch number");
+        require(msg.value == _forwardEthAmount, "Invalid forward amount");
         totalBatchesExecuted = _batchNumber;
         l2LogsRootHashes[_batchNumber] = _l2LogsRootHash;
-        emit SyncBatchRoot(_batchNumber, _l2LogsRootHash);
+        emit SyncBatchRoot(_batchNumber, _l2LogsRootHash, _forwardEthAmount);
     }
 
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
@@ -454,5 +497,41 @@ contract ZkLink is
         bytes32 actualRootHash = l2LogsRootHashes[_batchNumber];
 
         return actualRootHash == calculatedRootHash;
+    }
+
+    /// @dev Decode the withdraw message that came from L2
+    function _parseL2WithdrawalMessage(
+        bytes memory _message
+    ) internal pure returns (address l1Gateway, uint256 amount, address l1Receiver) {
+        // We check that the message is long enough to read the data.
+        // Please note that there are two versions of the message:
+        // 1. The message that is sent by `withdraw(address _l1Receiver)`
+        // It should be equal to the length of the bytes4 function signature + address l1Receiver + uint256 amount = 4 + 20 + 32 = 56 (bytes).
+        // 2. The message that is sent by `withdrawWithMessage(address _l1Receiver, bytes calldata _additionalData)`
+        // It should be equal to the length of the following:
+        // bytes4 function signature + address l1Receiver + uint256 amount + address l2Sender + bytes _additionalData =
+        // = 4 + 20 + 32 + 32 + _additionalData.length >= 68 (bytes).
+
+        // So the data is expected to be at least 56 bytes long.
+        require(_message.length == 108, "pm");
+
+        (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
+        require(bytes4(functionSignature) == this.finalizeEthWithdrawal.selector, "is");
+
+        (l1Gateway, offset) = UnsafeBytes.readAddress(_message, offset);
+        (amount, offset) = UnsafeBytes.readUint256(_message, offset);
+        // The additional data is l1 receiver address
+        (l1Receiver, offset) = UnsafeBytes.readAddress(_message, offset + 32);
+    }
+
+    /// @notice Transfer ether from the contract to the receiver
+    /// @dev Reverts only if the transfer call failed
+    function _withdrawFunds(address _to, uint256 _amount) internal {
+        bool callSuccess;
+        // Low-level assembly call, to avoid any memory copying (save gas)
+        assembly {
+            callSuccess := call(gas(), _to, _amount, 0, 0, 0, 0)
+        }
+        require(callSuccess, "pz");
     }
 }
