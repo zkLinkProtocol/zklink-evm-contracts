@@ -1,0 +1,14 @@
+{
+  "name": "linea-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@consensys/linea-sdk": "^0.2.1",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "ethers": "^6.11.1"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}

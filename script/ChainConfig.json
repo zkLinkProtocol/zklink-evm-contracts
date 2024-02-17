@@ -1,12 +1,8 @@
 {
-  "SCROLL": {
-  },
-  "LINEA": {
-  },
-  "ZKPOLYGON": {
-  },
-  "ARBITRUM": {
-  },
+  "SCROLL": {},
+  "LINEA": {},
+  "ZKPOLYGON": {},
+  "ARBITRUM": {},
   "ZKSYNCTEST": {
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
@@ -33,8 +29,20 @@
       "initializeParams": []
     }
   },
-  "ZKPOLYGONTEST": {
+  "LINEATEST": {
+    "l2Gateway": {
+      "contractName": "LineaL2Gateway",
+      "constructParams": ["0xC499a572640B64eA1C8c194c43Bc3E19940719dC"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "GOERLI",
+      "contractName": "LineaL1Gateway",
+      "constructParams": ["0x70BaD09280FD342D02fe64119779BC1f0791BAC2"],
+      "initializeParams": []
+    }
   },
+  "ZKPOLYGONTEST": {},
   "ARBITRUMTEST": {
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
