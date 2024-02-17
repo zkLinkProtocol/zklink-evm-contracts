@@ -11,7 +11,7 @@ import {IZkLink} from "../interfaces/IZkLink.sol";
 contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     IL2Gateway public gateway;
 
-    event ReceiveBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash);
+    event ReceiveBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash, uint256 forwardEthAmount);
     event ReceiveL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
 
     modifier onlyGateway() {
@@ -37,8 +37,12 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
         gateway.sendMessage{value: msg.value}(msg.value, callData);
     }
 
-    function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash) external onlyGateway {
-        emit ReceiveBatchRoot(_batchNumber, _l2LogsRootHash);
+    function syncBatchRoot(
+        uint256 _batchNumber,
+        bytes32 _l2LogsRootHash,
+        uint256 _forwardEthAmount
+    ) external payable onlyGateway {
+        emit ReceiveBatchRoot(_batchNumber, _l2LogsRootHash, _forwardEthAmount);
     }
 
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
