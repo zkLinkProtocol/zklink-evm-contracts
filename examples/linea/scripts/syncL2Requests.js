@@ -63,21 +63,15 @@ task('syncL2Requests', 'Send sync point to arbitrator')
       .getContract('0xC499a572640B64eA1C8c194c43Bc3E19940719dC', lineaL2Contract.signer)
       .minimumFeeInWei();
     console.log(`The minimum fee: ${formatEther(minimumFee.toBigInt())} ether`);
-    await l2Wallet.sendTransaction({
-      to: zkLinkAddr,
-      value: minimumFee.toBigInt(),
-    });
-    console.log(`Transfer ${minimumFee.toBigInt()} ether to zkLink...`);
 
     // send tx
     const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
     let tx = await zkLink.syncL2Requests(txs, {
-      value: parseEther(msgValue),
+      value: parseEther(msgValue) + minimumFee.toBigInt(),
     });
     await tx.wait();
     console.log(`The tx hash: ${tx.hash}`);
-    // const txHash = "0x0805ab212930572fd6d6d7fc101a078cf7561bde73ea769ac6e67b8a2b772321";
 
     /**
      * Query the message informations on L2 via txHash.
