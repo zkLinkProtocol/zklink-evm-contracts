@@ -53,7 +53,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   console.log(`The current block number: ${blockNumber}`);
   const l2LogsRootHash = keccak256(toUtf8Bytes(`L2 logs root hash ${blockNumber}`));
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
-  const callData = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash]);
+  const callData = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The call data: ${callData}`);
 
   // forward message to L2
