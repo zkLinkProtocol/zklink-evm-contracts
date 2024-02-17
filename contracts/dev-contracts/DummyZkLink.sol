@@ -46,7 +46,7 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
         emit ReceiveL2TxHash(_l2TxHash, _primaryChainL2TxHash);
     }
 
-    receive () external payable {}
+    receive() external payable {}
 
     function _getBalance() internal view returns (uint256) {
         return address(this).balance;
