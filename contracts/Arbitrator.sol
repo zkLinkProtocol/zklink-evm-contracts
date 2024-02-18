@@ -53,6 +53,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    /// @notice Return the message hash at a position stored in queue
+    function getMessageHash(IL1Gateway _gateway, uint256 _index) external view returns (bytes32 messageHash) {
+        if (_gateway == primaryChainGateway) {
+            messageHash = primaryChainMessageHashQueue.at(_index);
+        } else {
+            messageHash = secondaryChainMessageHashQueues[_gateway].at(_index);
+        }
+    }
+
     /// @dev Set primary chain
     function setPrimaryChainGateway(IL1Gateway _gateway) external onlyOwner {
         require(address(primaryChainGateway) == address(0), "Duplicate init gateway");
