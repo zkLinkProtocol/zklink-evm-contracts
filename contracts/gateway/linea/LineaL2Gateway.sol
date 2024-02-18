@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IMessageService} from "../../interfaces/linea/IMessageService.sol";
+import {IL2MessageService} from "../../interfaces/linea/IL2MessageService.sol";
 import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
 import {LineaGateway} from "./LineaGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
 contract LineaL2Gateway is L2BaseGateway, LineaGateway {
-    constructor(address _zkLink, IMessageService _messageService) L2BaseGateway(_zkLink) LineaGateway(_messageService) {
+    constructor(
+        address _zkLink,
+        IL2MessageService _messageService
+    ) L2BaseGateway(_zkLink) LineaGateway(_messageService) {
         _disableInitializers();
     }
 
@@ -16,11 +19,12 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
     }
 
     function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {
-        // transfer no fee to destination chain
-        require(msg.value == value, "Invalid value");
+        // msg value should include fee
+        uint256 coinbaseFee = IL2MessageService(address(MESSAGE_SERVICE)).minimumFeeInWei();
+        require(msg.value == value + coinbaseFee, "Invalid value");
 
         bytes memory message = abi.encodeCall(ILineaGateway.claimMessageCallback, (value, callData));
-        MESSAGE_SERVICE.sendMessage{value: msg.value}(remoteGateway, 0, message);
+        MESSAGE_SERVICE.sendMessage{value: msg.value}(remoteGateway, coinbaseFee, message);
     }
 
     function claimMessageCallback(

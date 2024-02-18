@@ -1,6 +1,6 @@
-const { JsonRpcProvider, Wallet, formatEther, parseEther } = require('ethers');
+const { JsonRpcProvider, Wallet, formatEther } = require('ethers');
 const { LineaSDK, OnChainMessageStatus } = require('@consensys/linea-sdk');
-const { readDeployContract, getLogName } = require('../../../script/utils');
+const { readDeployContract } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task, types } = require('hardhat/config');
 
@@ -11,12 +11,10 @@ function sleep(ms) {
 }
 
 task('syncL2Requests', 'Send sync point to arbitrator')
-  .addParam('value', 'Send msg value in ether', 0, types.string, true)
   .addParam('txs', 'New sync point', 100, types.int, true)
   .setAction(async (taskArgs, hre) => {
-    const msgValue = taskArgs.value;
     const txs = taskArgs.txs;
-    console.log(`The sync point: value: ${msgValue} ether, txs: ${txs}`);
+    console.log(`The sync point: ${txs}`);
 
     const walletPrivateKey = process.env.DEVNET_PRIVKEY;
     const l1Provider = new JsonRpcProvider(process.env.L1RPC);
@@ -30,11 +28,11 @@ task('syncL2Requests', 'Send sync point to arbitrator')
       l2RpcUrl: process.env.L2RPC ?? '',
       l1SignerPrivateKey: walletPrivateKey ?? '',
       l2SignerPrivateKey: walletPrivateKey ?? '',
-      network: 'linea-goerli',
+      network: ethereumName === 'GOERLI' ? 'linea-goerli' : 'linea-mainnet',
       mode: 'read-write',
     });
-    const lineaL1Contract = sdk.getL1Contract();
     const lineaL2Contract = sdk.getL2Contract();
+    const lineaL1ClaimingService = sdk.getL1ClaimingService();
 
     const l1WalletAddress = await l1Wallet.getAddress();
     const l1WalletBalance = formatEther(await l1Provider.getBalance(l1WalletAddress));
@@ -50,28 +48,34 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     }
     console.log(`The zkLink address: ${zkLinkAddr}`);
 
-    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, lineaName);
-    const lineaL1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
-    if (lineaL1GatewayAddr === undefined) {
-      console.log('linea l1 gateway address not exist');
+    const lineaL2GatewayAddr = readDeployContract(
+      logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
+      logName.DEPLOY_GATEWAY,
+      lineaName,
+    );
+    if (lineaL2GatewayAddr === undefined) {
+      console.log('linea l2 gateway address not exist');
       return;
     }
-    console.log(`The linea l1 gateway address: ${lineaL1GatewayAddr}`);
+    console.log(`The linea l2 gateway address: ${lineaL2GatewayAddr}`);
+    const l2Gateway = await hre.ethers.getContractAt('LineaL2Gateway', lineaL2GatewayAddr, l2Wallet);
+    const l2MessageServiceAddress = await l2Gateway.MESSAGE_SERVICE();
 
     // Transfer ETH to ZKLink as a fee
     const minimumFee = await lineaL2Contract
-      .getContract('0xC499a572640B64eA1C8c194c43Bc3E19940719dC', lineaL2Contract.signer)
+      .getContract(l2MessageServiceAddress, lineaL2Contract.signer)
       .minimumFeeInWei();
     console.log(`The minimum fee: ${formatEther(minimumFee.toBigInt())} ether`);
 
     // send tx
-    const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
+    const zkLink = await hre.ethers.getContractAt('DummyZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
     let tx = await zkLink.syncL2Requests(txs, {
-      value: parseEther(msgValue) + minimumFee.toBigInt(),
+      value: minimumFee.toBigInt(),
     });
-    await tx.wait();
     console.log(`The tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The tx confirmed`);
 
     /**
      * Query the message informations on L2 via txHash.
@@ -92,18 +96,13 @@ task('syncL2Requests', 'Send sync point to arbitrator')
       /**
        * Query the transaction status on L1 via messageHash.
        */
-      const messageStatus = await lineaL1Contract.getMessageStatus(message.messageHash);
+      const messageStatus = await lineaL1ClaimingService.getMessageStatus(message.messageHash);
       console.log(`The message status: ${messageStatus}`);
       if (messageStatus === OnChainMessageStatus.CLAIMABLE) {
-        const lineaL1Gateway = await hre.ethers.getContractAt('LineaL1Gateway', lineaL1GatewayAddr, l1Wallet);
-        const tx = await lineaL1Gateway.claimMessage(
-          message.value.toNumber(),
-          message.calldata,
-          message.messageNonce.toNumber(),
-        );
+        const tx = await lineaL1ClaimingService.claimMessage(message);
         console.log(`The tx hash: ${tx.hash}`);
-        const rec = await tx.wait();
-        console.log(`The tx receipt: ${JSON.stringify(rec)}`);
+        await tx.wait();
+        console.log(`The tx confirmed}`);
         break;
       }
       await sleep(60 * 1000 * 30);

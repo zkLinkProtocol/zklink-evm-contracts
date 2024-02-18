@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 interface IZkLink {
     /// @notice Send l2 requests sync status to primary chain
     /// @param _newTotalSyncedPriorityTxs New sync point
-    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external;
+    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable;
 
     /// @notice Receive batch root from primary chain
     /// @param _batchNumber The batch number
