@@ -16,12 +16,11 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
     }
 
     function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {
-        // msg value should include fee
-        uint256 coinbaseFee = MESSAGE_SERVICE.minimumFeeInWei();
-        require(msg.value == value + coinbaseFee, "Invalid fee");
+        // transfer no fee to destination chain
+        require(msg.value == value, "Invalid value");
 
         bytes memory message = abi.encodeCall(ILineaGateway.claimMessageCallback, (value, callData));
-        MESSAGE_SERVICE.sendMessage{value: msg.value}(remoteGateway, coinbaseFee, message);
+        MESSAGE_SERVICE.sendMessage{value: msg.value}(remoteGateway, 0, message);
     }
 
     function claimMessageCallback(
