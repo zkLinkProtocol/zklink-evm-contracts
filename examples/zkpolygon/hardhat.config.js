@@ -1,4 +1,4 @@
-require('@nomicfoundation/hardhat-toolbox');
+require('@nomiclabs/hardhat-ethers');
 require('./scripts/syncL2Requests');
 require('./scripts/syncBatchRoot');
 require('./scripts/setValidator');
