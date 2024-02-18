@@ -27,14 +27,18 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    function getGateway() external view returns (IL2Gateway) {
+        return gateway;
+    }
+
     function setGateway(IL2Gateway _gateway) external {
         require(address(gateway) == address(0), "Duplicate init gateway");
         gateway = _gateway;
     }
 
-    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external {
+    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable {
         bytes memory callData = abi.encode(0, _newTotalSyncedPriorityTxs);
-        gateway.sendMessage{value: 0}(0, callData);
+        gateway.sendMessage{value: msg.value}(0, callData);
     }
 
     function syncBatchRoot(

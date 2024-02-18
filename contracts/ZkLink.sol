@@ -358,7 +358,7 @@ contract ZkLink is
         return _proveL2LogInclusion(_l2BatchNumber, _l2MessageIndex, l2Log, _merkleProof);
     }
 
-    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external onlyValidator {
+    function syncL2Requests(uint256 _newTotalSyncedPriorityTxs) external payable onlyValidator {
         // Check newTotalSyncedPriorityTxs
         require(
             _newTotalSyncedPriorityTxs <= totalPriorityTxs && _newTotalSyncedPriorityTxs > totalSyncedPriorityTxs,
@@ -381,7 +381,7 @@ contract ZkLink is
             IZkSync.syncL2Requests,
             (gateway.getRemoteGateway(), _newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount)
         );
-        gateway.sendMessage{value: forwardAmount}(forwardAmount, callData);
+        gateway.sendMessage{value: msg.value + forwardAmount}(forwardAmount, callData);
 
         emit SyncL2Requests(_newTotalSyncedPriorityTxs, currentSyncStatus.hash, forwardAmount);
     }

@@ -7,12 +7,10 @@ const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
 task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
-  .addParam('value', 'Send msg value in ether', 0, types.string, true)
   .addParam('txs', 'New sync point', 100, types.int, true)
   .setAction(async (taskArgs, hre) => {
-    const msgValue = taskArgs.value;
     const txs = taskArgs.txs;
-    console.log(`The sync point: value: ${msgValue} ether, txs: ${txs}`);
+    console.log(`The sync point: ${txs}`);
 
     const walletPrivateKey = process.env.DEVNET_PRIVKEY;
     const l1Provider = new Provider(process.env.L1RPC);
@@ -51,7 +49,7 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
 
     const zkLink = await hre.ethers.getContractAt('DummyZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
-    const l2Tx = await zkLink.syncL2Requests(txs, { value: ethers.parseEther(msgValue) });
+    const l2Tx = await zkLink.syncL2Requests(txs);
     const txHash = l2Tx.hash;
     console.log(`The l2 tx hash: ${txHash}`);
     // const txHash = "0xea2da9a0bf26de481403976a49dab1cb13362a609370d8b175f52cd9c0e46bc3"
@@ -71,8 +69,8 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
      * Now that its confirmed and not executed, we can execute our message in its outbox entry.
      */
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-    const callData = abiCoder.encode(['uint256', 'uint256'], [ethers.parseEther(msgValue), txs]);
-    const message = abiCoder.encode(['uint256', 'bytes'], [ethers.parseEther(msgValue), callData]);
+    const callData = abiCoder.encode(['uint256', 'uint256'], [0, txs]);
+    const message = abiCoder.encode(['uint256', 'bytes'], [0, callData]);
     console.log(`The message sent from L2 to L1: ${message}`);
     const l1Gateway = await hre.ethers.getContractAt('ZkSyncL1Gateway', l1GatewayAddr, l1Wallet);
     const l1Tx = await l1Gateway.finalizeMessage(l1BatchNumber, proof.id, l1BatchTxIndex, message, proof.proof);

@@ -23,11 +23,9 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
     l2RpcUrl: process.env.L2RPC ?? '',
     l1SignerPrivateKey: walletPrivateKey ?? '',
     l2SignerPrivateKey: walletPrivateKey ?? '',
-    network: 'linea-goerli',
+    network: ethereumName === 'GOERLI' ? 'linea-goerli' : 'linea-mainnet',
     mode: 'read-write',
   });
-  // const l1ClaimingService = sdk.getL1ClaimingService();
-  // console.log(`The l1ClaimingService Address: ${await l1ClaimingService.getAddress()}`);
   const lineaL1Contract = sdk.getL1Contract();
   const lineaL2Contract = sdk.getL2Contract();
 
@@ -89,8 +87,9 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
   const adapterParams = '0x';
   let tx = await arbitrator.forwardMessage(lineaL1GatewayAddr, 0, executeCalldata, adapterParams);
-  await tx.wait();
   console.log(`The tx hash: ${tx.hash}`);
+  await tx.wait();
+  console.log(`The tx confirmed`);
   // const txHash = "0x60eda85e11f963c5317559999bd7a54ae4aa1086e8eff0e306523f9f3947bd7c";
 
   /**
@@ -115,18 +114,13 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
     const messageStatus = await lineaL2Contract.getMessageStatus(message.messageHash);
     console.log(`The message status: ${messageStatus}`);
     if (messageStatus === OnChainMessageStatus.CLAIMABLE) {
-      const lineaL2Gateway = await hre.ethers.getContractAt('LineaL2Gateway', lineaL2GatewayAddr, l2Wallet);
-      const tx = await lineaL2Gateway.claimMessage(
-        message.value.toNumber(),
-        message.calldata,
-        message.messageNonce.toNumber(),
-      );
+      const tx = await lineaL2Contract.claim(message);
       console.log(`The tx hash: ${tx.hash}`);
-      const rec = await tx.wait();
-      console.log(`The tx receipt: ${rec}`);
+      await tx.wait();
+      console.log(`The tx confirmed`);
       break;
     }
-    await sleep(60 * 1000 * 10);
+    await sleep(60 * 1000);
   }
   console.log('Done');
 

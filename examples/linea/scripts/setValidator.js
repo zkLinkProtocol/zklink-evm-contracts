@@ -30,7 +30,7 @@ task('setValidator', 'Set validator for zkLink')
       l2RpcUrl: process.env.L2RPC ?? '',
       l1SignerPrivateKey: walletPrivateKey ?? '',
       l2SignerPrivateKey: walletPrivateKey ?? '',
-      network: 'linea-goerli',
+      network: ethereumName === 'GOERLI' ? 'linea-goerli' : 'linea-mainnet',
       mode: 'read-write',
     });
     const lineaL1Contract = sdk.getL1Contract();
@@ -77,8 +77,9 @@ task('setValidator', 'Set validator for zkLink')
     const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
     const adapterParams = '0x';
     let tx = await arbitrator.setValidator(lineaL1GatewayAddr, validatorAddr, isActive, adapterParams);
-    await tx.wait();
     console.log(`The tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The tx confirmed`);
 
     /**
      * Query the transaction status on L2 via messageHash.
@@ -92,18 +93,13 @@ task('setValidator', 'Set validator for zkLink')
       const messageStatus = await lineaL2Contract.getMessageStatus(message.messageHash);
       console.log(`The message status: ${messageStatus}`);
       if (messageStatus === OnChainMessageStatus.CLAIMABLE) {
-        const lineaL2Gateway = await hre.ethers.getContractAt('LineaL2Gateway', lineaL2GatewayAddr, l2Wallet);
-        const tx = await lineaL2Gateway.claimMessage(
-          message.value.toNumber(),
-          message.calldata,
-          message.messageNonce.toNumber(),
-        );
+        const tx = await lineaL2Contract.claim(message);
         console.log(`The tx hash: ${tx.hash}`);
-        const rec = await tx.wait();
-        console.log(`The tx receipt: ${JSON.stringify(rec)}`);
+        await tx.wait();
+        console.log(`The tx confirmed`);
         break;
       }
-      await sleep(60 * 1000 * 10);
+      await sleep(60 * 1000);
     }
     console.log('Done');
   });

@@ -35,10 +35,4 @@ abstract contract LineaGateway is BaseGateway, ILineaGateway {
     function __LineaGateway_init() internal onlyInitializing {
         __BaseGateway_init();
     }
-
-    function claimMessage(uint256 _value, bytes calldata _callData, uint256 _nonce) external nonReentrant {
-        // `claimMessageCallback` will be called within `claimMessage`
-        // no fee on remote chain
-        MESSAGE_SERVICE.claimMessage(remoteGateway, address(this), 0, _value, payable(msg.sender), _callData, _nonce);
-    }
 }
