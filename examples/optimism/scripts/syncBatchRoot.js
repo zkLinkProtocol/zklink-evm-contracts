@@ -80,10 +80,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const minGasLimit = 200000;
   const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
   console.log('Prepare to forward the message to L2...');
-  let tx = await arbitrator.forwardMessage(optimismL1GatewayAddr, 0, executeCalldata, adapterParams, {
-    maxFeePerGas: 10000000000,
-    maxPriorityFeePerGas: 5000000000,
-  });
+  let tx = await arbitrator.forwardMessage(optimismL1GatewayAddr, 0, executeCalldata, adapterParams);
   const txHash = tx.hash;
   await tx.wait();
   console.log(`The tx hash: ${txHash}`);

@@ -66,11 +66,7 @@ task('setValidator', 'Set validator for zkLink')
     const minGasLimit = 200000;
     const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
     console.log('Prepare to forward the message to L2...');
-    let tx = await arbitrator.setValidator(optimismL1GatewayAddr, validatorAddr, isActive, adapterParams, {
-      maxFeePerGas: 200000000000, // 200 Gwei
-      maxPriorityFeePerGas: 5000000000, // 5 Gwei
-      gasLimit: 5000000,
-    });
+    let tx = await arbitrator.setValidator(optimismL1GatewayAddr, validatorAddr, isActive, adapterParams);
     const txHash = tx.hash;
     await tx.wait();
     console.log(`The tx hash: ${txHash}`);

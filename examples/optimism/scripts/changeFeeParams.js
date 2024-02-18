@@ -60,11 +60,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
   const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   console.log('Prepare to forward the message to L2...');
-  let tx = await arbitrator.changeFeeParams(optimismL1GatewayAddr, INIT_FEE_PARAMS, adapterParams, {
-    maxFeePerGas: 200000000000, // 200 Gwei
-    maxPriorityFeePerGas: 5000000000, // 5 Gwei
-    gasLimit: 5000000,
-  });
+  let tx = await arbitrator.changeFeeParams(optimismL1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
   const txHash = tx.hash;
   await tx.wait();
   console.log(`The tx hash: ${txHash}`);
