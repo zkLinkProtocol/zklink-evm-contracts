@@ -1,4 +1,4 @@
-const optimism = require('@eth-optimism/sdk');
+const manta = require('@eth-optimism/sdk');
 const ethers = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
@@ -10,14 +10,27 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
   const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
   const ethereumName = process.env.ETHEREUM;
-  const optimismName = process.env.OPTIMISM;
+  const mantaName = process.env.MANTA;
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
-  const messenger = new optimism.CrossChainMessenger({
-    l1ChainId: 11155111, // 11155111 for Sepolia, 1 for Ethereum
-    l2ChainId: 11155420, // 11155420 for OP Sepolia, 10 for OP Mainnet
+  const messenger = new manta.CrossChainMessenger({
+    l1ChainId: 5, // 5 for Goerli, 1 for Ethereum
+    l2ChainId: 3441005, // 3441005 for Manta Pacific Testnet, 169 for Manta Pacific Mainnet
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
+    bedrock: true,
+    contracts: {
+      l1: {
+        StateCommitmentChain: '0x0000000000000000000000000000000000000000',
+        BondManager: '0x0000000000000000000000000000000000000000',
+        CanonicalTransactionChain: '0x0000000000000000000000000000000000000000',
+        AddressManager: '0x0AaeDFF2961D05021832cA093cf9409eDF5ECa8C',
+        L1CrossDomainMessenger: '0x7Ad11bB9216BC9Dc4CBd488D7618CbFD433d1E75',
+        L1StandardBridge: '0x4638aC6b5727a8b9586D3eba5B44Be4b74ED41Fc',
+        OptimismPortal: '0x7FD7eEA37c53ABf356cc80e71144D62CD8aF27d3',
+        L2OutputOracle: '0x8553D4d201ef97F2b76A28F5E543701b25e55B1b',
+      },
+    },
   });
 
   const l1WalletAddress = await l1Wallet.getAddress();
@@ -35,46 +48,42 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   }
   console.log(`The arbitrator address: ${arbitratorAddr}`);
 
-  const zkLinkAddr = readDeployContract(
-    logName.DEPLOY_ZKLINK_LOG_PREFIX,
-    logName.DEPLOY_LOG_ZKLINK_PROXY,
-    optimismName,
-  );
+  const zkLinkAddr = readDeployContract(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY, mantaName);
   if (zkLinkAddr === undefined) {
     console.log('zkLink address not exist');
     return;
   }
   console.log(`The zkLink address: ${zkLinkAddr}`);
 
-  const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, optimismName);
-  const optimismL1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
-  if (optimismL1GatewayAddr === undefined) {
-    console.log('optimism l1 gateway address not exist');
+  const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, mantaName);
+  const mantaL1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+  if (mantaL1GatewayAddr === undefined) {
+    console.log('manta l1 gateway address not exist');
     return;
   }
-  console.log(`The optimism l1 gateway address: ${optimismL1GatewayAddr}`);
+  console.log(`The manta l1 gateway address: ${mantaL1GatewayAddr}`);
 
-  const optimismL2GatewayAddr = readDeployContract(
+  const mantaL2GatewayAddr = readDeployContract(
     logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
     logName.DEPLOY_GATEWAY,
-    optimismName,
+    mantaName,
   );
-  if (optimismL2GatewayAddr === undefined) {
-    console.log('optimism l2 gateway address not exist');
+  if (mantaL2GatewayAddr === undefined) {
+    console.log('manta l2 gateway address not exist');
     return;
   }
-  console.log(`The optimism l2 gateway address: ${optimismL2GatewayAddr}`);
+  console.log(`The manta l2 gateway address: ${mantaL2GatewayAddr}`);
 
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
   const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   const executeCalldata = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
-  const optimismL2Gateway = await hre.ethers.getContractAt('OptimismGateway', optimismL2GatewayAddr, l1Wallet);
-  const sendData = optimismL2Gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+  const mantaL2Gateway = await hre.ethers.getContractAt('OptimismGateway', mantaL2GatewayAddr, l1Wallet);
+  const sendData = mantaL2Gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
 
   const gasLimit = await messenger.estimateGas.sendMessage({
     direction: 1, // L2_TO_L1, Estimating the Gas Required on L2
-    target: optimismL2GatewayAddr,
+    target: mantaL2GatewayAddr,
     message: sendData,
   });
   console.log(`The gas limit: ${gasLimit}`);
@@ -83,7 +92,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
   const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
   console.log('Prepare to forward the message to L2...');
-  let tx = await arbitrator.changeFeeParams(optimismL1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
+  let tx = await arbitrator.changeFeeParams(mantaL1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
   const txHash = tx.hash;
   await tx.wait();
   console.log(`The tx hash: ${txHash}`);
@@ -93,7 +102,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
    */
   const message = (await messenger.getMessagesByTransaction(txHash)).pop();
   console.log(`The message: ${JSON.stringify(message)}`);
-  // Waiting for the official optimism bridge to forward the message to L2
+  // Waiting for the official manta bridge to forward the message to L2
   const rec = await messenger.waitForMessageReceipt(message);
   console.log(`The tx receipt: ${JSON.stringify(rec)}`);
   console.log('Done');
