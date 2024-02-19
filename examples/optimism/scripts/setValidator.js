@@ -61,10 +61,32 @@ task('setValidator', 'Set validator for zkLink')
     }
     console.log(`The optimism l1 gateway address: ${optimismL1GatewayAddr}`);
 
+    const optimismL2GatewayAddr = readDeployContract(
+      logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
+      logName.DEPLOY_GATEWAY,
+      optimismName,
+    );
+    if (optimismL2GatewayAddr === undefined) {
+      console.log('optimism l2 gateway address not exist');
+      return;
+    }
+    console.log(`The optimism l2 gateway address: ${optimismL2GatewayAddr}`);
+
+    const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
+    const executeCalldata = zkLink.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
+    const optimismL2Gateway = await hre.ethers.getContractAt('OptimismGateway', optimismL2GatewayAddr, l1Wallet);
+    const sendData = optimismL2Gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+
+    const gasLimit = await messenger.estimateGas.sendMessage({
+      direction: 1, // L2_TO_L1, Estimating the Gas Required on L2
+      target: optimismL2GatewayAddr,
+      message: sendData,
+    });
+    console.log(`The gas limit: ${gasLimit}`);
+
     // forward message to L2
     const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
-    const minGasLimit = 200000;
-    const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
+    const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
     console.log('Prepare to forward the message to L2...');
     let tx = await arbitrator.setValidator(optimismL1GatewayAddr, validatorAddr, isActive, adapterParams);
     const txHash = tx.hash;

@@ -74,11 +74,19 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The call data: ${executeCalldata}`);
+  const optimismL2Gateway = await hre.ethers.getContractAt('OptimismGateway', optimismL2GatewayAddr, l1Wallet);
+  const sendData = optimismL2Gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+
+  const gasLimit = await messenger.estimateGas.sendMessage({
+    direction: 1, // L2_TO_L1, Estimating the Gas Required on L2
+    target: optimismL2GatewayAddr,
+    message: sendData,
+  });
+  console.log(`The gas limit: ${gasLimit}`);
 
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
-  const minGasLimit = 200000;
-  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
+  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
   console.log('Prepare to forward the message to L2...');
   let tx = await arbitrator.forwardMessage(optimismL1GatewayAddr, 0, executeCalldata, adapterParams);
   const txHash = tx.hash;
@@ -93,7 +101,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   console.log(`The message: ${JSON.stringify(message)}`);
   // Waiting for the official optimism bridge to forward the message to L2
   const rec = await messenger.waitForMessageReceipt(message);
-  console.log(`The gas limit: ${JSON.stringify(rec)}`);
+  console.log(`The tx receipt: ${JSON.stringify(rec)}`);
   console.log('Done');
 
   // Example txs:

@@ -1,3 +1,4 @@
+const manta = require('@eth-optimism/sdk');
 const ethers = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
@@ -12,6 +13,26 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const mantaName = process.env.MANTA;
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
+  // https://github.com/Manta-Network/bridging-tutorial/blob/ad640a17264e2f009065811a0ff0872d8063b27b/standard-bridge-custom-token/README.md?plain=1#L152
+  const messenger = new manta.CrossChainMessenger({
+    l1ChainId: 5, // 5 for Goerli, 1 for Ethereum
+    l2ChainId: 3441005, // 3441005 for Manta Pacific Testnet, 169 for Manta Pacific Mainnet
+    l1SignerOrProvider: l1Wallet,
+    l2SignerOrProvider: l2Wallet,
+    bedrock: true,
+    contracts: {
+      l1: {
+        StateCommitmentChain: '0x0000000000000000000000000000000000000000',
+        BondManager: '0x0000000000000000000000000000000000000000',
+        CanonicalTransactionChain: '0x0000000000000000000000000000000000000000',
+        AddressManager: '0x0AaeDFF2961D05021832cA093cf9409eDF5ECa8C',
+        L1CrossDomainMessenger: '0x7Ad11bB9216BC9Dc4CBd488D7618CbFD433d1E75',
+        L1StandardBridge: '0x4638aC6b5727a8b9586D3eba5B44Be4b74ED41Fc',
+        OptimismPortal: '0x7FD7eEA37c53ABf356cc80e71144D62CD8aF27d3',
+        L2OutputOracle: '0x8553D4d201ef97F2b76A28F5E543701b25e55B1b',
+      },
+    },
+  });
 
   const l1WalletAddress = await l1Wallet.getAddress();
   const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
@@ -63,22 +84,36 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The call data: ${executeCalldata}`);
+  const gateway = await hre.ethers.getContractAt('OptimismGateway', mantaL2GatewayAddr, l2Wallet);
+  const sendData = gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+
+  const gasLimit = await messenger.estimateGas.sendMessage({
+    direction: 1, // L2_TO_L1, Estimating the Gas Required on L2
+    target: mantaL2GatewayAddr,
+    message: sendData,
+  });
+  console.log(`The gas limit: ${gasLimit}`);
 
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
-  const minGasLimit = 0;
-  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
+  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
   console.log('Prepare to forward the message to L2...');
   let tx = await arbitrator.forwardMessage(mantaL1GatewayAddr, 0, executeCalldata, adapterParams);
   const txHash = tx.hash;
-  await tx.wait();
   console.log(`The tx hash: ${txHash}`);
-  // const txHash = "0x61e78c71aca383f9e15ccebae7ecca355131227319a80a338ac9f809d752a344";
+  await tx.wait();
+  console.log(`The transaction has been executed on L1`);
 
-  // Waiting for the official optimism bridge to forward the message to L2
+  /**
+   * Query the message informations on L1 via txHash.
+   */
+  const message = (await messenger.getMessagesByTransaction(txHash)).pop();
+  // Waiting for the official manta bridge to forward the message to L2
+  const rec = await messenger.waitForMessageReceipt(message);
+  console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
   console.log('Done');
 
   // Example txs:
-  // https://goerli.etherscan.io/tx/0x0fc043fd0bf6bb306c4a802cf8ac89498e2298ad1d85b56fdd4bbc840016c161
-  // https://pacific-explorer.testnet.manta.network/tx/0xd6eb96a4be4613371a37a298c6738817971586a2144d2200b2d9ab3cfdc9addf
+  // https://goerli.etherscan.io/tx/0x12b283959163783e7faf186b70fd4513560a3a41f79099f56ae984c2ac81be6d
+  // https://pacific-explorer.testnet.manta.network/tx/0xbce746d631ac613b61f224138779cbcf3a2f744864b50443440c1c9346cc4c11
 });
