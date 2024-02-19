@@ -9,7 +9,7 @@ import {L2BaseGateway} from "../L2BaseGateway.sol";
 contract MantaL2Gateway is L2BaseGateway, MantaGateway {
     constructor(
         address _zkLink
-    ) L2BaseGateway(_zkLink) MantaGateway(IMantaMessenger(0x4200000000000000000000000000000000000010)) {
+    ) L2BaseGateway(_zkLink) MantaGateway(IMantaMessenger(0x4200000000000000000000000000000000000007)) {
         _disableInitializers();
     }
 
