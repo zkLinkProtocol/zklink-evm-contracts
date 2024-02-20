@@ -5,6 +5,7 @@
   "ARBITRUM": {},
   "OPTIMISM": {},
   "MANTA": {},
+  "MANTLE": {},
   "ZKSYNCTEST": {
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
@@ -81,6 +82,19 @@
       "netName": "GOERLI",
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x7Ad11bB9216BC9Dc4CBd488D7618CbFD433d1E75"],
+      "initializeParams": []
+    }
+  },
+  "MANTLETEST": {
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "GOERLI",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x7Bfe603647d5380ED3909F6f87580D0Af1B228B4"],
       "initializeParams": []
     }
   }
