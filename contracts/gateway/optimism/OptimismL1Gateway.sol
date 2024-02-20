@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {IOptimismMessenger} from "../../interfaces/optimism/IOptimismMessenger.sol";
-import {IOptimismGateway} from "../../interfaces/optimism/IOptimismGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {OptimismGateway} from "./OptimismGateway.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 
@@ -26,7 +26,7 @@ contract OptimismL1Gateway is L1BaseGateway, OptimismGateway {
     ) external payable onlyArbitrator {
         require(msg.value == _value, "Invalid value");
         uint32 _minGasLimit = abi.decode(_adapterParams, (uint32));
-        bytes memory message = abi.encodeCall(IOptimismGateway.claimMessageCallback, (_value, _callData));
+        bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         MESSAGE_SERVICE.sendMessage{value: _value}(remoteGateway, message, _minGasLimit);
     }
 

@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import {IMessageService} from "../../interfaces/linea/IMessageService.sol";
 import {BaseGateway} from "../BaseGateway.sol";
-import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 
-abstract contract LineaGateway is BaseGateway, ILineaGateway {
+abstract contract LineaGateway is BaseGateway, IMessageClaimer {
     /// @notice Linea message service on local chain
     IMessageService public immutable MESSAGE_SERVICE;
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IL2MessageService} from "../../interfaces/linea/IL2MessageService.sol";
-import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {LineaGateway} from "./LineaGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
@@ -23,7 +23,7 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
         uint256 coinbaseFee = IL2MessageService(address(MESSAGE_SERVICE)).minimumFeeInWei();
         require(msg.value == value + coinbaseFee, "Invalid value");
 
-        bytes memory message = abi.encodeCall(ILineaGateway.claimMessageCallback, (value, callData));
+        bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (value, callData));
         MESSAGE_SERVICE.sendMessage{value: msg.value}(remoteGateway, coinbaseFee, message);
     }
 

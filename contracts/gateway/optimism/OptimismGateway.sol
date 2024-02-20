@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import {IOptimismMessenger} from "../../interfaces/optimism/IOptimismMessenger.sol";
-import {IOptimismGateway} from "../../interfaces/optimism/IOptimismGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-abstract contract OptimismGateway is BaseGateway, IOptimismGateway {
+abstract contract OptimismGateway is BaseGateway, IMessageClaimer {
     /// @notice Optimism message service on local chain
     IOptimismMessenger public immutable MESSAGE_SERVICE;
 

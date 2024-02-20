@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IScrollGateway} from "../../interfaces/scroll/IScrollGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {IScrollMessenger} from "../../interfaces/scroll/IScrollMessenger.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {ScrollGateway} from "./ScrollGateway.sol";
@@ -22,7 +22,7 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
         // no fee
         require(msg.value == _value, "Invalid value");
 
-        bytes memory callData = abi.encodeCall(IScrollGateway.claimMessageCallback, (_value, _callData));
+        bytes memory callData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         // transfer no fee to L1
         MESSAGE_SERVICE.sendMessage{value: _value}(
             remoteGateway,

@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {IZkPolygon} from "../../interfaces/zkpolygon/IZkPolygon.sol";
-import {IZkPolygonGateway} from "../../interfaces/zkpolygon/IZkPolygonGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
+contract ZkPolygonL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public immutable MESSAGE_SERVICE;
 
@@ -30,7 +30,7 @@ contract ZkPolygonL2Gateway is IZkPolygonGateway, L2BaseGateway, BaseGateway {
     }
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable onlyZkLink {
-        bytes memory executeData = abi.encodeCall(IZkPolygonGateway.claimMessageCallback, (_value, _callData));
+        bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         MESSAGE_SERVICE.bridgeMessage{value: msg.value}(
             ETH_NETWORK_ID,
             remoteGateway,

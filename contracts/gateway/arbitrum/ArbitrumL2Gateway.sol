@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 import {ArbSys} from "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
-import {IArbitrumGateway} from "../../interfaces/arbitrum/IArbitrumGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
+contract ArbitrumL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
     /// @notice Arbitrum system contract
     ArbSys public constant ARB_SYS = ArbSys(address(100));
 
@@ -29,7 +29,7 @@ contract ArbitrumL2Gateway is IArbitrumGateway, L2BaseGateway, BaseGateway {
         require(msg.value == _value, "Invalid value");
 
         // send message to ArbitrumL1Gateway
-        bytes memory message = abi.encodeCall(IArbitrumGateway.claimMessageCallback, (_value, _callData));
+        bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         ARB_SYS.sendTxToL1{value: _value}(remoteGateway, message);
     }
 

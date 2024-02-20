@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IOptimismMessenger} from "../../interfaces/optimism/IOptimismMessenger.sol";
-import {IOptimismGateway} from "../../interfaces/optimism/IOptimismGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {OptimismGateway} from "./OptimismGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
@@ -20,7 +20,7 @@ contract OptimismL2Gateway is L2BaseGateway, OptimismGateway {
     function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {
         require(msg.value == value, "Invalid fee");
 
-        bytes memory message = abi.encodeCall(IOptimismGateway.claimMessageCallback, (value, callData));
+        bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (value, callData));
         // `_minGasLimit` can be zero here as long as sufficient gas is provided
         // when `finalizeWithdrawalTransaction` is executed on layer one
         MESSAGE_SERVICE.sendMessage{value: value}(remoteGateway, message, uint32(0));

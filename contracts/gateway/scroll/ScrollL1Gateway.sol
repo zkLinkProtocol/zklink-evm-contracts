@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IScrollGateway} from "../../interfaces/scroll/IScrollGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {IScrollMessenger} from "../../interfaces/scroll/IScrollMessenger.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
@@ -26,7 +26,7 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
     ) external payable override onlyArbitrator {
         uint256 _finalizeMessageGasLimit = abi.decode(_adapterParams, (uint256));
 
-        bytes memory executeData = abi.encodeCall(IScrollGateway.claimMessageCallback, (_value, _callData));
+        bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         MESSAGE_SERVICE.sendMessage{value: msg.value}(
             remoteGateway,
             _value,
