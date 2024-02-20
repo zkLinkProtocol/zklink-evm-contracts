@@ -36,6 +36,9 @@ contract ZkLink is
 {
     using UncheckedMath for uint256;
 
+    /// @dev Whether eth is the gas token
+    bool public immutable IS_ETH_GAS_TOKEN;
+
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
     /// @notice List of permitted validators
@@ -106,6 +109,11 @@ contract ZkLink is
     modifier onlyValidator() {
         require(validators[msg.sender], "Not validator"); // validator is not active
         _;
+    }
+
+    constructor(bool _isEthGasToken) {
+        IS_ETH_GAS_TOKEN = _isEthGasToken;
+        _disableInitializers();
     }
 
     function initialize() external initializer {
@@ -209,6 +217,10 @@ contract ZkLink is
         bytes[] calldata _factoryDeps,
         address _refundRecipient
     ) external payable nonReentrant whenNotPaused returns (bytes32 canonicalTxHash) {
+        // Disable l2 value if eth is not the gas token
+        if (!IS_ETH_GAS_TOKEN) {
+            require(_l2Value == 0, "Not allow l2 value");
+        }
         // Change the sender address if it is a smart contract to prevent address collision between L1 and L2.
         // Please note, currently zkSync address derivation is different from Ethereum one, but it may be changed in the future.
         address sender = msg.sender;
@@ -296,6 +308,7 @@ contract ZkLink is
         bytes calldata _message,
         bytes32[] calldata _merkleProof
     ) external nonReentrant {
+        require(IS_ETH_GAS_TOKEN, "Not allow eth withdraw");
         require(!isEthWithdrawalFinalized[_l2BatchNumber][_l2MessageIndex], "jj");
 
         L2Message memory l2ToL1Message = L2Message({

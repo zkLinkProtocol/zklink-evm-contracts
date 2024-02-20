@@ -102,7 +102,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
         const tx = await lineaL1ClaimingService.claimMessage(message);
         console.log(`The tx hash: ${tx.hash}`);
         await tx.wait();
-        console.log(`The tx confirmed}`);
+        console.log(`The tx confirmed`);
         break;
       }
       await sleep(60 * 1000 * 30);

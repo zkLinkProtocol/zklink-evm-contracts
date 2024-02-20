@@ -9,6 +9,7 @@ import {IL2Gateway} from "../interfaces/IL2Gateway.sol";
 import {IZkLink} from "../interfaces/IZkLink.sol";
 
 contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
+    bool public immutable IS_ETH_GAS_TOKEN;
     IL2Gateway public gateway;
 
     event ReceiveBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash, uint256 forwardEthAmount);
@@ -17,6 +18,11 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
     modifier onlyGateway() {
         require(msg.sender == address(gateway), "Not gateway");
         _;
+    }
+
+    constructor(bool _isEthGasToken) {
+        IS_ETH_GAS_TOKEN = _isEthGasToken;
+        _disableInitializers();
     }
 
     function initialize() external initializer {

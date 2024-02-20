@@ -15,13 +15,16 @@ function getZkLinkContractName(dummy) {
 }
 
 task('deployZkLink', 'Deploy zkLink')
-  .addParam('force', 'Fore redeploy all contracts', false, types.boolean, true)
-  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
-  .addParam('dummy', 'Deploy dummy contract for test', false, types.boolean, true)
+  .addParam('eth', 'Is eth the gas token', true, types.boolean)
+  .addOptionalParam('force', 'Fore redeploy all contracts', false, types.boolean)
+  .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
+  .addOptionalParam('dummy', 'Deploy dummy contract for test', false, types.boolean)
   .setAction(async (taskArgs, hardhat) => {
+    let isEthGasToken = taskArgs.eth;
     let force = taskArgs.force;
     let skipVerify = taskArgs.skipVerify;
     let dummy = taskArgs.dummy;
+    console.log('is eth the gas token?', isEthGasToken);
     console.log('force redeploy all contracts?', force);
     console.log('skip verify contracts?', skipVerify);
     console.log('deploy dummy contracts?', dummy);
@@ -39,10 +42,11 @@ task('deployZkLink', 'Deploy zkLink')
     if (!(logName.DEPLOY_LOG_ZKLINK_PROXY in deployLog) || force) {
       console.log('deploy zkLink...');
       const contractName = getZkLinkContractName(dummy);
-      const contract = await contractDeployer.deployProxy(contractName);
+      const contract = await contractDeployer.deployProxy(contractName, [], [isEthGasToken]);
       const transaction = await getDeployTx(contract);
       zkLinkAddr = await contract.getAddress();
       deployLog[logName.DEPLOY_LOG_ZKLINK_PROXY] = zkLinkAddr;
+      deployLog[logName.DEPLOY_LOG_ZKLINK_IS_ETH_GAS_TOKEN] = isEthGasToken;
       deployLog[logName.DEPLOY_LOG_DEPLOY_TX_HASH] = transaction.hash;
       deployLog[logName.DEPLOY_LOG_DEPLOY_BLOCK_NUMBER] = transaction.blockNumber;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
@@ -64,7 +68,7 @@ task('deployZkLink', 'Deploy zkLink')
 
     // verify target contract
     if ((!(logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
-      await verifyContractCode(hardhat, zkLinkTargetAddr, []);
+      await verifyContractCode(hardhat, zkLinkTargetAddr, [isEthGasToken]);
       deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
@@ -78,8 +82,8 @@ task('deployZkLink', 'Deploy zkLink')
   });
 
 task('upgradeZkLink', 'Upgrade zkLink')
-  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
-  .addParam('dummy', 'Deploy dummy contract for test', false, types.boolean, true)
+  .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
+  .addOptionalParam('dummy', 'Deploy dummy contract for test', false, types.boolean)
   .setAction(async (taskArgs, hardhat) => {
     let skipVerify = taskArgs.skipVerify;
     let dummy = taskArgs.dummy;
@@ -99,13 +103,20 @@ task('upgradeZkLink', 'Upgrade zkLink')
       return;
     }
     console.log('zkLink old target', oldContractTargetAddr);
+    const isETHGasToken = deployLog[logName.DEPLOY_LOG_ZKLINK_IS_ETH_GAS_TOKEN];
+    if (isETHGasToken === undefined) {
+      console.log('is eth gas token not exist');
+      return;
+    }
+    console.log('is eth gas token?', isETHGasToken);
 
     const contractDeployer = new ChainContractDeployer(hardhat);
     await contractDeployer.init();
 
     console.log('upgrade zkLink...');
     const contractName = getZkLinkContractName(dummy);
-    const contract = await contractDeployer.upgradeProxy(contractName, contractAddr);
+
+    const contract = await contractDeployer.upgradeProxy(contractName, contractAddr, [isETHGasToken]);
     const tx = await getDeployTx(contract);
     console.log('upgrade tx', tx.hash);
     const newContractTargetAddr = await getImplementationAddress(hardhat.ethers.provider, contractAddr);
@@ -115,7 +126,7 @@ task('upgradeZkLink', 'Upgrade zkLink')
 
     // verify target contract
     if (!skipVerify) {
-      await verifyContractCode(hardhat, newContractTargetAddr, []);
+      await verifyContractCode(hardhat, newContractTargetAddr, [isETHGasToken]);
       deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
