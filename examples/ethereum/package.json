@@ -1,0 +1,14 @@
+{
+  "name": "ethereum-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "ethers": "^6.11.1",
+    "hardhat": "^2.19.5"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}
