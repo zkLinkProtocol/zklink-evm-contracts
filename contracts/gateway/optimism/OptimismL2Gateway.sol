@@ -17,13 +17,14 @@ contract OptimismL2Gateway is L2BaseGateway, OptimismGateway {
         __OptimismGateway_init();
     }
 
-    function sendMessage(uint256 value, bytes memory callData) external payable override onlyZkLink {
-        require(msg.value == value, "Invalid fee");
+    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+        require(msg.value == _value, "Invalid fee");
 
-        bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (value, callData));
+        bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         // `_minGasLimit` can be zero here as long as sufficient gas is provided
         // when `finalizeWithdrawalTransaction` is executed on layer one
-        MESSAGE_SERVICE.sendMessage{value: value}(remoteGateway, message, uint32(0));
+        MESSAGE_SERVICE.sendMessage{value: _value}(remoteGateway, message, uint32(0));
+        emit L2GatewayMessageSent(_value, _callData);
     }
 
     function claimMessageCallback(

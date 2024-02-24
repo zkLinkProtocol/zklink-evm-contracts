@@ -43,6 +43,7 @@ contract ZkSyncL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
         // send message to ZkSyncL1Gateway(the second message send to L1)
         bytes memory message = abi.encode(_value, _callData);
         L2_MESSENGER.sendToL1(message);
+        emit L2GatewayMessageSent(_value, _callData);
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {

@@ -37,6 +37,7 @@ contract ZkPolygonL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
             FORCE_UPDATE_GLOBAL_EXIT_ROOT,
             executeData
         );
+        emit L2GatewayMessageSent(_value, _callData);
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyMessageService {

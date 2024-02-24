@@ -30,6 +30,7 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
             callData,
             0 // Gas limit required to complete the deposit on L1. This is optional, send 0 if you don’t want to set it.
         );
+        emit L2GatewayMessageSent(_value, _callData);
     }
 
     function claimMessageCallback(uint256 _value, bytes memory _callData) external payable override onlyMessageService {

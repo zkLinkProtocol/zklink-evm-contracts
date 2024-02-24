@@ -43,5 +43,6 @@ contract EthereumGateway is
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
         ARBITRATOR.receiveMessage{value: _value}(_value, _callData);
+        emit L2GatewayMessageSent(_value, _callData);
     }
 }
