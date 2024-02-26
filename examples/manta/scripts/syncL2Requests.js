@@ -122,5 +122,5 @@ task('syncL2Requests', 'Send sync point to arbitrator')
 
     // Example txs:
     // https://pacific-explorer.testnet.manta.network/tx/0x1a81ed28c1b74120753b0edf3d98e80b814ec5f065ad44b26c0cd6131dc04d22
-    // https://sepolia.etherscan.io/tx/0x18be026ceed349625363f84a75c0384e69c549a972d79e78f327c2a1647a183d
+    // https://goerli.etherscan.io/tx/0x54ce6421e1d9c1e7d2c35af292c9e3bbaf632b60115556a94b7fb61e53905599
   });
