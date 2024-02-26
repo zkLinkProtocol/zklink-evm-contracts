@@ -17,10 +17,11 @@ contract ArbitrumL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
         _;
     }
 
-    constructor(address _zkLink) L2BaseGateway(_zkLink) {}
+    constructor(address _zkLink) L2BaseGateway(_zkLink) {
+        _disableInitializers();
+    }
 
     function initialize() external initializer {
-        _disableInitializers();
         __BaseGateway_init();
     }
 
