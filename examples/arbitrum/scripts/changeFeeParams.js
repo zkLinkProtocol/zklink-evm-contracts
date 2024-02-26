@@ -103,7 +103,9 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
     [L1ToL2MessageGasParams.maxSubmissionCost, L1ToL2MessageGasParams.gasLimit, L1ToL2MessageGasParams.maxFeePerGas],
   );
   console.log(`Send a l1 message to l2...`);
-  let l1Tx = await arbitrator.changeFeeParams(l1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
+  let l1Tx = await arbitrator.changeFeeParams(l1GatewayAddr, INIT_FEE_PARAMS, adapterParams, {
+    value: L1ToL2MessageGasParams.deposit,
+  });
   const l1TxHash = l1Tx.hash;
   console.log(`The l1 tx hash: ${l1TxHash}`);
   const forwardMessageReceipt = await l1Tx.wait();
