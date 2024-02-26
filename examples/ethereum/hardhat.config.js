@@ -1,5 +1,6 @@
 require('@nomicfoundation/hardhat-toolbox');
 require('./scripts/changeFeeParams');
+require('./scripts/setValidator');
 
 const BaseConfig = require('../../hardhat.base.config');
 
