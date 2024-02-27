@@ -9,25 +9,32 @@ const {
 } = require('./utils');
 const logName = require('./deploy_log_name');
 const { task, types } = require('hardhat/config');
+const { zkLinkConfig } = require('./zklink_config');
 
 function getZkLinkContractName(dummy) {
   return dummy ? 'DummyZkLink' : 'ZkLink';
 }
 
 task('deployZkLink', 'Deploy zkLink')
-  .addParam('eth', 'Is eth the gas token', true, types.boolean)
   .addOptionalParam('force', 'Fore redeploy all contracts', false, types.boolean)
   .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
   .addOptionalParam('dummy', 'Deploy dummy contract for test', false, types.boolean)
   .setAction(async (taskArgs, hardhat) => {
-    let isEthGasToken = taskArgs.eth;
     let force = taskArgs.force;
     let skipVerify = taskArgs.skipVerify;
     let dummy = taskArgs.dummy;
-    console.log('is eth the gas token?', isEthGasToken);
     console.log('force redeploy all contracts?', force);
     console.log('skip verify contracts?', skipVerify);
     console.log('deploy dummy contracts?', dummy);
+
+    const netName = process.env.NET;
+    const chainInfo = zkLinkConfig[netName];
+    if (chainInfo === undefined) {
+      console.log('current net not support');
+      return;
+    }
+    const isEthGasToken = chainInfo.eth;
+    console.log(`is eth the gas token of ${netName}?`, isEthGasToken);
 
     const contractDeployer = new ChainContractDeployer(hardhat);
     await contractDeployer.init();
