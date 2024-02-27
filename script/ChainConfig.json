@@ -7,6 +7,7 @@
   "MANTA": {},
   "MANTLE": {},
   "ZKSYNCTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
       "constructParams": [],
@@ -20,6 +21,7 @@
     }
   },
   "SCROLLTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ScrollL2Gateway",
       "constructParams": ["0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d"],
@@ -33,6 +35,7 @@
     }
   },
   "LINEATEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "LineaL2Gateway",
       "constructParams": ["0xC499a572640B64eA1C8c194c43Bc3E19940719dC"],
@@ -47,6 +50,7 @@
   },
   "ZKPOLYGONTEST": {},
   "ARBITRUMTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
       "constructParams": [],
@@ -60,6 +64,7 @@
     }
   },
   "OPTIMISMTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -73,6 +78,7 @@
     }
   },
   "MANTATEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -86,6 +92,7 @@
     }
   },
   "MANTLETEST": {
+    "eth": false,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
