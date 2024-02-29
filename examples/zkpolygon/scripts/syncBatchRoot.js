@@ -1,4 +1,3 @@
-// const { JsonRpcProvider, Wallet, formatEther, keccak256, toUtf8Bytes } = require('ethers');
 const { ZkEvmClient, use } = require('@maticnetwork/maticjs');
 const { Web3ClientPlugin } = require('@maticnetwork/maticjs-ethers');
 const { providers, Wallet, utils } = require('ethers');
@@ -25,23 +24,16 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
 
     const zkEvmClient = new ZkEvmClient();
     await zkEvmClient.init({
-        network: "testnet",
+        network: ethereumName === "GOERLI" ? "testnet" : "mainnet",
         version: 'blueberry',
         parent: {
-            provider: process.env.L1RPC,
-            defaultConfig: {
-                from: "0xd14653F6fA807107084e5d8a18bB5Ce3C5BbFB90"
-            }
+            provider: l1Wallet
         },
         child: {
-            provider: process.env.L2RPC,
-            defaultConfig: {
-                from: "0xd14653F6fA807107084e5d8a18bB5Ce3C5BbFB90"
-            }
+            provider: l2Wallet
         },
         log: true
     });
-    console.log(`The zkEvmClient: ${JSON.stringify(zkEvmClient)}`);
 
     const arbitratorAddr = readDeployContract(
         logName.DEPLOY_ARBITRATOR_LOG_PREFIX,
@@ -80,23 +72,34 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
     console.log(`The call data: ${callData}`);
 
     // forward message to L2
-    // const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
-    // const adapterParams = "0x";
-    // let tx = await arbitrator.forwardMessage(zkpolygonL1GatewayAddr, 0, callData, adapterParams);
-    // await tx.wait();
-    // console.log(`The tx hash: ${tx.hash}`);
-    const txHash = "0xa3e1bcd4d06690d6e28f782c58c2e1864eab5d00b9a944a2630ec0a219552b95";
-    // const bridgeUtil = new BridgeUtil(zkEvmClient.client);
-    // console.log(`The tx hash: ${JSON.stringify(bridgeUtil)}`);
-    const isDeposit = await zkEvmClient.isDeposited(txHash);
-    console.log(`The deposit is deposited: ${isDeposit}`);
+    const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
+    const adapterParams = "0x";
+    let tx = await arbitrator.forwardMessage(zkpolygonL1GatewayAddr, 0, callData, adapterParams);
+    await tx.wait();
+    console.log(`The tx hash: ${tx.hash}`);
+    // const txHash = "0xa3e1bcd4d06690d6e28f782c58c2e1864eab5d00b9a944a2630ec0a219552b95";
+
+    /**
+     * Wait for the deposit to be confirmed
+     */
     const isClaimable = await zkEvmClient.isDepositClaimable(txHash);
     console.log(`The deposit is claimable: ${isClaimable}`);
-    // const logData = await bridgeUtil.getBridgeLogData(txHash, true);
-    // console.log(`The log data: ${logData}`);
 
-    // Waiting for the official zkpolygon bridge to forward the message to L2
-    // No user action is required for follow-up.
+    /**
+     * Claim message
+     */
+    const logData = await zkEvmClient.bridgeUtil.getBridgeLogData(txHash, true);
+    console.log(`The logData: ${JSON.stringify(logData, null, 2)}`);
+    const payload = await zkEvmClient.bridgeUtil.buildPayloadForClaim(txHash, true, logData.originNetwork)
+    console.log(`The payload: ${JSON.stringify(payload, null, 2)}`);
+
+    // const result = await zkEvmClient.claimMessage(...payload, { returnTransaction: true });
+    const claimTx = await zkEvmClient.childChainBridge.claimMessage(payload.smtProof, [], payload.globalIndex, payload.mainnetExitRoot, payload.rollupExitRoot, payload.originNetwork, payload.originTokenAddress, payload.destinationNetwork, payload.destinationAddress, payload.amount, payload.metadata, { returnTransaction: true });
+    console.log(`The result: ${JSON.stringify(result, null, 2)}`);
+
+    // Get the receipt
+    const rec = await claimTx.getReceipt();
+    console.log(`The claim tx receipt: ${JSON.stringify(rec, null, 2)}`);
 
     // Example txs:
     // https://goerli.etherscan.io/tx/0xa3e1bcd4d06690d6e28f782c58c2e1864eab5d00b9a944a2630ec0a219552b95
