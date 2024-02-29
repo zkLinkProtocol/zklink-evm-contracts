@@ -19,6 +19,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
     l2ChainId: 5001, // 5001 for Mantle Testnet, 5000 for Mantle Mainnet
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
+    bedrock: true,
   });
 
   const l1WalletAddress = await l1Wallet.getAddress();

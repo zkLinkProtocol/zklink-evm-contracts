@@ -23,6 +23,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
       l2ChainId: 5001, // 5001 for Mantle Testnet, 5000 for Mantle Mainnet
       l1SignerOrProvider: l1Wallet,
       l2SignerOrProvider: l2Wallet,
+      bedrock: true,
     });
 
     const l2WalletAddress = await l2Wallet.getAddress();
