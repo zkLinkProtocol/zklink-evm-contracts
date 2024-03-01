@@ -14,8 +14,8 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
   const messenger = new optimism.CrossChainMessenger({
-    l1ChainId: 11155111, // 11155111 for Sepolia, 1 for Ethereum
-    l2ChainId: 11155420, // 11155420 for OP Sepolia, 10 for OP Mainnet
+    l1ChainId: ethereumName !== 'ETHEREUM' ? 11155111 : 1, // 11155111 for Sepolia, 1 for Ethereum
+    l2ChainId: ethereumName !== 'ETHEREUM' ? 11155420 : 10, // 11155420 for OP Sepolia, 10 for OP Mainnet
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
   });
