@@ -16,6 +16,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
     const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
     const mantleName = process.env.MANTLE;
+    const ethereumName = process.env.ETHEREUM;
     const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
     const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
     const messenger = new mantle.CrossChainMessenger({
