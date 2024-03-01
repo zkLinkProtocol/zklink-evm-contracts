@@ -5,10 +5,10 @@ import {IL2Messenger} from "../../interfaces/zksync/IL2Messenger.sol";
 import {IL2ETHToken} from "../../interfaces/zksync/IL2ETHToken.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
-import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway, BaseGateway {
+contract ZkSyncL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
     uint160 internal constant SYSTEM_CONTRACTS_OFFSET = 0x8000; // 2^15
 
     /// @notice ZkSync system message service on local chain
@@ -43,9 +43,10 @@ contract ZkSyncL2Gateway is IZkSyncL2Gateway, L2BaseGateway, BaseGateway {
         // send message to ZkSyncL1Gateway(the second message send to L1)
         bytes memory message = abi.encode(_value, _callData);
         L2_MESSENGER.sendToL1(message);
+        emit L2GatewayMessageSent(_value, _callData);
     }
 
-    function claimMessage(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
+    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls

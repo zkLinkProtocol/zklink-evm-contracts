@@ -5,7 +5,7 @@ import {IMailbox} from "../../zksync/l1-contracts/zksync/interfaces/IMailbox.sol
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {IZkSyncL1Gateway} from "../../interfaces/zksync/IZkSyncL1Gateway.sol";
-import {IZkSyncL2Gateway} from "../../interfaces/zksync/IZkSyncL2Gateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 import {L2Message} from "../../zksync/l1-contracts/zksync/Storage.sol";
 
@@ -35,7 +35,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         bytes memory _adapterParams
     ) external payable onlyArbitrator {
         (uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) = abi.decode(_adapterParams, (uint256, uint256));
-        bytes memory executeData = abi.encodeCall(IZkSyncL2Gateway.claimMessage, (_value, _callData));
+        bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
             remoteGateway,
             _value,

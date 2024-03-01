@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import {IMessageService} from "../../interfaces/linea/IMessageService.sol";
 import {BaseGateway} from "../BaseGateway.sol";
-import {ILineaGateway} from "../../interfaces/linea/ILineaGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 
-abstract contract LineaGateway is BaseGateway, ILineaGateway {
+abstract contract LineaGateway is BaseGateway, IMessageClaimer {
     /// @notice Linea message service on local chain
     IMessageService public immutable MESSAGE_SERVICE;
 
@@ -34,11 +34,5 @@ abstract contract LineaGateway is BaseGateway, ILineaGateway {
 
     function __LineaGateway_init() internal onlyInitializing {
         __BaseGateway_init();
-    }
-
-    function claimMessage(uint256 _value, bytes calldata _callData, uint256 _nonce) external nonReentrant {
-        // `claimMessageCallback` will be called within `claimMessage`
-        // no fee on remote chain
-        MESSAGE_SERVICE.claimMessage(remoteGateway, address(this), 0, _value, payable(msg.sender), _callData, _nonce);
     }
 }

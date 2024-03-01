@@ -38,6 +38,10 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     event ValidatorStatusUpdate(IL1Gateway gateway, address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(IL1Gateway gateway, FeeParams newFeeParams);
+    /// @notice Emit when receive message from l1 gateway
+    event MessageReceived(uint256 value, bytes callData);
+    /// @notice Emit when forward message to l1 gateway
+    event MessageForwarded(IL1Gateway gateway, uint256 value, bytes callData);
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
@@ -52,6 +56,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    /// @notice Return the message hash at a position stored in queue
+    function getMessageHash(IL1Gateway _gateway, uint256 _index) external view returns (bytes32 messageHash) {
+        if (_gateway == primaryChainGateway) {
+            messageHash = primaryChainMessageHashQueue.at(_index);
+        } else {
+            messageHash = secondaryChainMessageHashQueues[_gateway].at(_index);
+        }
+    }
 
     /// @dev Set primary chain
     function setPrimaryChainGateway(IL1Gateway _gateway) external onlyOwner {
@@ -118,6 +131,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             require(secondaryChainGateways[gateway], "Not secondary chain gateway");
             secondaryChainMessageHashQueues[gateway].pushBack(finalizeMessageHash);
         }
+        emit MessageReceived(_value, _callData);
     }
 
     function forwardMessage(
@@ -143,5 +157,6 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             // Forward fee to send message
             primaryChainGateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);
         }
+        emit MessageForwarded(_gateway, _value, _callData);
     }
 }

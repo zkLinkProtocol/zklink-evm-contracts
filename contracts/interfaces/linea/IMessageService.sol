@@ -37,7 +37,4 @@ interface IMessageService {
      * @return The original sender of the message on the origin layer.
      */
     function sender() external view returns (address);
-
-    /// @notice Returns coinbase fee when sendMessage
-    function minimumFeeInWei() external view returns (uint256);
 }

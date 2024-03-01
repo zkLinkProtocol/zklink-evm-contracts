@@ -40,6 +40,7 @@ contract ZkPolygonL2Gateway is IBridgeMessageReceiver, L2BaseGateway, BaseGatewa
             FORCE_UPDATE_GLOBAL_EXIT_ROOT,
             executeData
         );
+        emit L2GatewayMessageSent(_value, _callData);
     }
 
     function onMessageReceived(

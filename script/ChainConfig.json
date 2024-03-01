@@ -1,7 +1,51 @@
 {
-  "SCROLL": {},
-  "LINEA": {},
+  "ETHEREUM": {
+    "eth": true
+  },
+  "ZKSYNC": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ZkSyncL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ZkSyncL1Gateway",
+      "constructParams": ["0x32400084c286cf3e17e7b677ea9583e60a000324"],
+      "initializeParams": []
+    }
+  },
+  "SCROLL": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ScrollL2Gateway",
+      "constructParams": ["0x781e90f1c8Fc4611c9b7497C3B47F99Ef6969CbC"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ScrollL1Gateway",
+      "constructParams": ["0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367"],
+      "initializeParams": []
+    }
+  },
+  "LINEA": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "LineaL2Gateway",
+      "constructParams": ["0x508Ca82Df566dCD1B0DE8296e70a96332cD644ec"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "LineaL1Gateway",
+      "constructParams": ["0xd19d4B5d358258f05D7B411E21A1460D11B0876F"],
+      "initializeParams": []
+    }
+  },
   "ZKPOLYGON": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ZkPolygonL2Gateway",
       "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
@@ -14,8 +58,70 @@
       "initializeParams": []
     }
   },
-  "ARBITRUM": {},
+  "ARBITRUM": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ArbitrumL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ArbitrumL1Gateway",
+      "constructParams": ["0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f"],
+      "initializeParams": []
+    }
+  },
+  "OPTIMISM": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"],
+      "initializeParams": []
+    }
+  },
+  "MANTA": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x635ba609680c55C3bDd0B3627b4c5dB21b13c310"],
+      "initializeParams": []
+    }
+  },
+  "MANTLE": {
+    "eth": false,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x676A795fe6E43C17c668de16730c3F690FEB7120"],
+      "initializeParams": []
+    }
+  },
+  "GOERLI": {
+    "eth": true
+  },
+  "SEPOLIA": {
+    "eth": true
+  },
   "ZKSYNCTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
       "constructParams": [],
@@ -29,6 +135,7 @@
     }
   },
   "SCROLLTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ScrollL2Gateway",
       "constructParams": ["0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d"],
@@ -42,6 +149,7 @@
     }
   },
   "LINEATEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "LineaL2Gateway",
       "constructParams": ["0xC499a572640B64eA1C8c194c43Bc3E19940719dC"],
@@ -55,6 +163,7 @@
     }
   },
   "ZKPOLYGONTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ZkPolygonL2Gateway",
       "constructParams": ["0xF6BEEeBB578e214CA9E23B0e9683454Ff88Ed2A7"],
@@ -68,6 +177,7 @@
     }
   },
   "ARBITRUMTEST": {
+    "eth": true,
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
       "constructParams": [],
@@ -77,6 +187,48 @@
       "netName": "SEPOLIA",
       "contractName": "ArbitrumL1Gateway",
       "constructParams": ["0xaAe29B0366299461418F5324a79Afc425BE5ae21"],
+      "initializeParams": []
+    }
+  },
+  "OPTIMISMTEST": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "SEPOLIA",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x58Cc85b8D04EA49cC6DBd3CbFFd00B4B8D6cb3ef"],
+      "initializeParams": []
+    }
+  },
+  "MANTATEST": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "GOERLI",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x7Ad11bB9216BC9Dc4CBd488D7618CbFD433d1E75"],
+      "initializeParams": []
+    }
+  },
+  "MANTLETEST": {
+    "eth": false,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "GOERLI",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x7Bfe603647d5380ED3909F6f87580D0Af1B228B4"],
       "initializeParams": []
     }
   }

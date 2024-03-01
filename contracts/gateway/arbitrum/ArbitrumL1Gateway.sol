@@ -6,9 +6,9 @@ import {IOutbox} from "@arbitrum/nitro-contracts/src/bridge/Outbox.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
-import {IArbitrumGateway} from "../../interfaces/arbitrum/IArbitrumGateway.sol";
+import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
 
-contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
+contract ArbitrumL1Gateway is IMessageClaimer, L1BaseGateway, BaseGateway {
     /// @notice Arbitrum inbox on local chain
     Inbox public immutable INBOX;
 
@@ -40,7 +40,7 @@ contract ArbitrumL1Gateway is IArbitrumGateway, L1BaseGateway, BaseGateway {
             _adapterParams,
             (uint256, uint256, uint256)
         );
-        bytes memory data = abi.encodeCall(IArbitrumGateway.claimMessageCallback, (_value, _callData));
+        bytes memory data = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         INBOX.createRetryableTicket{value: msg.value}(
             remoteGateway,
             _value,

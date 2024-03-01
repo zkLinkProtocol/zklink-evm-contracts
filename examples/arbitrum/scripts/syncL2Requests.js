@@ -7,12 +7,10 @@ const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
 task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
-  .addParam('value', 'Send msg value in ether', 0, types.string, true)
   .addParam('txs', 'New sync point', 100, types.int, true)
   .setAction(async (taskArgs, hre) => {
-    const msgValue = taskArgs.value;
     const txs = taskArgs.txs;
-    console.log(`The sync point: value: ${msgValue} ether, txs: ${txs}`);
+    console.log(`The sync point: ${txs}`);
 
     const walletPrivateKey = process.env.DEVNET_PRIVKEY;
     const l1Provider = new providers.JsonRpcProvider(process.env.L1RPC);
@@ -38,7 +36,7 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
 
     const zkLink = await hre.ethers.getContractAt('DummyZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
-    const l2Tx = await zkLink.syncL2Requests(txs, { value: utils.parseEther(msgValue) });
+    const l2Tx = await zkLink.syncL2Requests(txs);
     const txHash = l2Tx.hash;
     console.log(`The l2 tx hash: ${txHash}`);
     const syncL2RequestsReceipt = await l2Tx.wait();

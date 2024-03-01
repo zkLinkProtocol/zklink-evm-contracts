@@ -1,4 +1,4 @@
-const { JsonRpcProvider, Wallet, formatEther, parseEther } = require('ethers');
+const { JsonRpcProvider, Wallet, formatEther } = require('ethers');
 const { readDeployContract } = require('../../../script/utils');
 const { getL1MessagerContract } = require('./utils/utils');
 const logName = require('../../../script/deploy_log_name');
@@ -11,12 +11,10 @@ function sleep(ms) {
 }
 
 task('syncL2Requests', 'Send sync point to arbitrator')
-  .addParam('value', 'Send msg value in ether', 0, types.string, true)
   .addParam('txs', 'New sync point', 100, types.int, true)
   .setAction(async (taskArgs, hre) => {
-    const msgValue = taskArgs.value;
     const txs = taskArgs.txs;
-    console.log(`The sync point: value: ${msgValue} ether, txs: ${txs}`);
+    console.log(`The sync point: ${txs}`);
 
     const walletPrivateKey = process.env.DEVNET_PRIVKEY;
     const l1Provider = new JsonRpcProvider(process.env.L1RPC);
@@ -54,11 +52,10 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     // send txs
     const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
     console.log(`Send a l2 message to l1...`);
-    let tx = await zkLink.syncL2Requests(txs, {
-      value: parseEther(msgValue),
-    });
-    await tx.wait();
+    let tx = await zkLink.syncL2Requests(txs);
     console.log(`The tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The tx confirmed`);
 
     // Wait for Scroll to package the transaction and poll for results via the following API.
     let claimInfo;
