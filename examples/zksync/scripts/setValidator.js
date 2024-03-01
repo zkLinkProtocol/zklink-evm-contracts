@@ -72,7 +72,7 @@ task('setValidator', 'Set validator for zkLink')
     const zkLinkCallValue = ethers.parseEther('0');
     const zkLinkCallData = zkLinkFactory.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
     const l2GatewayFactory = await hre.ethers.getContractFactory('ZkSyncL2Gateway');
-    const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessage', [
+    const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessageCallback', [
       zkLinkCallValue,
       zkLinkCallData,
     ]);

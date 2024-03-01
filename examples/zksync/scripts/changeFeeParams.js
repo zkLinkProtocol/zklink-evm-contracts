@@ -61,7 +61,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const zkLinkCallValue = ethers.parseEther('0');
   const zkLinkCallData = zkLinkFactory.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
   const l2GatewayFactory = await hre.ethers.getContractFactory('ZkSyncL2Gateway');
-  const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessage', [
+  const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessageCallback', [
     zkLinkCallValue,
     zkLinkCallData,
   ]);

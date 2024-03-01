@@ -22,8 +22,8 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
     const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
     const messenger = new manta.CrossChainMessenger({
-      l1ChainId: 5, // 5 for Goerli, 1 for Ethereum
-      l2ChainId: 3441005, // 3441005 for Manta Pacific Testnet, 169 for Manta Pacific Mainnet
+      l1ChainId: ethereumName !== 'ETHEREUM' ? 5 : 1, // 5 for Goerli, 1 for Ethereum
+      l2ChainId: ethereumName !== 'ETHEREUM' ? 3441005 : 169, // 3441005 for Manta Pacific Testnet, 169 for Manta Pacific Mainnet
       l1SignerOrProvider: l1Wallet,
       l2SignerOrProvider: l2Wallet,
       bedrock: true,
