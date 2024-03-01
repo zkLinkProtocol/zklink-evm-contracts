@@ -44,7 +44,20 @@
       "initializeParams": []
     }
   },
-  "ZKPOLYGON": {},
+  "ZKPOLYGON": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ZkPolygonL2Gateway",
+      "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ZkPolygonL1Gateway",
+      "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
+      "initializeParams": []
+    }
+  },
   "ARBITRUM": {
     "eth": true,
     "l2Gateway": {
@@ -149,7 +162,20 @@
       "initializeParams": []
     }
   },
-  "ZKPOLYGONTEST": {},
+  "ZKPOLYGONTEST": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ZkPolygonL2Gateway",
+      "constructParams": ["0xF6BEEeBB578e214CA9E23B0e9683454Ff88Ed2A7"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "GOERLI",
+      "contractName": "ZkPolygonL1Gateway",
+      "constructParams": ["0xF6BEEeBB578e214CA9E23B0e9683454Ff88Ed2A7"],
+      "initializeParams": []
+    }
+  },
   "ARBITRUMTEST": {
     "eth": true,
     "l2Gateway": {

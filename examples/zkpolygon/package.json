@@ -1,0 +1,15 @@
+{
+  "name": "zkpolygon-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@maticnetwork/maticjs": "^3.8.0",
+    "@maticnetwork/maticjs-ethers": "^1.0.3",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "hardhat": "^2.9.1"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}

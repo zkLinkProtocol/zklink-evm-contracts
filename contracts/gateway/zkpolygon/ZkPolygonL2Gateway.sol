@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {IZkPolygon} from "../../interfaces/zkpolygon/IZkPolygon.sol";
-import {IMessageClaimer} from "../../interfaces/IMessageClaimer.sol";
+import {IBridgeMessageReceiver} from "../../interfaces/zkpolygon/IBridgeMessageReceiver.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {BaseGateway} from "../BaseGateway.sol";
 
-contract ZkPolygonL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
+contract ZkPolygonL2Gateway is IBridgeMessageReceiver, L2BaseGateway, BaseGateway {
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public immutable MESSAGE_SERVICE;
 
@@ -30,7 +30,10 @@ contract ZkPolygonL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
     }
 
     function sendMessage(uint256 _value, bytes memory _callData) external payable onlyZkLink {
-        bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
+        // no fee
+        require(msg.value == _value, "Invalid value");
+
+        bytes memory executeData = abi.encode(_value, _callData);
         MESSAGE_SERVICE.bridgeMessage{value: msg.value}(
             ETH_NETWORK_ID,
             remoteGateway,
@@ -40,8 +43,15 @@ contract ZkPolygonL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
         emit L2GatewayMessageSent(_value, _callData);
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyMessageService {
+    function onMessageReceived(
+        address originAddress,
+        uint32,
+        bytes memory data
+    ) external payable override onlyMessageService {
+        require(originAddress == remoteGateway, "Invalid origin address");
+        (uint256 _value, bytes memory _callData) = abi.decode(data, (uint256, bytes));
         require(msg.value == _value, "Invalid value");
+
         (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");
     }
