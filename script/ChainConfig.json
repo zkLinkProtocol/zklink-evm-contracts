@@ -2,6 +2,20 @@
   "ETHEREUM": {
     "eth": true
   },
+  "ZKSYNC": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ZkSyncL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ZkSyncL1Gateway",
+      "constructParams": ["0x32400084c286cf3e17e7b677ea9583e60a000324"],
+      "initializeParams": []
+    }
+  },
   "SCROLL": {
     "eth": true,
     "l2Gateway": {
