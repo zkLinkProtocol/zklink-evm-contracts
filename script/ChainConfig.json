@@ -1,7 +1,19 @@
 {
   "SCROLL": {},
   "LINEA": {},
-  "ZKPOLYGON": {},
+  "ZKPOLYGON": {
+    "l2Gateway": {
+      "contractName": "ZkPolygonL2Gateway",
+      "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ZkPolygonL1Gateway",
+      "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
+      "initializeParams": []
+    }
+  },
   "ARBITRUM": {},
   "ZKSYNCTEST": {
     "l2Gateway": {

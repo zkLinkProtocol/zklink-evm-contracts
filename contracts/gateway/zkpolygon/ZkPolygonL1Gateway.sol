@@ -34,6 +34,8 @@ contract ZkPolygonL1Gateway is IBridgeMessageReceiver, L1BaseGateway, BaseGatewa
     }
 
     function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
+        require(msg.value == _value, "Invalid value");
+
         bytes memory executeData = abi.encode(_value, _callData);
         MESSAGE_SERVICE.bridgeMessage{value: msg.value}(
             ETH_NETWORK_ID,
