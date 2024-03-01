@@ -1,4 +1,7 @@
 {
+  "ETHEREUM": {
+    "eth": true
+  },
   "SCROLL": {
     "eth": true,
     "l2Gateway": {
@@ -83,6 +86,12 @@
       "constructParams": ["0x676A795fe6E43C17c668de16730c3F690FEB7120"],
       "initializeParams": []
     }
+  },
+  "GOERLI": {
+    "eth": true
+  },
+  "SEPOLIA": {
+    "eth": true
   },
   "ZKSYNCTEST": {
     "eth": true,
