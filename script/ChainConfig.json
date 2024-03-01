@@ -1,11 +1,89 @@
 {
-  "SCROLL": {},
-  "LINEA": {},
+  "SCROLL": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ScrollL2Gateway",
+      "constructParams": ["0x781e90f1c8Fc4611c9b7497C3B47F99Ef6969CbC"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ScrollL1Gateway",
+      "constructParams": ["0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367"],
+      "initializeParams": []
+    }
+  },
+  "LINEA": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "LineaL2Gateway",
+      "constructParams": ["0x508Ca82Df566dCD1B0DE8296e70a96332cD644ec"],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "LineaL1Gateway",
+      "constructParams": ["0xd19d4B5d358258f05D7B411E21A1460D11B0876F"],
+      "initializeParams": []
+    }
+  },
   "ZKPOLYGON": {},
-  "ARBITRUM": {},
-  "OPTIMISM": {},
-  "MANTA": {},
-  "MANTLE": {},
+  "ARBITRUM": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "ArbitrumL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "ArbitrumL1Gateway",
+      "constructParams": ["0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f"],
+      "initializeParams": []
+    }
+  },
+  "OPTIMISM": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"],
+      "initializeParams": []
+    }
+  },
+  "MANTA": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x635ba609680c55C3bDd0B3627b4c5dB21b13c310"],
+      "initializeParams": []
+    }
+  },
+  "MANTLE": {
+    "eth": false,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x676A795fe6E43C17c668de16730c3F690FEB7120"],
+      "initializeParams": []
+    }
+  },
   "ZKSYNCTEST": {
     "eth": true,
     "l2Gateway": {
