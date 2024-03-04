@@ -113,6 +113,6 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     console.log('Done! Your transaction is executed', rec);
 
     // Example txs:
-    // https://sepolia.scrollscan.com/tx/0x94fdabbe147cd519859331ce2d6ca0b43878e5f6af9140ae677d98359e694f67
-    // https://sepolia.etherscan.io/tx/0x5d1a5922309e939255789ec3872cb9b97b85fb5095672589bc1b8898570e791f
+    // https://sepolia.scrollscan.com/tx/0xcbadd7ef4635821989200eacdb2d6e762d4995d39a71375d0c9bc70cf5eae1c5
+    // https://sepolia.etherscan.io/tx/
   });

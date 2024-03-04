@@ -76,6 +76,6 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   // No user action is required for follow-up.
 
   // Example txs:
-  // https://sepolia.etherscan.io/tx/0xdd02bbc1a304791ab5fc53dd76f353b6391858d78553ad75797f3aff30aa04c4
-  // https://sepolia.scrollscan.com/tx/0xfea71e57b844ec3c9a0289786ac55afec64aa71d1fdf35a8b3b2636c630d92fb
+  // https://sepolia.etherscan.io/tx/0x5005a1ce99258db5a7da4ffa2bed645ba75992f40b54cf917a9c379da7ef0811
+  // https://sepolia.scrollscan.com/tx/0xe563946240df357efed36b86b9b157483269262f28db58a958bc8973bed39970
 });

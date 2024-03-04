@@ -24,4 +24,7 @@ interface IScrollMessenger {
         uint256 gasLimit,
         address refundAddress
     ) external payable;
+
+    /// @notice Return the sender of a cross domain message.
+    function xDomainMessageSender() external view returns (address);
 }

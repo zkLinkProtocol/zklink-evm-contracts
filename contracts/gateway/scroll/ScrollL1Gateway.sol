@@ -37,7 +37,10 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
         );
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
+    function claimMessageCallback(
+        uint256 _value,
+        bytes memory _callData
+    ) external payable override onlyMessageService onlyRemoteGateway {
         // no fee
         require(msg.value == _value, "Invalid value");
 
