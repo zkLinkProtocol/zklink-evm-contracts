@@ -150,7 +150,7 @@ task('syncBatchRoot', 'Send batch root from arbitrator to zkLink')
     console.log(`L2 retryable ticket is executed 🥳 `);
 
     /** Example Txs
-     * https://sepolia.etherscan.io/tx/0x10fede986b8c3445db2a0ab2332a97b2b3b682ff79c9fd931898474deb00c86a
-     * https://sepolia.explorer.zksync.io/tx/0x202a4975289136b3292bf7b1202e1b8bc540351571d7656d060a489bd7b3509f
+     * https://sepolia.etherscan.io/tx/0xb78825ae48a53c7d254029747c84d24eb527097c9837cf152c3810fc3135a3f8
+     * https://sepolia.explorer.zksync.io/tx/0x9a2b4ff9e73fa62db8fe3e7cdd9d995c084396daa18cefc1eb8024d15ffb15ae
      */
   });
