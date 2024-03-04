@@ -70,7 +70,13 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
      * Now that its confirmed and not executed, we can execute our message in its outbox entry.
      */
     const l1Gateway = await hre.ethers.getContractAt('ZkSyncL1Gateway', l1GatewayAddr, l1Wallet);
-    const l1Tx = await l1Gateway.finalizeMessage(withdrawalParams.l1BatchNumber, withdrawalParams.l2MessageIndex, withdrawalParams.l2TxNumberInBlock, withdrawalParams.message, withdrawalParams.proof);
+    const l1Tx = await l1Gateway.finalizeMessage(
+      withdrawalParams.l1BatchNumber,
+      withdrawalParams.l2MessageIndex,
+      withdrawalParams.l2TxNumberInBlock,
+      withdrawalParams.message,
+      withdrawalParams.proof,
+    );
     const l1Receipt = await l1Tx.wait();
     console.log('Done! Your transaction is executed', l1Receipt);
 
