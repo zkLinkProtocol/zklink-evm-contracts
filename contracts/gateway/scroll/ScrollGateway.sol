@@ -22,6 +22,12 @@ abstract contract ScrollGateway is BaseGateway, IMessageClaimer {
         _;
     }
 
+    /// @dev Modifier to make sure the original sender is gateway on remote chain.
+    modifier onlyRemoteGateway() {
+        require(MESSAGE_SERVICE.xDomainMessageSender() == remoteGateway, "Not remote gateway");
+        _;
+    }
+
     constructor(IScrollMessenger _messageService) {
         MESSAGE_SERVICE = _messageService;
     }
