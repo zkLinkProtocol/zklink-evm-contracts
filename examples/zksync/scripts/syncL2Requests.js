@@ -82,3 +82,18 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
      * https://sepolia.etherscan.io/tx/0xa1cee7b21085d3ee3e359aea3704f5ba15676db38d83a64be48e25cad716cab4
      */
   });
+
+task('getFinalizeParams', 'Get finalize params of l2 tx')
+  .addParam('hash', 'The l2 tx hash', undefined, types.string)
+  .setAction(async taskArgs => {
+    const l2TxHash = taskArgs.hash;
+    console.log(`The l2 tx hash: ${l2TxHash}`);
+
+    const walletPrivateKey = process.env.DEVNET_PRIVKEY;
+    const l1Provider = new Provider(process.env.L1RPC);
+    const l2Provider = new Provider(process.env.L2RPC);
+    const wallet = new Wallet(walletPrivateKey, l2Provider, l1Provider);
+
+    const params = await wallet.finalizeWithdrawalParams(l2TxHash);
+    console.log(`Finalize params: ${JSON.stringify(params)}`);
+  });

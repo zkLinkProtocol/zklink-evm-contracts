@@ -55,7 +55,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         uint256 _l2BatchNumber,
         uint256 _l2MessageIndex,
         uint16 _l2TxNumberInBatch,
-        bytes memory _message,
+        bytes calldata _message,
         bytes32[] calldata _merkleProof
     ) external nonReentrant {
         require(!isMessageFinalized[_l2BatchNumber][_l2MessageIndex], "Message was finalized");
@@ -99,15 +99,14 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         ARBITRATOR.receiveMessage{value: value}(value, callData);
     }
 
-    /// @dev Decode the ETH withdraw message with additional data about WETH withdrawal that came from L2EthToken
-    /// contract
+    /// @dev Decode the ETH withdraw message with additional data about sendMessage that came from ZkSyncL2Gateway
     function _parseL2EthWithdrawalMessage(
         bytes memory _message
     ) internal view returns (uint256 l2Value, bytes memory l2CallData) {
         // Check that the message length is correct.
-        // additionalData (WETH withdrawal data): l2 sender address + weth receiver address = 20 + 20 = 40 (bytes)
-        // It should be equal to the length of the function signature + eth receiver address + uint256 amount +
-        // additionalData >= 4 + 20 + 32 + 20 + 32 = 108 (bytes).
+        // additionalData (sendMessage): l2Value + l2CallData >= 32 (bytes)
+        // It should be equal to the length of the function signature + eth receiver address + uint256 amount + l2Sender
+        // + additionalData >= 4 + 20 + 32 + 20 + 32 = 108 (bytes).
         require(_message.length >= 108, "Incorrect ETH message with additional data length");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
