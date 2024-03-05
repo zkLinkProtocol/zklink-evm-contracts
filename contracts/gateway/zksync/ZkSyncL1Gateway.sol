@@ -107,13 +107,10 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         // additionalData (sendMessage): l2Value + l2CallData >= 32 (bytes)
         // It should be equal to the length of the function signature + eth receiver address + uint256 amount + l2Sender
         // + additionalData >= 4 + 20 + 32 + 20 + 32 = 108 (bytes).
-        require(_message.length >= 108, "Incorrect ETH message with additional data length");
+        require(_message.length >= 108, "Incorrect message length");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
-        require(
-            bytes4(functionSignature) == IMailbox.finalizeEthWithdrawal.selector,
-            "Incorrect ETH message function selector"
-        );
+        require(bytes4(functionSignature) == IMailbox.finalizeEthWithdrawal.selector, "Incorrect function selector");
 
         address l1EthReceiver;
         (l1EthReceiver, offset) = UnsafeBytes.readAddress(_message, offset);
@@ -124,7 +121,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
         address l2Sender;
         (l2Sender, offset) = UnsafeBytes.readAddress(_message, offset);
-        require(l2Sender == remoteGateway, "The withdrawal was not initiated by L2 gateway");
+        require(l2Sender == remoteGateway, "Not initiated by L2 gateway");
 
         // Parse additional data
         (l2Value, offset) = UnsafeBytes.readUint256(_message, offset);
