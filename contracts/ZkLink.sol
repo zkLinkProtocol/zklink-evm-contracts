@@ -542,10 +542,9 @@ contract ZkLink is
         // It should be equal to the length of the bytes4 function signature + address l1Receiver + uint256 amount = 4 + 20 + 32 = 56 (bytes).
         // 2. The message that is sent by `withdrawWithMessage(address _l1Receiver, bytes calldata _additionalData)`
         // It should be equal to the length of the following:
-        // bytes4 function signature + address l1Receiver + uint256 amount + address l2Sender + bytes _additionalData =
-        // = 4 + 20 + 32 + 32 + _additionalData.length >= 68 (bytes).
-
-        // So the data is expected to be at least 56 bytes long.
+        // bytes4 function signature + address l1Gateway + uint256 amount + address l2Sender + bytes _additionalData
+        // (where the _additionalData = abi.encode(l1Receiver))
+        // = 4 + 20 + 32 + 20 + 32 == 108 (bytes).
         require(_message.length == 108, "pm");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
