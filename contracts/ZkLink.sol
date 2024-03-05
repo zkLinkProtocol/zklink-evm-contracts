@@ -73,6 +73,8 @@ contract ZkLink is
     /// @dev Used to indicate that eth withdrawal was already processed
     mapping(uint256 l2BatchNumber => mapping(uint256 l2ToL1MessageNumber => bool isFinalized))
         public isEthWithdrawalFinalized;
+    /// @dev The forward fee allocator
+    address public forwardFeeAllocator;
 
     /// @notice Gateway init
     event InitGateway(IL2Gateway gateway);
@@ -93,11 +95,13 @@ contract ZkLink is
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
-    event WithdrawForwardFee(uint256 amount);
+    event WithdrawForwardFee(address receiver, uint256 amount);
     /// @notice Emitted when the withdrawal is finalized on L1 and funds are released.
     /// @param to The address to which the funds were sent
     /// @param amount The amount of funds that were sent
     event EthWithdrawalFinalized(address indexed to, uint256 amount);
+    /// @notice Forward fee allocator changed
+    event ForwardFeeAllocatorUpdate(address oldAllocator, address newAllocator);
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
@@ -108,6 +112,12 @@ contract ZkLink is
     /// @notice Checks if validator is active
     modifier onlyValidator() {
         require(validators[msg.sender], "Not validator"); // validator is not active
+        _;
+    }
+
+    /// @notice Checks if msg sender is forward fee allocator
+    modifier onlyForwardFeeAllocator() {
+        require(msg.sender == forwardFeeAllocator, "Not forward fee allocator");
         _;
     }
 
@@ -197,6 +207,14 @@ contract ZkLink is
         feeParams = _newFeeParams;
 
         emit NewFeeParams(oldFeeParams, _newFeeParams);
+    }
+
+    /// @dev Update the forward fee allocator
+    function setForwardFeeAllocator(address _newForwardFeeAllocator) external onlyOwner {
+        require(_newForwardFeeAllocator != address(0), "Invalid allocator");
+        address oldAllocator = forwardFeeAllocator;
+        forwardFeeAllocator = _newForwardFeeAllocator;
+        emit ForwardFeeAllocatorUpdate(oldAllocator, _newForwardFeeAllocator);
     }
 
     function l2TransactionBaseCost(
@@ -418,7 +436,7 @@ contract ZkLink is
         emit SyncL2TxHash(_l2TxHash, _primaryChainL2TxHash);
     }
 
-    function withdrawForwardFee(uint256 _amount) external nonReentrant onlyValidator {
+    function withdrawForwardFee(address _receiver, uint256 _amount) external nonReentrant onlyForwardFeeAllocator {
         require(_amount > 0, "Invalid amount");
         uint256 newWithdrawnFee = totalValidatorForwardFeeWithdrawn + _amount;
         require(totalValidatorForwardFee >= newWithdrawnFee, "Withdraw exceed");
@@ -426,9 +444,9 @@ contract ZkLink is
         // Update withdrawn fee
         totalValidatorForwardFeeWithdrawn = newWithdrawnFee;
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = msg.sender.call{value: _amount}("");
+        (bool success, ) = _receiver.call{value: _amount}("");
         require(success, "Withdraw failed");
-        emit WithdrawForwardFee(_amount);
+        emit WithdrawForwardFee(_receiver, _amount);
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
