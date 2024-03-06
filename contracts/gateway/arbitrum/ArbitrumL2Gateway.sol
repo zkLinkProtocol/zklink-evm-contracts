@@ -31,6 +31,7 @@ contract ArbitrumL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
 
         // send message to ArbitrumL1Gateway
         bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
+        // no use of the return value
         ARB_SYS.sendTxToL1{value: _value}(remoteGateway, message);
         emit L2GatewayMessageSent(_value, _callData);
     }

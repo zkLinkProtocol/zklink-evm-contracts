@@ -41,6 +41,7 @@ contract ArbitrumL1Gateway is IMessageClaimer, L1BaseGateway, BaseGateway {
             (uint256, uint256, uint256)
         );
         bytes memory data = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
+        // no use of the return value
         INBOX.createRetryableTicket{value: msg.value}(
             remoteGateway,
             _value,
