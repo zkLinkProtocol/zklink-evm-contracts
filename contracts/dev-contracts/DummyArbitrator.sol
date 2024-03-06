@@ -19,7 +19,7 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function receiveMessage(uint256 _value, bytes memory _callData) external payable {
+    function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
         emit ReceiveMessage(_value, _callData);
     }
@@ -27,8 +27,8 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
     function forwardMessage(
         IL1Gateway _gateway,
         uint256 _value,
-        bytes memory _callData,
-        bytes memory _adapterParams
+        bytes calldata _callData,
+        bytes calldata _adapterParams
     ) external payable {
         // Forward fee to send message
         _gateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);

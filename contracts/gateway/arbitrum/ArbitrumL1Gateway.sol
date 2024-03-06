@@ -33,8 +33,8 @@ contract ArbitrumL1Gateway is IMessageClaimer, L1BaseGateway, BaseGateway {
 
     function sendMessage(
         uint256 _value,
-        bytes memory _callData,
-        bytes memory _adapterParams
+        bytes calldata _callData,
+        bytes calldata _adapterParams
     ) external payable onlyArbitrator {
         (uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas) = abi.decode(
             _adapterParams,
@@ -55,7 +55,7 @@ contract ArbitrumL1Gateway is IMessageClaimer, L1BaseGateway, BaseGateway {
         );
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
+    function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
         ARBITRATOR.receiveMessage{value: _value}(_value, _callData);

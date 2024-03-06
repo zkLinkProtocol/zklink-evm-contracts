@@ -8,5 +8,5 @@ interface IL1Gateway is IGateway {
     /// @param _value The msg value
     /// @param _callData The call data
     /// @param _adapterParams Some params need to call canonical message service
-    function sendMessage(uint256 _value, bytes memory _callData, bytes memory _adapterParams) external payable;
+    function sendMessage(uint256 _value, bytes calldata _callData, bytes calldata _adapterParams) external payable;
 }

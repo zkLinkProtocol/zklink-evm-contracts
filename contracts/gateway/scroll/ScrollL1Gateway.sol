@@ -21,8 +21,8 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
 
     function sendMessage(
         uint256 _value,
-        bytes memory _callData,
-        bytes memory _adapterParams
+        bytes calldata _callData,
+        bytes calldata _adapterParams
     ) external payable override onlyArbitrator {
         uint256 _finalizeMessageGasLimit = abi.decode(_adapterParams, (uint256));
 
@@ -39,7 +39,7 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
 
     function claimMessageCallback(
         uint256 _value,
-        bytes memory _callData
+        bytes calldata _callData
     ) external payable override onlyMessageService onlyRemoteGateway {
         // no fee
         require(msg.value == _value, "Invalid value");

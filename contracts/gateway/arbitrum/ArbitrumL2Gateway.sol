@@ -25,7 +25,7 @@ contract ArbitrumL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
         __BaseGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         // no fee
         require(msg.value == _value, "Invalid value");
 
@@ -36,7 +36,7 @@ contract ArbitrumL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
         emit L2GatewayMessageSent(_value, _callData);
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
+    function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls

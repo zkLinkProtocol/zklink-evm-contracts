@@ -34,8 +34,8 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
     function sendMessage(
         uint256 _value,
-        bytes memory _callData,
-        bytes memory _adapterParams
+        bytes calldata _callData,
+        bytes calldata _adapterParams
     ) external payable onlyArbitrator {
         (uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) = abi.decode(_adapterParams, (uint256, uint256));
         bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));

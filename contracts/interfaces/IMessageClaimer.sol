@@ -5,5 +5,5 @@ interface IMessageClaimer {
     /// @notice Receive callback called by message service
     /// @param _value The message value
     /// @param _callData The message data
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable;
+    function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable;
 }

@@ -31,7 +31,7 @@ contract EthereumGateway is
         return address(this);
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
+    function sendMessage(uint256 _value, bytes calldata _callData, bytes calldata) external payable onlyArbitrator {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -39,7 +39,7 @@ contract EthereumGateway is
         require(success, "Call zkLink failed");
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
         ARBITRATOR.receiveMessage{value: _value}(_value, _callData);

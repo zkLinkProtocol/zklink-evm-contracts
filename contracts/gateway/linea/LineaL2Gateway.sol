@@ -18,7 +18,7 @@ contract LineaL2Gateway is L2BaseGateway, LineaGateway {
         __LineaGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         // msg value should include fee
         uint256 coinbaseFee = IL2MessageService(address(MESSAGE_SERVICE)).minimumFeeInWei();
         require(msg.value == _value + coinbaseFee, "Invalid value");
