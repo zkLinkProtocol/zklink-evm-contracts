@@ -15,7 +15,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
 
-  const messengerL1Contracts = ethereumName !== "ETHEREUM" ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
+  const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
   const messenger = new blast.CrossChainMessenger({
     l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
     l2ChainId: await l2Wallet.getChainId(), // 168587773 for Blast Testnet, 81457 for Blast Mainnet
@@ -26,12 +26,12 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
       Standard: {
         Adapter: blast.StandardBridgeAdapter,
         l1Bridge: messengerL1Contracts.L1StandardBridge,
-        l2Bridge: "0x4200000000000000000000000000000000000010",
+        l2Bridge: '0x4200000000000000000000000000000000000010',
       },
     },
     contracts: {
       l1: messengerL1Contracts,
-    }
+    },
   });
 
   const l1WalletAddress = await l1Wallet.getAddress();
@@ -84,12 +84,12 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The call data: ${executeCalldata}`);
-  const gateway = await hre.ethers.getContractAt('OptimismGateway', blastL2GatewayAddr, l2Wallet);
+  const gateway = await hre.ethers.getContractAt('OptimismGateway', blastL1GatewayAddr, l2Wallet);
   const sendData = gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
 
   const gasLimit = await messenger.estimateGas.sendMessage({
-    direction: 1, // L2_TO_L1, Estimating the Gas Required on L2
-    target: blastL2GatewayAddr,
+    direction: 0, // L1_TO_L2, Estimating the Gas Required on L2
+    target: blastL1GatewayAddr,
     message: sendData,
   });
   console.log(`The gas limit: ${gasLimit}`);
@@ -97,17 +97,16 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
   const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
+  console.log(`The adapter params: ${adapterParams}`);
   console.log('Prepare to forward the message to L2...');
   let tx = await arbitrator.forwardMessage(blastL1GatewayAddr, 0, executeCalldata, adapterParams);
   const txHash = tx.hash;
   console.log(`The tx hash: ${txHash}`);
   await tx.wait();
   console.log(`The transaction has been executed on L1`);
-  // const txHash = "0x3e9006e0dea3412cdb9bd7bcdf322d9cd928e7f11ed5e2730464886929f9c961"
-  // const txHash = "0x8927241a10df6d9eb4e0af34f4daa1919c2879770a35079e68e9ba71f2104a2d"
-  // const txHash = "0xa1d25233cebc53b5064578e74d2820028cdbf7ac4490b6294d10fd13ece5ef94"
+  // const txHash = "0x742c8aedb51057196d55f2a908c4f7704ad5b4d5fcf1d10a333002dedb7beaf6"
 
-  const status = await messenger.getMessageStatus(txHash);
+  const status = await messenger.waitForMessageStatus(txHash, blast.MessageStatus.RELAYED);
   console.log(`The message status: ${status}`);
   /**
    * Query the message informations on L1 via txHash.
