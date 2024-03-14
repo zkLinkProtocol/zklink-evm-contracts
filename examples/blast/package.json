@@ -1,0 +1,15 @@
+{
+  "name": "blast-example",
+  "license": "MIT",
+  "version": "1.0.0",
+  "scripts": {},
+  "devDependencies": {
+    "@eth-optimism/sdk": "^3.2.0",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.9.1"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1"
+  }
+}
