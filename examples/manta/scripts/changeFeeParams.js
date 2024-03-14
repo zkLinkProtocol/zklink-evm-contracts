@@ -98,7 +98,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   console.log(`The tx hash: ${txHash}`);
 
   /**
-   * Query the message informations on L1 via txHash.
+   * Query the message information on L1 via txHash.
    */
   const message = (await messenger.getMessagesByTransaction(txHash)).pop();
   console.log(`The message: ${JSON.stringify(message)}`);
