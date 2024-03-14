@@ -131,7 +131,7 @@ task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
 
     const zkLinkFactory = await hre.ethers.getContractFactory('ZkLink');
     const executeCalldata = zkLinkFactory.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
-    const gatewayFactory = await hre.ethers.getContractFactory('OptimismGateway');
+    const gatewayFactory = await hre.ethers.getContractFactory('OptimismL2Gateway');
     const sendData = gatewayFactory.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
 
     const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);

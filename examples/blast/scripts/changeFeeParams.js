@@ -120,7 +120,7 @@ task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLin
 
   const zkLinkFactory = await hre.ethers.getContractFactory('ZkLink');
   const executeCalldata = zkLinkFactory.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
-  const gatewayFactory = await hre.ethers.getContractFactory('OptimismGateway');
+  const gatewayFactory = await hre.ethers.getContractFactory('OptimismL2Gateway');
   const sendData = gatewayFactory.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
 
   const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
