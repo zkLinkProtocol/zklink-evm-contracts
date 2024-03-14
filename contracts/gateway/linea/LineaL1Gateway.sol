@@ -19,7 +19,7 @@ contract LineaL1Gateway is L1BaseGateway, LineaGateway {
         __LineaGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData, bytes memory) external payable onlyArbitrator {
+    function sendMessage(uint256 _value, bytes calldata _callData, bytes calldata) external payable onlyArbitrator {
         // transfer no fee to destination chain
         require(msg.value == _value, "Invalid value");
         bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));

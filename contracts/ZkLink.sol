@@ -36,6 +36,10 @@ contract ZkLink is
 {
     using UncheckedMath for uint256;
 
+    // keccak256("ForwardL2Request(address gateway,bool isContractCall,address sender,uint256 txId,address contractAddressL2,uint256 l2Value,bytes32 l2CallDataHash,uint256 l2GasLimit,uint256 l2GasPricePerPubdata,bytes32 factoryDepsHash,address refundRecipient)")
+    bytes32 public constant FORWARD_REQUEST_TYPE_HASH =
+        0xe0aaca1722ef50bb0c9b032e5b16ce2b79fa9f23638835456b27fd6894f8292c;
+
     /// @dev Whether eth is the gas token
     bool public immutable IS_ETH_GAS_TOKEN;
 
@@ -73,6 +77,14 @@ contract ZkLink is
     /// @dev Used to indicate that eth withdrawal was already processed
     mapping(uint256 l2BatchNumber => mapping(uint256 l2ToL1MessageNumber => bool isFinalized))
         public isEthWithdrawalFinalized;
+    /// @dev The forward fee allocator
+    address public forwardFeeAllocator;
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
 
     /// @notice Gateway init
     event InitGateway(IL2Gateway gateway);
@@ -93,11 +105,13 @@ contract ZkLink is
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
-    event WithdrawForwardFee(uint256 amount);
+    event WithdrawForwardFee(address receiver, uint256 amount);
     /// @notice Emitted when the withdrawal is finalized on L1 and funds are released.
     /// @param to The address to which the funds were sent
     /// @param amount The amount of funds that were sent
     event EthWithdrawalFinalized(address indexed to, uint256 amount);
+    /// @notice Forward fee allocator changed
+    event ForwardFeeAllocatorUpdate(address oldAllocator, address newAllocator);
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
@@ -108,6 +122,12 @@ contract ZkLink is
     /// @notice Checks if validator is active
     modifier onlyValidator() {
         require(validators[msg.sender], "Not validator"); // validator is not active
+        _;
+    }
+
+    /// @notice Checks if msg sender is forward fee allocator
+    modifier onlyForwardFeeAllocator() {
+        require(msg.sender == forwardFeeAllocator, "Not forward fee allocator");
         _;
     }
 
@@ -199,6 +219,14 @@ contract ZkLink is
         emit NewFeeParams(oldFeeParams, _newFeeParams);
     }
 
+    /// @dev Update the forward fee allocator
+    function setForwardFeeAllocator(address _newForwardFeeAllocator) external onlyOwner {
+        require(_newForwardFeeAllocator != address(0), "Invalid allocator");
+        address oldAllocator = forwardFeeAllocator;
+        forwardFeeAllocator = _newForwardFeeAllocator;
+        emit ForwardFeeAllocatorUpdate(oldAllocator, _newForwardFeeAllocator);
+    }
+
     function l2TransactionBaseCost(
         uint256 _gasPrice,
         uint256 _l2GasLimit,
@@ -283,7 +311,7 @@ contract ZkLink is
                 feeParams.priorityTxMaxPubdata
             );
         }
-        canonicalTxHash = keccak256(abi.encode(request));
+        canonicalTxHash = hashForwardL2Request(request);
 
         // Accumulate sync status
         SecondaryChainSyncStatus memory syncStatus;
@@ -418,7 +446,7 @@ contract ZkLink is
         emit SyncL2TxHash(_l2TxHash, _primaryChainL2TxHash);
     }
 
-    function withdrawForwardFee(uint256 _amount) external nonReentrant onlyValidator {
+    function withdrawForwardFee(address _receiver, uint256 _amount) external nonReentrant onlyForwardFeeAllocator {
         require(_amount > 0, "Invalid amount");
         uint256 newWithdrawnFee = totalValidatorForwardFeeWithdrawn + _amount;
         require(totalValidatorForwardFee >= newWithdrawnFee, "Withdraw exceed");
@@ -426,9 +454,9 @@ contract ZkLink is
         // Update withdrawn fee
         totalValidatorForwardFeeWithdrawn = newWithdrawnFee;
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = msg.sender.call{value: _amount}("");
+        (bool success, ) = _receiver.call{value: _amount}("");
         require(success, "Withdraw failed");
-        emit WithdrawForwardFee(_amount);
+        emit WithdrawForwardFee(_receiver, _amount);
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
@@ -524,10 +552,9 @@ contract ZkLink is
         // It should be equal to the length of the bytes4 function signature + address l1Receiver + uint256 amount = 4 + 20 + 32 = 56 (bytes).
         // 2. The message that is sent by `withdrawWithMessage(address _l1Receiver, bytes calldata _additionalData)`
         // It should be equal to the length of the following:
-        // bytes4 function signature + address l1Receiver + uint256 amount + address l2Sender + bytes _additionalData =
-        // = 4 + 20 + 32 + 32 + _additionalData.length >= 68 (bytes).
-
-        // So the data is expected to be at least 56 bytes long.
+        // bytes4 function signature + address l1Gateway + uint256 amount + address l2Sender + bytes _additionalData
+        // (where the _additionalData = abi.encode(l1Receiver))
+        // = 4 + 20 + 32 + 20 + 32 == 108 (bytes).
         require(_message.length == 108, "pm");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
@@ -548,5 +575,25 @@ contract ZkLink is
             callSuccess := call(gas(), _to, _amount, 0, 0, 0, 0)
         }
         require(callSuccess, "pz");
+    }
+
+    function hashForwardL2Request(ForwardL2Request memory _request) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    FORWARD_REQUEST_TYPE_HASH,
+                    _request.gateway,
+                    _request.isContractCall,
+                    _request.sender,
+                    _request.txId,
+                    _request.contractAddressL2,
+                    _request.l2Value,
+                    keccak256(_request.l2CallData),
+                    _request.l2GasLimit,
+                    _request.l2GasPricePerPubdata,
+                    keccak256(abi.encode(_request.factoryDeps)),
+                    _request.refundRecipient
+                )
+            );
     }
 }

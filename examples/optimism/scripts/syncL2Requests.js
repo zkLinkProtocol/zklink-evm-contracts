@@ -16,11 +16,12 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
     const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
     const optimismName = process.env.OPTIMISM;
+    const ethereumName = process.env.ETHEREUM;
     const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
     const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
     const messenger = new optimism.CrossChainMessenger({
-      l1ChainId: 11155111, // 11155111 for Sepolia, 1 for Ethereum
-      l2ChainId: 11155420, // 11155420 for OP Sepolia, 10 for OP Mainnet
+      l1ChainId: ethereumName !== 'ETHEREUM' ? 11155111 : 1, // 11155111 for Sepolia, 1 for Ethereum
+      l2ChainId: ethereumName !== 'ETHEREUM' ? 11155420 : 10, // 11155420 for OP Sepolia, 10 for OP Mainnet
       l1SignerOrProvider: l1Wallet,
       l2SignerOrProvider: l2Wallet,
     });

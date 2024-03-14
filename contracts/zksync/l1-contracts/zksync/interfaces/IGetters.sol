@@ -32,4 +32,9 @@ interface IGetters {
 
     /// @return The maximum number of L2 gas that a user can request for L1 -> L2 transactions
     function getPriorityTxMaxGasLimit() external view returns (uint256);
+
+    /// @return Whether a withdrawal has been finalized.
+    /// @param _l2BatchNumber The L2 batch number within which the withdrawal happened.
+    /// @param _l2MessageIndex The index of the L2->L1 message denoting the withdrawal.
+    function isEthWithdrawalFinalized(uint256 _l2BatchNumber, uint256 _l2MessageIndex) external view returns (bool);
 }

@@ -17,7 +17,7 @@ contract OptimismL2Gateway is L2BaseGateway, OptimismGateway {
         __OptimismGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         require(msg.value == _value, "Invalid fee");
 
         bytes memory message = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));

@@ -247,7 +247,7 @@
     }
   },
   "BLASTTEST": {
-    "eth": false,
+    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],

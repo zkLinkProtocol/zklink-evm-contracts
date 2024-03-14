@@ -22,7 +22,7 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
     const zksyncName = process.env.ZKSYNC;
     const ethereumName = process.env.ETHEREUM;
     const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
-    const l2Wallet = new Wallet(walletPrivateKey, l2Provider);
+    const l2Wallet = new Wallet(walletPrivateKey, l2Provider, l1Provider);
 
     const l2WalletAddress = await l2Wallet.getAddress();
     const l2WalletBalance = ethers.formatEther(await l2Wallet.getBalance());
@@ -52,33 +52,36 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
     const l2Tx = await zkLink.syncL2Requests(txs);
     const txHash = l2Tx.hash;
     console.log(`The l2 tx hash: ${txHash}`);
-    // const txHash = "0xea2da9a0bf26de481403976a49dab1cb13362a609370d8b175f52cd9c0e46bc3"
+    // const txHash = "0x4948b5b62d415eca82629e9043bbcada07abeabc5f1a91bfbca664ce7bf3e046"
     const txHandle = await l2Provider.getTransaction(txHash);
     await txHandle.wait();
 
     // waiting to finalize can take a few minutes.
     await txHandle.waitFinalize();
 
-    const proof = await l2Provider.getLogProof(txHash);
-    console.log('Proof :>> ', proof);
-    const { l1BatchNumber, l1BatchTxIndex } = await l2Provider.getTransactionReceipt(txHash);
-    console.log('L1 Index for Tx in block :>> ', l1BatchTxIndex);
-    console.log('L1 Batch for block :>> ', l1BatchNumber);
+    const withdrawalParams = await l2Wallet.finalizeWithdrawalParams(txHash);
+    console.log('L1 Batch for block :>> ', withdrawalParams.l1BatchNumber);
+    console.log('L2 message index :>> ', withdrawalParams.l2MessageIndex);
+    console.log('L1 Index for Tx in block :>> ', withdrawalParams.l2TxNumberInBlock);
+    console.log('L2 to L1 message :>> ', withdrawalParams.message);
+    console.log('Proof :>> ', withdrawalParams.proof);
 
     /**
      * Now that its confirmed and not executed, we can execute our message in its outbox entry.
      */
-    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-    const callData = abiCoder.encode(['uint256', 'uint256'], [0, txs]);
-    const message = abiCoder.encode(['uint256', 'bytes'], [0, callData]);
-    console.log(`The message sent from L2 to L1: ${message}`);
     const l1Gateway = await hre.ethers.getContractAt('ZkSyncL1Gateway', l1GatewayAddr, l1Wallet);
-    const l1Tx = await l1Gateway.finalizeMessage(l1BatchNumber, proof.id, l1BatchTxIndex, message, proof.proof);
+    const l1Tx = await l1Gateway.finalizeMessage(
+      withdrawalParams.l1BatchNumber,
+      withdrawalParams.l2MessageIndex,
+      withdrawalParams.l2TxNumberInBlock,
+      withdrawalParams.message,
+      withdrawalParams.proof,
+    );
     const l1Receipt = await l1Tx.wait();
     console.log('Done! Your transaction is executed', l1Receipt);
 
     /** Example Txs
-     * https://sepolia.explorer.zksync.io/tx/0xea2da9a0bf26de481403976a49dab1cb13362a609370d8b175f52cd9c0e46bc3
-     * https://sepolia.etherscan.io/tx/0xa1cee7b21085d3ee3e359aea3704f5ba15676db38d83a64be48e25cad716cab4
+     * https://sepolia.explorer.zksync.io/tx/0x4948b5b62d415eca82629e9043bbcada07abeabc5f1a91bfbca664ce7bf3e046
+     * https://sepolia.etherscan.io/tx/0x61044b2b88c2947010917f7c57b5bd43123bc6824e9a2215e6622d6f88d9320b
      */
   });

@@ -22,8 +22,8 @@ task('setValidator', 'Set validator for zkLink')
     const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
 
     const messenger = new mantle.CrossChainMessenger({
-      l1ChainId: 5, // 5 for Goerli, 1 for Ethereum
-      l2ChainId: 5001, // 5001 for Mantle Testnet, 5000 for Mantle Mainnet
+      l1ChainId: ethereumName !== 'ETHEREUM' ? 5 : 1, // 5 for Goerli, 1 for Ethereum
+      l2ChainId: ethereumName !== 'ETHEREUM' ? 5001 : 5000, // 5001 for Mantle Testnet, 5000 for Mantle Mainnet
       l1SignerOrProvider: l1Wallet,
       l2SignerOrProvider: l2Wallet,
       bedrock: true,

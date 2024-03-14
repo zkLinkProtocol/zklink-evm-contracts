@@ -31,22 +31,16 @@ contract ZkSyncL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
         __BaseGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         // no fee
         require(msg.value == _value, "Invalid value");
 
-        if (_value > 0) {
-            // send eth to ZkSyncL1Gateway(the first message send to L1)
-            L2_ETH_ADDRESS.withdraw{value: _value}(remoteGateway);
-        }
-
-        // send message to ZkSyncL1Gateway(the second message send to L1)
-        bytes memory message = abi.encode(_value, _callData);
-        L2_MESSENGER.sendToL1(message);
+        bytes memory message = abi.encodePacked(_value, _callData);
+        L2_ETH_ADDRESS.withdrawWithMessage{value: _value}(remoteGateway, message);
         emit L2GatewayMessageSent(_value, _callData);
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable onlyRemoteGateway {
+    function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls

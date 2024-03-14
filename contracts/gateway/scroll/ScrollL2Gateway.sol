@@ -18,7 +18,7 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
         __ScrollGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable override onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         // no fee
         require(msg.value == _value, "Invalid value");
 
@@ -33,7 +33,10 @@ contract ScrollL2Gateway is L2BaseGateway, ScrollGateway {
         emit L2GatewayMessageSent(_value, _callData);
     }
 
-    function claimMessageCallback(uint256 _value, bytes memory _callData) external payable override onlyMessageService {
+    function claimMessageCallback(
+        uint256 _value,
+        bytes calldata _callData
+    ) external payable override onlyMessageService onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls

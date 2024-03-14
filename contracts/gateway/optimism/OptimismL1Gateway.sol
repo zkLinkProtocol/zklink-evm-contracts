@@ -21,8 +21,8 @@ contract OptimismL1Gateway is L1BaseGateway, OptimismGateway {
 
     function sendMessage(
         uint256 _value,
-        bytes memory _callData,
-        bytes memory _adapterParams
+        bytes calldata _callData,
+        bytes calldata _adapterParams
     ) external payable onlyArbitrator {
         require(msg.value == _value, "Invalid value");
         uint32 _minGasLimit = abi.decode(_adapterParams, (uint32));

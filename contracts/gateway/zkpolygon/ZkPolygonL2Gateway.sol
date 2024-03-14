@@ -29,7 +29,7 @@ contract ZkPolygonL2Gateway is IBridgeMessageReceiver, L2BaseGateway, BaseGatewa
         __BaseGateway_init();
     }
 
-    function sendMessage(uint256 _value, bytes memory _callData) external payable onlyZkLink {
+    function sendMessage(uint256 _value, bytes calldata _callData) external payable onlyZkLink {
         // no fee
         require(msg.value == _value, "Invalid value");
 
@@ -46,7 +46,7 @@ contract ZkPolygonL2Gateway is IBridgeMessageReceiver, L2BaseGateway, BaseGatewa
     function onMessageReceived(
         address originAddress,
         uint32,
-        bytes memory data
+        bytes calldata data
     ) external payable override onlyMessageService {
         require(originAddress == remoteGateway, "Invalid origin address");
         (uint256 _value, bytes memory _callData) = abi.decode(data, (uint256, bytes));

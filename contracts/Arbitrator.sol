@@ -27,6 +27,12 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     mapping(IL1Gateway => DoubleEndedQueueUpgradeable.Bytes32Deque) public secondaryChainMessageHashQueues;
     /// @notice List of permitted relayers
     mapping(address relayerAddress => bool isRelayer) public relayers;
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
 
     /// @notice Primary chain gateway init
     event InitPrimaryChain(IL1Gateway gateway);
@@ -47,6 +53,10 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     modifier onlyRelayer() {
         require(relayers[msg.sender], "Not relayer"); // relayer is not active
         _;
+    }
+
+    constructor() {
+        _disableInitializers();
     }
 
     function initialize() external initializer {
@@ -77,7 +87,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     function setSecondaryChainGateway(
         IL1Gateway _gateway,
         bool _active,
-        bytes memory _adapterParams
+        bytes calldata _adapterParams
     ) external payable onlyOwner {
         require(_gateway != primaryChainGateway, "Invalid gateway");
         secondaryChainGateways[_gateway] = _active;
@@ -98,7 +108,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         IL1Gateway _gateway,
         address _validator,
         bool _active,
-        bytes memory _adapterParams
+        bytes calldata _adapterParams
     ) external payable onlyOwner {
         require(_gateway == primaryChainGateway || secondaryChainGateways[_gateway], "Invalid gateway");
         bytes memory callData = abi.encodeCall(IAdmin.setValidator, (_validator, _active));
@@ -111,7 +121,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     function changeFeeParams(
         IL1Gateway _gateway,
         FeeParams calldata _newFeeParams,
-        bytes memory _adapterParams
+        bytes calldata _adapterParams
     ) external payable onlyOwner {
         require(_gateway == primaryChainGateway || secondaryChainGateways[_gateway], "Invalid gateway");
         bytes memory callData = abi.encodeCall(IAdmin.changeFeeParams, (_newFeeParams));
@@ -120,7 +130,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         emit NewFeeParams(_gateway, _newFeeParams);
     }
 
-    function receiveMessage(uint256 _value, bytes memory _callData) external payable {
+    function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
         // store message hash for forwarding
         bytes32 finalizeMessageHash = keccak256(abi.encode(_value, _callData));
@@ -137,8 +147,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     function forwardMessage(
         IL1Gateway _gateway,
         uint256 _value,
-        bytes memory _callData,
-        bytes memory _adapterParams
+        bytes calldata _callData,
+        bytes calldata _adapterParams
     ) external payable nonReentrant onlyRelayer {
         bytes32 finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         if (_gateway == primaryChainGateway) {
