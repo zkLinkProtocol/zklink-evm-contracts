@@ -4,6 +4,7 @@ const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
 const { L1_MAINNET_CONTRACTS, L1_TESTNET_CONTRACTS } = require('./constants');
 const { task } = require('hardhat/config');
+const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
 require('dotenv').config();
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArgs, hre) => {
@@ -77,7 +78,6 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
 
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
-  const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   const executeCalldata = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
   const gateway = await hre.ethers.getContractAt('OptimismGateway', blastL1GatewayAddr, l1Wallet);
   const sendData = gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
@@ -105,4 +105,57 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   console.log(`The message: ${JSON.stringify(message, null, 2)}`);
   console.log('Done');
   // Waiting for the official blast bridge to forward the message to L2
+});
+
+task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (taskArgs, hre) => {
+  const blastName = process.env.BLAST;
+  const ethereumName = process.env.ETHEREUM;
+  const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, blastName);
+  const blastL1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+  if (blastL1GatewayAddr === undefined) {
+    console.log('blast l1 gateway address not exist');
+    return;
+  }
+  console.log(`The blast l1 gateway address: ${blastL1GatewayAddr}`);
+
+  const zkLinkFactory = await hre.ethers.getContractFactory('ZkLink');
+  const executeCalldata = zkLinkFactory.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
+  const gatewayFactory = await hre.ethers.getContractFactory('OptimismGateway');
+  const sendData = gatewayFactory.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+
+  const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
+  const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
+  const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
+  const messenger = new blast.CrossChainMessenger({
+    l1ChainId: (await l1Provider.getNetwork()).chainId, // 11155111 for Sepolia, 1 for Ethereum
+    l2ChainId: (await l2Provider.getNetwork()).chainId, // 168587773 for Blast Testnet, 81457 for Blast Mainnet
+    l1SignerOrProvider: l1Provider,
+    l2SignerOrProvider: l2Provider,
+    bedrock: false,
+    bridges: {
+      Standard: {
+        Adapter: blast.StandardBridgeAdapter,
+        l1Bridge: messengerL1Contracts.L1StandardBridge,
+        l2Bridge: '0x4200000000000000000000000000000000000010',
+      },
+    },
+    contracts: {
+      l1: messengerL1Contracts,
+    },
+  });
+
+  const gasLimit = await messenger.estimateGas.sendMessage({
+    direction: 0, // L1_TO_L2, Estimating the Gas Required on L2
+    target: blastL1GatewayAddr,
+    message: sendData,
+  });
+  console.log(`The gas limit: ${gasLimit}`);
+  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
+  const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
+  const calldata = arbitratorFactory.interface.encodeFunctionData('changeFeeParams', [
+    blastL1GatewayAddr,
+    INIT_FEE_PARAMS,
+    adapterParams,
+  ]);
+  console.log(`The changeFeeParams calldata: ${calldata}`);
 });

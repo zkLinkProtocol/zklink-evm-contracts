@@ -10,7 +10,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-task('setSecondaryGateway', 'Send secondary gateway')
+task('setSecondaryGateway', 'Set secondary gateway')
   .addOptionalParam(
     'arbitrator',
     'The arbitrator address (default get from arbitrator deploy log)',
@@ -112,4 +112,44 @@ task('setSecondaryGateway', 'Send secondary gateway')
       await sleep(60 * 1000);
     }
     console.log('Done');
+  });
+
+task('encodeSetSecondaryGateway', 'Get the calldata of set secondary gateway')
+  .addParam('targetNetwork', 'L2 network name', undefined, types.string, false)
+  .addOptionalParam('active', 'Enable the gateway?', true, types.boolean)
+  .setAction(async (taskArgs, hre) => {
+    const ethereumName = process.env.ETHEREUM;
+    const lineaName = process.env.LINEA;
+    console.log(`Ethereum net name: ${ethereumName}`);
+    console.log(`Linea net name: ${lineaName}`);
+
+    let targetNetwork = taskArgs.targetNetwork;
+    const active = taskArgs.active;
+    console.log(`Enable the gateway? ${active}`);
+    if (targetNetwork === lineaName) {
+      console.log('Can not set for primary chain');
+      return;
+    }
+
+    let l1GatewayAddr;
+    if (targetNetwork === ethereumName) {
+      l1GatewayAddr = readDeployContract(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, ethereumName);
+    } else {
+      const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, targetNetwork);
+      l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+    }
+    if (l1GatewayAddr === undefined) {
+      console.log('L1 gateway address not found');
+      return;
+    }
+    console.log(`The secondary chain l1 gateway address: ${l1GatewayAddr}`);
+
+    const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
+    const adapterParams = '0x';
+    const calldata = arbitratorFactory.interface.encodeFunctionData('setSecondaryChainGateway', [
+      l1GatewayAddr,
+      active,
+      adapterParams,
+    ]);
+    console.log(`The setSecondaryChainGateway calldata: ${calldata}`);
   });

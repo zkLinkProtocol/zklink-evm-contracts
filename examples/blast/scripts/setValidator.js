@@ -110,3 +110,64 @@ task('setValidator', 'Set validator for zkLink')
     console.log('Done');
     // Waiting for the official blast bridge to forward the message to L2
   });
+
+task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
+  .addParam('validator', 'Validator Address', undefined, types.string)
+  .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)
+  .setAction(async (taskArgs, hre) => {
+    const validatorAddr = taskArgs.validator;
+    const isActive = taskArgs.active;
+    console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
+
+    const blastName = process.env.BLAST;
+    const ethereumName = process.env.ETHEREUM;
+    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, blastName);
+    const blastL1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+    if (blastL1GatewayAddr === undefined) {
+      console.log('blast l1 gateway address not exist');
+      return;
+    }
+    console.log(`The blast l1 gateway address: ${blastL1GatewayAddr}`);
+
+    const zkLinkFactory = await hre.ethers.getContractFactory('ZkLink');
+    const executeCalldata = zkLinkFactory.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
+    const gatewayFactory = await hre.ethers.getContractFactory('OptimismGateway');
+    const sendData = gatewayFactory.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+
+    const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
+    const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
+    const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
+    const messenger = new blast.CrossChainMessenger({
+      l1ChainId: (await l1Provider.getNetwork()).chainId, // 11155111 for Sepolia, 1 for Ethereum
+      l2ChainId: (await l2Provider.getNetwork()).chainId, // 168587773 for Blast Testnet, 81457 for Blast Mainnet
+      l1SignerOrProvider: l1Provider,
+      l2SignerOrProvider: l2Provider,
+      bedrock: false,
+      bridges: {
+        Standard: {
+          Adapter: blast.StandardBridgeAdapter,
+          l1Bridge: messengerL1Contracts.L1StandardBridge,
+          l2Bridge: '0x4200000000000000000000000000000000000010',
+        },
+      },
+      contracts: {
+        l1: messengerL1Contracts,
+      },
+    });
+
+    const gasLimit = await messenger.estimateGas.sendMessage({
+      direction: 0, // L1_TO_L2, Estimating the Gas Required on L2
+      target: blastL1GatewayAddr,
+      message: sendData,
+    });
+    console.log(`The gas limit: ${gasLimit}`);
+    const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
+    const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
+    const calldata = arbitratorFactory.interface.encodeFunctionData('setValidator', [
+      blastL1GatewayAddr,
+      validatorAddr,
+      isActive,
+      adapterParams,
+    ]);
+    console.log(`The changeFeeParams calldata: ${calldata}`);
+  });
