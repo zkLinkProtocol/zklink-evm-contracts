@@ -2,11 +2,12 @@ const base = require('@eth-optimism/sdk');
 const ethers = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
+const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
 const { L1_MAINNET_CONTRACTS, L1_TESTNET_CONTRACTS } = require('./constants');
 const { task } = require('hardhat/config');
 require('dotenv').config();
 
-async function preProcess() {
+async function preProcess(hre) {
   const walletPrivateKey = process.env.DEVNET_PRIVKEY;
   const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
   const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
@@ -57,11 +58,7 @@ async function preProcess() {
   }
   console.log(`The base l1 gateway address: ${baseL1GatewayAddr}`);
 
-  const baseL2GatewayAddr = readDeployContract(
-    logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
-    logName.DEPLOY_GATEWAY,
-    baseName,
-  );
+  const baseL2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, baseName);
   if (baseL2GatewayAddr === undefined) {
     console.log('base l2 gateway address not exist');
     return;
@@ -70,7 +67,6 @@ async function preProcess() {
 
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
-  const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   const executeCalldata = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
   console.log(`The call data: ${executeCalldata}`);
   const gateway = await hre.ethers.getContractAt('OptimismGateway', baseL2GatewayAddr, l2Wallet);
@@ -92,14 +88,12 @@ async function preProcess() {
     messenger,
     arbitrator,
     baseL1GatewayAddr,
-    INIT_FEE_PARAMS,
     adapterParams,
-  }
-};
+  };
+}
 
-task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArgs, hre) => {
-
-  const { messenger, arbitrator, baseL1GatewayAddr, INIT_FEE_PARAMS, adapterParams } = await preProcess();
+task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre) => {
+  const { messenger, arbitrator, baseL1GatewayAddr, adapterParams } = await preProcess(hre);
 
   console.log('Prepare to forward the message to L2...');
   let tx = await arbitrator.changeFeeParams(baseL1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
@@ -118,10 +112,8 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   console.log('Done');
 });
 
-
-task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (taskArgs, hre) => {
-
-  const { messenger, arbitrator, baseL1GatewayAddr, INIT_FEE_PARAMS, adapterParams } = await preProcess();
+task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (_, hre) => {
+  const { arbitrator, baseL1GatewayAddr, adapterParams } = await preProcess(hre);
 
   const calldata = arbitrator.interface.encodeFunctionData('changeFeeParams', [
     baseL1GatewayAddr,
@@ -130,4 +122,3 @@ task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLin
   ]);
   console.log(`The changeFeeParams calldata: ${calldata}`);
 });
-

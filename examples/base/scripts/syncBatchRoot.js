@@ -57,11 +57,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   }
   console.log(`The base l1 gateway address: ${baseL1GatewayAddr}`);
 
-  const baseL2GatewayAddr = readDeployContract(
-    logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
-    logName.DEPLOY_GATEWAY,
-    baseName,
-  );
+  const baseL2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, baseName);
   if (baseL2GatewayAddr === undefined) {
     console.log('base l2 gateway address not exist');
     return;

@@ -6,7 +6,7 @@ const { L1_MAINNET_CONTRACTS, L1_TESTNET_CONTRACTS } = require('./constants');
 const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
-async function preProcess(validatorAddr, isActive) {
+async function preProcess(hre, validatorAddr, isActive) {
   const walletPrivateKey = process.env.DEVNET_PRIVKEY;
   const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
   const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
@@ -57,11 +57,7 @@ async function preProcess(validatorAddr, isActive) {
   }
   console.log(`The base l1 gateway address: ${baseL1GatewayAddr}`);
 
-  const baseL2GatewayAddr = readDeployContract(
-    logName.DEPLOY_L2_GATEWAY_LOG_PREFIX,
-    logName.DEPLOY_GATEWAY,
-    baseName,
-  );
+  const baseL2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, baseName);
   if (baseL2GatewayAddr === undefined) {
     console.log('base l2 gateway address not exist');
     return;
@@ -94,7 +90,7 @@ async function preProcess(validatorAddr, isActive) {
     baseL1GatewayAddr,
     baseL2GatewayAddr,
     adapterParams,
-  }
+  };
 }
 
 task('setValidator', 'Set validator for zkLink')
@@ -105,7 +101,7 @@ task('setValidator', 'Set validator for zkLink')
     const isActive = taskArgs.active;
     console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
 
-    const { messenger, arbitrator, baseL1GatewayAddr, baseL2GatewayAddr, adapterParams } = await preProcess(validatorAddr, isActive);
+    const { messenger, arbitrator, baseL1GatewayAddr, adapterParams } = await preProcess(hre, validatorAddr, isActive);
 
     console.log('Prepare to forward the message to L2...');
     let tx = await arbitrator.setValidator(baseL1GatewayAddr, validatorAddr, isActive, adapterParams);
@@ -124,7 +120,6 @@ task('setValidator', 'Set validator for zkLink')
     console.log('Done');
   });
 
-
 task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
   .addParam('validator', 'Validator Address', undefined, types.string)
   .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)
@@ -133,7 +128,7 @@ task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
     const isActive = taskArgs.active;
     console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
 
-    const { messenger, arbitrator, baseL1GatewayAddr, baseL2GatewayAddr, adapterParams } = await preProcess(validatorAddr, isActive);
+    const { arbitrator, baseL1GatewayAddr, adapterParams } = await preProcess(hre, validatorAddr, isActive);
 
     const calldata = arbitrator.interface.encodeFunctionData('setValidator', [
       baseL1GatewayAddr,
