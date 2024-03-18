@@ -15,8 +15,8 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
 
   const messenger = new mantle.CrossChainMessenger({
-    l1ChainId: ethereumName !== 'ETHEREUM' ? 5 : 1, // 5 for Goerli, 1 for Ethereum
-    l2ChainId: ethereumName !== 'ETHEREUM' ? 5001 : 5000, // 5001 for Mantle Testnet, 5000 for Mantle Mainnet
+    l1ChainId: await l1Wallet.getChainId(), // 5 for Goerli, 1 for Ethereum
+    l2ChainId: await l2Wallet.getChainId(), // 5003 for Mantle Testnet, 5000 for Mantle Mainnet
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
     bedrock: true,
@@ -71,12 +71,22 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const l2LogsRootHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(`L2 logs root hash ${blockNumber}`));
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
-  console.log(`The call data: ${executeCalldata}`);
+  console.log(`The executeCalldata: ${executeCalldata}`);
+
+  const gateway = await hre.ethers.getContractAt('OptimismGateway', mantleL2GatewayAddr, l2Wallet);
+  const sendData = gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
+
+  const gasLimit = await l1Provider.estimateGas({
+    from: l1WalletAddress,
+    to: mantleL2GatewayAddr,
+    data: sendData,
+  });
+  console.log(`The gas limit: ${gasLimit}`);
 
   // forward message to L2
-  const gasLimit = 400000;
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
   const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
+  console.log(`The adapterParams: ${adapterParams}`);
   console.log('Prepare to forward the message to L2...');
   let tx = await arbitrator.forwardMessage(mantleL1GatewayAddr, 0, executeCalldata, adapterParams);
   const txHash = tx.hash;
@@ -93,6 +103,6 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   console.log('Done');
 
   // Example txs:
-  // https://goerli.etherscan.io/tx/0xf9293e70159720af00a35e0d9a1b0fcd917d075e1b87c2136048ba22d94b5721
-  // https://explorer.testnet.mantle.xyz/tx/0xfc6c4da2fe72ce3eb474e5c8371e947cbaeb026ac77fbdb49ca8a3ad70458dfc
+  // https://sepolia.etherscan.io/tx/0xf600a71aaa7631dbbd01f94b821c1bd59ab0737410a0d8b198bf375122f42d2a
+  // https://explorer.sepolia.mantle.xyz/tx/0xd11cd5f651b64fc44dbe6509589467b6ab682831733004992a091cda0104567f
 });

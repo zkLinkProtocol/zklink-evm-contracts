@@ -103,14 +103,14 @@
   "MANTLE": {
     "eth": false,
     "l2Gateway": {
-      "contractName": "OptimismL2Gateway",
+      "contractName": "MantleL2Gateway",
       "constructParams": [],
       "initializeParams": []
     },
     "l1Gateway": {
       "netName": "ETHEREUM",
-      "contractName": "OptimismL1Gateway",
-      "constructParams": ["0x676A795fe6E43C17c668de16730c3F690FEB7120"],
+      "contractName": "MantleL1Gateway",
+      "constructParams": [""],
       "initializeParams": []
     }
   },
@@ -235,14 +235,14 @@
   "MANTLETEST": {
     "eth": false,
     "l2Gateway": {
-      "contractName": "OptimismL2Gateway",
+      "contractName": "MantleL2Gateway",
       "constructParams": [],
       "initializeParams": []
     },
     "l1Gateway": {
-      "netName": "GOERLI",
-      "contractName": "OptimismL1Gateway",
-      "constructParams": ["0x7Bfe603647d5380ED3909F6f87580D0Af1B228B4"],
+      "netName": "SEPOLIA",
+      "contractName": "MantleL1Gateway",
+      "constructParams": ["0x37dAC5312e31Adb8BB0802Fc72Ca84DA5cDfcb4c"],
       "initializeParams": []
     }
   },
