@@ -128,6 +128,20 @@
       "initializeParams": []
     }
   },
+  "BASE": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x866E82a600A1414e583f7F13623F1aC5d58b0Afa"],
+      "initializeParams": []
+    }
+  },
   "GOERLI": {
     "eth": true
   },
@@ -257,6 +271,20 @@
       "netName": "SEPOLIA",
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x9338F298F29D3918D5D1Feb209aeB9915CC96333"],
+      "initializeParams": []
+    }
+  },
+  "BASETEST": {
+    "eth": true,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "SEPOLIA",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0xC34855F4De64F1840e5686e64278da901e261f20"],
       "initializeParams": []
     }
   }
