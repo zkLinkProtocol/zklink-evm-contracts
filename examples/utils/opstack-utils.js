@@ -180,7 +180,7 @@ async function syncL2Requests(hre, messenger, l2Wallet, ethereumName, opChainNam
     const calldata = zkLink.interface.encodeFunctionData('syncL2Requests', [txs]);
     console.log(`The calldata: ${calldata}`);
     const gasLimit = await l2Wallet.provider.estimateGas({
-        from: l2WalletAddress,
+        from: l2Wallet.address,
         to: zkLinkAddr,
         data: calldata,
     });
