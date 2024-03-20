@@ -26,25 +26,13 @@ async function initMessenger() {
     l2SignerOrProvider: l2Wallet,
   });
 
-  return { l1Wallet, l2Wallet, messenger, ethereumName, optimismName };
+  return { messenger, ethereumName, optimismName };
 }
 
 task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
-  const { l1Wallet, l2Wallet, messenger, ethereumName, optimismName } = await initMessenger();
+  const { messenger, ethereumName, optimismName } = await initMessenger();
 
-  const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
-
-  const message = await syncBatchRoot(
-    hre,
-    messenger,
-    l1Wallet,
-    l2Wallet.provider,
-    ethereumName,
-    optimismName,
-    'optimism',
-  );
+  const message = await syncBatchRoot(hre, messenger, ethereumName, optimismName, 'optimism');
   // Waiting for the official optimism bridge to forward the message to L2
   const rec = await messenger.waitForMessageReceipt(message);
   console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
@@ -61,13 +49,9 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const txs = taskArgs.txs;
     console.log(`The sync point: txs: ${txs}`);
 
-    const { l2Wallet, messenger, ethereumName, optimismName } = await initMessenger();
+    const { messenger, ethereumName, optimismName } = await initMessenger();
 
-    const l2WalletAddress = await l2Wallet.getAddress();
-    const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
-    console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
-
-    await syncL2Requests(hre, messenger, l2Wallet, ethereumName, optimismName, 'optimism', txs);
+    await syncL2Requests(hre, messenger, ethereumName, optimismName, 'optimism', txs);
 
     console.log('Done! Your transaction is executed');
 
@@ -84,22 +68,9 @@ task('setValidator', 'Set validator for zkLink')
     const isActive = taskArgs.active;
     console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
 
-    const { l1Wallet, messenger, ethereumName, optimismName } = await initMessenger();
+    const { messenger, ethereumName, optimismName } = await initMessenger();
 
-    const l1WalletAddress = await l1Wallet.getAddress();
-    const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-    console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
-
-    const message = await setValidator(
-      hre,
-      messenger,
-      l1Wallet,
-      ethereumName,
-      optimismName,
-      'optimism',
-      validatorAddr,
-      isActive,
-    );
+    const message = await setValidator(hre, messenger, ethereumName, optimismName, 'optimism', validatorAddr, isActive);
     // Waiting for the official optimism bridge to forward the message to L2
     const rec = await messenger.waitForMessageReceipt(message);
     console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
@@ -107,13 +78,9 @@ task('setValidator', 'Set validator for zkLink')
   });
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre) => {
-  const { l1Wallet, messenger, ethereumName, optimismName } = await initMessenger();
+  const { messenger, ethereumName, optimismName } = await initMessenger();
 
-  const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
-
-  const message = await changeFeeParams(hre, messenger, l1Wallet, ethereumName, optimismName, 'optimism');
+  const message = await changeFeeParams(hre, messenger, ethereumName, optimismName, 'optimism');
 
   // Waiting for the official optimism bridge to forward the message to L2
   const rec = await messenger.waitForMessageReceipt(message);

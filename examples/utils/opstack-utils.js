@@ -80,12 +80,18 @@ async function generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalld
   return adapterParams;
 }
 
-async function syncBatchRoot(hre, messenger, l1Wallet, l2Provider, ethereumName, opChainName, chainName) {
+async function syncBatchRoot(hre, messenger, ethereumName, opChainName, chainName) {
   const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
     ethereumName,
     opChainName,
     chainName,
   );
+  const l1Wallet = messenger.l1Signer;
+  const l2Provider = messenger.l2Provider;
+
+  const l1WalletAddress = await l1Wallet.getAddress();
+  const l1WalletBalance = ethers.formatEther((await l1Wallet.getBalance()).toString());
+  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('DummyZkLink', zkLinkAddr);
@@ -97,11 +103,26 @@ async function syncBatchRoot(hre, messenger, l1Wallet, l2Provider, ethereumName,
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The call data: ${executeCalldata}`);
   const adapterParams = await generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata);
-
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
+  const sendData = arbitrator.interface.encodeFunctionData('forwardMessage', [
+    l1GatewayAddr,
+    0,
+    executeCalldata,
+    adapterParams,
+  ]);
+  const feeData = await l1Wallet.getFeeData();
+  const gasLimit = await l1Wallet.provider.estimateGas({
+    from: l1Wallet.address,
+    to: arbitratorAddr,
+    data: sendData,
+  });
   console.log('Prepare to forward the message to L2...');
-  let tx = await arbitrator.forwardMessage(l1GatewayAddr, 0, executeCalldata, adapterParams);
+  let tx = await arbitrator.forwardMessage(l1GatewayAddr, 0, executeCalldata, adapterParams, {
+    maxFeePerGas: feeData.maxFeePerGas.mul(2),
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+    gasLimit: gasLimit.mul(2),
+  });
   const txHash = tx.hash;
   console.log(`The tx hash: ${txHash}`);
   await tx.wait();
@@ -117,12 +138,16 @@ async function syncBatchRoot(hre, messenger, l1Wallet, l2Provider, ethereumName,
   return message;
 }
 
-async function setValidator(hre, messenger, l1Wallet, ethereumName, opChainName, chainName, validatorAddr, isActive) {
+async function setValidator(hre, messenger, ethereumName, opChainName, chainName, validatorAddr, isActive) {
   const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
     ethereumName,
     opChainName,
     chainName,
   );
+  const l1Wallet = messenger.l1Signer;
+  const l1WalletAddress = await l1Wallet.getAddress();
+  const l1WalletBalance = ethers.formatEther((await l1Wallet.getBalance()).toString());
+  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
@@ -131,8 +156,24 @@ async function setValidator(hre, messenger, l1Wallet, ethereumName, opChainName,
 
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
+  const sendData = arbitrator.interface.encodeFunctionData('setValidator', [
+    l1GatewayAddr,
+    validatorAddr,
+    isActive,
+    adapterParams,
+  ]);
+  const feeData = await l1Wallet.getFeeData();
+  const gasLimit = await l1Wallet.provider.estimateGas({
+    from: l1Wallet.address,
+    to: arbitratorAddr,
+    data: sendData,
+  });
   console.log('Prepare to forward the message to L2...');
-  let tx = await arbitrator.setValidator(l1GatewayAddr, validatorAddr, isActive, adapterParams);
+  let tx = await arbitrator.setValidator(l1GatewayAddr, validatorAddr, isActive, adapterParams, {
+    maxFeePerGas: feeData.maxFeePerGas.mul(2),
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+    gasLimit: gasLimit.mul(2),
+  });
   const txHash = tx.hash;
   console.log(`The tx hash: ${txHash}`);
   await tx.wait();
@@ -147,12 +188,16 @@ async function setValidator(hre, messenger, l1Wallet, ethereumName, opChainName,
   return message;
 }
 
-async function changeFeeParams(hre, messenger, l1Wallet, ethereumName, opChainName, chainName) {
+async function changeFeeParams(hre, messenger, ethereumName, opChainName, chainName) {
   const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
     ethereumName,
     opChainName,
     chainName,
   );
+  const l1Wallet = messenger.l1Signer;
+  const l1WalletAddress = await l1Wallet.getAddress();
+  const l1WalletBalance = ethers.formatEther((await l1Wallet.getBalance()).toString());
+  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
@@ -161,8 +206,23 @@ async function changeFeeParams(hre, messenger, l1Wallet, ethereumName, opChainNa
 
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
+  const sendData = arbitrator.interface.encodeFunctionData('changeFeeParams', [
+    l1GatewayAddr,
+    INIT_FEE_PARAMS,
+    adapterParams,
+  ]);
+  const feeData = await l1Wallet.getFeeData();
+  const gasLimit = await l1Wallet.provider.estimateGas({
+    from: l1Wallet.address,
+    to: arbitratorAddr,
+    data: sendData,
+  });
   console.log('Prepare to forward the message to L2...');
-  let tx = await arbitrator.changeFeeParams(l1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
+  let tx = await arbitrator.changeFeeParams(l1GatewayAddr, INIT_FEE_PARAMS, adapterParams, {
+    maxFeePerGas: feeData.maxFeePerGas.mul(2),
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+    gasLimit: gasLimit.mul(2),
+  });
   const txHash = tx.hash;
   console.log(`The tx hash: ${txHash}`);
   await tx.wait();
@@ -177,12 +237,17 @@ async function changeFeeParams(hre, messenger, l1Wallet, ethereumName, opChainNa
   return message;
 }
 
-async function syncL2Requests(hre, messenger, l2Wallet, ethereumName, opChainName, chainName, txs) {
+async function syncL2Requests(hre, messenger, ethereumName, opChainName, chainName, txs) {
   const { zkLinkAddr } = await getContractAddresses(ethereumName, opChainName, chainName);
+  const l2Wallet = messenger.l2Signer;
+  const l1Wallet = messenger.l1Signer;
+
+  const l2WalletAddress = await l2Wallet.getAddress();
+  const l2WalletBalance = ethers.formatEther((await l2Wallet.getBalance()).toString());
+  console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
   const calldata = zkLink.interface.encodeFunctionData('syncL2Requests', [txs]);
-  console.log(`The calldata: ${calldata}`);
   const gasLimit = await l2Wallet.provider.estimateGas({
     from: l2Wallet.address,
     to: zkLinkAddr,
@@ -197,10 +262,12 @@ async function syncL2Requests(hre, messenger, l2Wallet, ethereumName, opChainNam
   console.log(`The tx hash: ${txHash}`);
   await tx.wait();
   console.log(`The transaction has been executed on L2`);
-  // const txHash = "0x50af03de3b0edaccb567d2cbc0f6067631c969794f4a93a7bcff68c991465085";
-  let status = await messenger.getMessageStatus(txHash);
-  console.log(`The message status update to: ${status}`);
 
+  // const txHash = "0xcebb6da21e5992821a897bdcbf8fbf00dda22d46881a0ebe29d390cdc3150631";
+  const status = await messenger.getMessageStatus(txHash);
+  console.log(`The message status update to: ${status}`);
+  const feeData = await l1Wallet.getFeeData();
+  console.log(`The fee data: ${JSON.stringify(feeData)}`);
   /**
    * Wait until the message is ready to prove
    * This step can take a few minutes.
@@ -210,11 +277,14 @@ async function syncL2Requests(hre, messenger, l2Wallet, ethereumName, opChainNam
    * Once the message is ready to be proven, you'll send an L1 transaction to prove that the message was sent on L2.
    */
   console.log(`Proving the message...`);
-  tx = await messenger.proveMessage(txHash);
+  tx = await messenger.proveMessage(txHash, {
+    maxFeePerGas: feeData.maxFeePerGas.mul(2),
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+  });
   console.log(`The prove tx hash: ${tx.hash}`);
   await tx.wait();
   console.log(`The message has been proven`);
-  await sleep(60 * 1000); // wait for 12 seconds
+  await sleep(60 * 1000); // wait for 60 seconds
   /**
    * Wait until the message is ready for relay
    * The final step to sending messages from L2 to L1 is to relay the messages on L1. This can only happen after the fault proof period has elapsed. On OP Sepolia, this is only a few seconds. On OP Mainnet, this takes 7 days.
@@ -225,7 +295,10 @@ async function syncL2Requests(hre, messenger, l2Wallet, ethereumName, opChainNam
    * Once the withdrawal is ready to be relayed you can finally complete the message sending process.
    */
   console.log(`Relaying the message...`);
-  tx = await messenger.finalizeMessage(txHash);
+  tx = await messenger.finalizeMessage(txHash, {
+    maxFeePerGas: feeData.maxFeePerGas.mul(2),
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+  });
   console.log(`The relay tx hash: ${tx.hash}`);
   await tx.wait();
   console.log(`The message has been relayed`);

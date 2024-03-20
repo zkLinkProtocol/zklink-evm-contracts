@@ -51,19 +51,17 @@ async function initMessenger() {
     },
   });
 
-  return { l1Wallet, l2Wallet, messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName };
+  return { messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName };
 }
 
 task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
-  const { l1Wallet, l2Wallet, messenger, ethereumName, blastName } = await initMessenger();
+  const { messenger, ethereumName, blastName } = await initMessenger();
 
-  const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
+  const l2Wallet = messenger.l2Signer;
   const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
   console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-  const message = await syncBatchRoot(hre, messenger, l1Wallet, l2Wallet.provider, ethereumName, blastName, 'blast');
+  const message = await syncBatchRoot(hre, messenger, ethereumName, blastName, 'blast');
 
   await messenger.waitForMessageStatus(message, blast.MessageStatus.RELAYED);
   const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -81,8 +79,9 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const txs = taskArgs.txs;
     console.log(`The sync point: txs: ${txs}`);
 
-    const { l1Wallet, l2Wallet, messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName } =
-      await initMessenger();
+    const { messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName } = await initMessenger();
+    const l1Wallet = messenger.l1Signer;
+    const l2Wallet = messenger.l2Signer;
 
     const optimismPortalContract = await hre.ethers.getContractAt(
       OPTIMISM_PORTAL_ABI,
@@ -147,6 +146,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const message = (await messenger.getMessagesByTransaction(txHash)).pop();
     let status = await messenger.getMessageStatus(message);
     console.log(`The message status update to: ${blast.MessageStatus[status]}`);
+    const feeData = await l1Wallet.getFeeData();
 
     /**
      * Wait until the message is ready to prove
@@ -157,7 +157,10 @@ task('syncL2Requests', 'Send sync point to arbitrator')
      * Once the message is ready to be proven, you'll send an L1 transaction to prove that the message was sent on L2.
      */
     console.log(`Proving the message...`);
-    tx = await messenger.proveMessage(message);
+    tx = await messenger.proveMessage(message, {
+      maxFeePerGas: feeData.maxFeePerGas.mul(2),
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+    });
     console.log(`The prove tx hash: ${tx.hash}`);
     await tx.wait();
     console.log(`The message has been proven`);
@@ -188,14 +191,21 @@ task('syncL2Requests', 'Send sync point to arbitrator')
       hintId = await yieldManagerContract.findCheckpointHint(requestId, 1, lastCheckPoint);
     }
     console.log(`The hint id: ${hintId}`);
-    tx = await optimismPortalContract.finalizeWithdrawalTransaction(hintId, [
-      messageInfos.nonce,
-      messageInfos.sender,
-      messageInfos.target,
-      messageInfos.value,
-      messageInfos.gasLimit,
-      messageInfos.data,
-    ]);
+    tx = await optimismPortalContract.finalizeWithdrawalTransaction(
+      hintId,
+      [
+        messageInfos.nonce,
+        messageInfos.sender,
+        messageInfos.target,
+        messageInfos.value,
+        messageInfos.gasLimit,
+        messageInfos.data,
+      ],
+      {
+        maxFeePerGas: feeData.maxFeePerGas.mul(2),
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.mul(2),
+      },
+    );
     console.log(`The relay tx hash: ${tx.hash}`);
     await tx.wait();
     console.log(`The message has been relayed`);
@@ -214,24 +224,13 @@ task('setValidator', 'Set validator for zkLink')
     const isActive = taskArgs.active;
     console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
 
-    const { l1Wallet, l2Wallet, messenger, ethereumName, blastName } = await initMessenger();
+    const { messenger, ethereumName, blastName } = await initMessenger();
 
-    const l1WalletAddress = await l1Wallet.getAddress();
-    const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-    console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
+    const l2Wallet = messenger.l2Signer;
     const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
     console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-    const message = await setValidator(
-      hre,
-      messenger,
-      l1Wallet,
-      ethereumName,
-      blastName,
-      'blast',
-      validatorAddr,
-      isActive,
-    );
+    const message = await setValidator(hre, messenger, ethereumName, blastName, 'blast', validatorAddr, isActive);
 
     await messenger.waitForMessageStatus(message, blast.MessageStatus.RELAYED);
     const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -240,15 +239,13 @@ task('setValidator', 'Set validator for zkLink')
   });
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArgs, hre) => {
-  const { l1Wallet, l2Wallet, messenger, ethereumName, blastName } = await initMessenger();
+  const { messenger, ethereumName, blastName } = await initMessenger();
 
-  const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
+  const l2Wallet = messenger.l2Signer;
   const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
   console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-  const message = await changeFeeParams(hre, messenger, l1Wallet, ethereumName, blastName, 'blast');
+  const message = await changeFeeParams(hre, messenger, ethereumName, blastName, 'blast');
 
   await messenger.waitForMessageStatus(message, blast.MessageStatus.RELAYED);
   const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');

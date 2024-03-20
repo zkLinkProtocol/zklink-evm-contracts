@@ -33,17 +33,13 @@ async function initMessenger() {
     },
   });
 
-  return { l1Wallet, l2Wallet, messenger, ethereumName, mantaName };
+  return { messenger, ethereumName, mantaName };
 }
 
 task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
-  const { l1Wallet, l2Wallet, messenger, ethereumName, mantaName } = await initMessenger();
+  const { messenger, ethereumName, mantaName } = await initMessenger();
 
-  const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
-
-  const message = await syncBatchRoot(hre, messenger, l1Wallet, l2Wallet.provider, ethereumName, mantaName, 'manta');
+  const message = await syncBatchRoot(hre, messenger, ethereumName, mantaName, 'manta');
   // Waiting for the official manta bridge to forward the message to L2
   const rec = await messenger.waitForMessageReceipt(message);
   console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
@@ -60,13 +56,9 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const txs = taskArgs.txs;
     console.log(`The sync point: txs: ${txs}`);
 
-    const { l2Wallet, messenger, ethereumName, mantaName } = await initMessenger();
+    const { messenger, ethereumName, mantaName } = await initMessenger();
 
-    const l2WalletAddress = await l2Wallet.getAddress();
-    const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
-    console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
-
-    await syncL2Requests(hre, messenger, l2Wallet, ethereumName, mantaName, 'manta', txs);
+    await syncL2Requests(hre, messenger, ethereumName, mantaName, 'manta', txs);
 
     console.log('Done!');
 
@@ -76,13 +68,9 @@ task('syncL2Requests', 'Send sync point to arbitrator')
   });
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre) => {
-  const { l1Wallet, messenger, ethereumName, mantaName } = await initMessenger();
+  const { messenger, ethereumName, mantaName } = await initMessenger();
 
-  const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-  console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
-
-  const message = await changeFeeParams(hre, messenger, l1Wallet, ethereumName, mantaName, 'manta');
+  const message = await changeFeeParams(hre, messenger, ethereumName, mantaName, 'manta');
 
   // Waiting for the official manta bridge to forward the message to L2
   const rec = await messenger.waitForMessageReceipt(message);
@@ -98,22 +86,9 @@ task('setValidator', 'Set validator for zkLink')
     const isActive = taskArgs.active;
     console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
 
-    const { l1Wallet, messenger, ethereumName, mantaName } = await initMessenger();
+    const { messenger, ethereumName, mantaName } = await initMessenger();
 
-    const l1WalletAddress = await l1Wallet.getAddress();
-    const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
-    console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
-
-    const message = await setValidator(
-      hre,
-      messenger,
-      l1Wallet,
-      ethereumName,
-      mantaName,
-      'manta',
-      validatorAddr,
-      isActive,
-    );
+    const message = await setValidator(hre, messenger, ethereumName, mantaName, 'manta', validatorAddr, isActive);
 
     // Waiting for the official manta bridge to forward the message to L2
     const rec = await messenger.waitForMessageReceipt(message);
