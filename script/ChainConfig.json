@@ -242,7 +242,7 @@
     "l1Gateway": {
       "netName": "SEPOLIA",
       "contractName": "OptimismL1Gateway",
-      "constructParams": [""],
+      "constructParams": ["0xFe7cF31c4579bb1C578716e04E1Ae16Ac5549fF0"],
       "initializeParams": []
     }
   },
