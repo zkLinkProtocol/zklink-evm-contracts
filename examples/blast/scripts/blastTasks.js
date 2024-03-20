@@ -90,7 +90,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     console.log('Done!');
 
     // Example txs:
-    //
+    // https://sepolia.blastscan.io/tx/0xf482f09c7085be3cbe6d1ef63b7e67d353fbf86cc40455d560a46b5458ecc2b7
     //
   });
 
