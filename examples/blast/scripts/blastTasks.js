@@ -2,13 +2,22 @@ const blast = require('@eth-optimism/sdk');
 const ethers = require('ethers');
 const {
   syncBatchRoot,
-  syncL2Requests,
+  getContractAddresses,
   setValidator,
   changeFeeParams,
   encodeSetValidator,
   encodeChangeFeeParams,
 } = require('../../utils/opstack-utils');
-const { L1_MAINNET_CONTRACTS, L1_TESTNET_CONTRACTS } = require('./constants');
+const {
+  MESSAGE_PASSER_ABI,
+  MESSAGE_PASSER_ADDRESS,
+  OPTIMISM_PORTAL_ABI,
+  YIELD_MANAGER_ABI,
+  L1_MAINNET_CONTRACTS,
+  L1_TESTNET_CONTRACTS,
+  YIELD_MANAGER_TESTNET_ADDRESS,
+  YIELD_MANAGER_MAINNET_ADDRESS,
+} = require('./constants');
 const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
@@ -22,6 +31,8 @@ async function initMessenger() {
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
 
   const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
+  const yieldManagerAddress =
+    ethereumName !== 'ETHEREUM' ? YIELD_MANAGER_TESTNET_ADDRESS : YIELD_MANAGER_MAINNET_ADDRESS;
   const messenger = new blast.CrossChainMessenger({
     l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
     l2ChainId: await l2Wallet.getChainId(), // 168587773 for Blast Testnet, 81457 for Blast Mainnet
@@ -40,7 +51,7 @@ async function initMessenger() {
     },
   });
 
-  return { l1Wallet, l2Wallet, messenger, ethereumName, blastName };
+  return { l1Wallet, l2Wallet, messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName };
 }
 
 task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
@@ -70,28 +81,129 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const txs = taskArgs.txs;
     console.log(`The sync point: txs: ${txs}`);
 
-    const { l2Wallet, messenger, ethereumName, blastName } = await initMessenger();
+    const { l1Wallet, l2Wallet, messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName } =
+      await initMessenger();
 
-    // const optimismPortalContract = await hre.ethers.getContractAt(
-    //   OPTIMISM_PORTAL_ABI,
-    //   messengerL1Contracts.OptimismPortal,
-    //   l1Wallet,
-    // );
-    // console.log(`The optimism portal contract address: ${optimismPortalContract.address}`);
+    const optimismPortalContract = await hre.ethers.getContractAt(
+      OPTIMISM_PORTAL_ABI,
+      messengerL1Contracts.OptimismPortal,
+      l1Wallet,
+    );
+    console.log(`The optimism portal contract address: ${optimismPortalContract.address}`);
 
-    // const yieldManagerContract = await hre.ethers.getContractAt(YIELD_MANAGER_ABI, yieldManagerAddress, l1Wallet);
-    // console.log(`The yield manager contract address: ${yieldManagerContract.address}`);
+    const yieldManagerContract = await hre.ethers.getContractAt(YIELD_MANAGER_ABI, yieldManagerAddress, l1Wallet);
+    console.log(`The yield manager contract address: ${yieldManagerContract.address}`);
+
+    const messagePasserContract = await hre.ethers.getContractAt(MESSAGE_PASSER_ABI, MESSAGE_PASSER_ADDRESS, l2Wallet);
+    console.log(`The message passer contract address: ${messagePasserContract.address}`);
 
     const l2WalletAddress = await l2Wallet.getAddress();
     const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
     console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
-    await syncL2Requests(hre, messenger, l2Wallet, ethereumName, blastName, 'blast', txs);
+    const { zkLinkAddr } = await getContractAddresses(ethereumName, blastName, 'blast');
+
+    const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
+    const calldata = zkLink.interface.encodeFunctionData('syncL2Requests', [txs]);
+    console.log(`The calldata: ${calldata}`);
+    const gasLimit = await l2Wallet.provider.estimateGas({
+      from: l2Wallet.address,
+      to: zkLinkAddr,
+      data: calldata,
+    });
+    console.log(`The gas limit: ${gasLimit}`);
+
+    console.log(`Send a l2 message to l1...`);
+    let tx = await zkLink.syncL2Requests(txs, {
+      gasLimit: gasLimit,
+    });
+    let txHash = tx.hash;
+    console.log(`The tx hash: ${txHash}`);
+    await tx.wait();
+    console.log(`The transaction has been executed on L2`);
+    // const txHash = "0xa84e4ec21c6134edc671008d69934cdbc4750fd98ca06f2fe81c20fab8abafb5";
+    let receipt = await l2Wallet.provider.getTransactionReceipt(txHash);
+
+    let messageInfos;
+    for (const log of receipt.logs) {
+      switch (log.address.toLowerCase()) {
+        case messagePasserContract.address.toLowerCase(): {
+          const parsed = messagePasserContract.interface.parseLog(log);
+          if (parsed.name === 'MessagePassed') {
+            messageInfos = {
+              nonce: parsed.args.nonce,
+              sender: parsed.args.sender,
+              target: parsed.args.target,
+              gasLimit: parsed.args.gasLimit,
+              data: parsed.args.data,
+              value: parsed.args.value,
+            };
+          }
+        }
+      }
+    }
+    console.log(`The messageInfos: ${JSON.stringify(messageInfos, null, 2)}`);
+
+    const message = (await messenger.getMessagesByTransaction(txHash)).pop();
+    let status = await messenger.getMessageStatus(message);
+    console.log(`The message status update to: ${blast.MessageStatus[status]}`);
+
+    /**
+     * Wait until the message is ready to prove
+     * This step can take a few minutes.
+     */
+    await messenger.waitForMessageStatus(message, blast.MessageStatus.READY_TO_PROVE);
+    /**
+     * Once the message is ready to be proven, you'll send an L1 transaction to prove that the message was sent on L2.
+     */
+    console.log(`Proving the message...`);
+    tx = await messenger.proveMessage(message);
+    console.log(`The prove tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The message has been proven`);
+    let requestId;
+    receipt = await l1Wallet.provider.getTransactionReceipt(tx.hash);
+    for (const log of receipt.logs) {
+      switch (log.address.toLowerCase()) {
+        case optimismPortalContract.address.toLowerCase(): {
+          const parsed = optimismPortalContract.interface.parseLog(log);
+          if (parsed.name === 'WithdrawalProven') {
+            requestId = parsed.args.requestId;
+          }
+        }
+      }
+    }
+    console.log(`The request id: ${requestId}`);
+    /**
+     * Wait until the message is ready for relay
+     * The final step to sending messages from L2 to L1 is to relay the messages on L1. This can only happen after the fault proof period has elapsed. On OP Sepolia, this is only a few seconds. On OP Mainnet, this takes 7 days.
+     */
+    await messenger.waitForMessageStatus(message, blast.MessageStatus.READY_FOR_RELAY);
+
+    let hintId;
+    if (requestId.toNumber() === 0) {
+      hintId = 0;
+    } else {
+      const lastCheckPoint = await yieldManagerContract.getLastCheckpointId();
+      hintId = await yieldManagerContract.findCheckpointHint(requestId, 1, lastCheckPoint);
+    }
+    console.log(`The hint id: ${hintId}`);
+    tx = await optimismPortalContract.finalizeWithdrawalTransaction(hintId, [
+      messageInfos.nonce,
+      messageInfos.sender,
+      messageInfos.target,
+      messageInfos.value,
+      messageInfos.gasLimit,
+      messageInfos.data,
+    ]);
+    console.log(`The relay tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The message has been relayed`);
     console.log('Done!');
 
     // Example txs:
     // https://sepolia.blastscan.io/tx/0xf482f09c7085be3cbe6d1ef63b7e67d353fbf86cc40455d560a46b5458ecc2b7
-    //
+    // https://sepolia.etherscan.io/tx/0x96b3e1ab8fc9777f606f032370dec5184c7769ebd9c14647611766d50b3b8c14
   });
 
 task('setValidator', 'Set validator for zkLink')

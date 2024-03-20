@@ -270,6 +270,7 @@ async function encodeChangeFeeParams(hre, messenger, ethereumName, opChainName, 
 }
 
 module.exports = {
+  getContractAddresses,
   syncBatchRoot,
   setValidator,
   changeFeeParams,
