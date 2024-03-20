@@ -91,7 +91,7 @@ async function syncBatchRoot(hre, messenger, l1Wallet, l2Provider, ethereumName,
   const zkLink = await hre.ethers.getContractAt('DummyZkLink', zkLinkAddr);
   const zklinkIface = zkLink.interface;
   const blockNumber = await l2Provider.getBlockNumber();
-  console.log(`The current block number: ${blockNumber}`);
+  console.log(`The current block number on l1: ${blockNumber}`);
   const l2LogsRootHash = ethers.keccak256(ethers.toUtf8Bytes(`L2 logs root hash ${blockNumber}`));
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
