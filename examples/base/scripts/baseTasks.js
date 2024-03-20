@@ -42,10 +42,13 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
   const l1WalletAddress = await l1Wallet.getAddress();
   const l1WalletBalance = ethers.utils.formatEther(await l1Wallet.getBalance());
   console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
+  const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
+  console.log(`Current block on l2: ${l2CurrentBlock}`);
 
   const message = await syncBatchRoot(hre, messenger, l1Wallet, l2Wallet.provider, ethereumName, baseName, 'base');
   // Waiting for the official base bridge to forward the message to L2
-  const rec = await messenger.waitForMessageReceipt(message);
+  await messenger.waitForMessageStatus(message, base.MessageStatus.RELAYED);
+  const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
   console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
   console.log('Done');
 
@@ -66,14 +69,8 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
     console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
-    const message = await syncL2Requests(hre, messenger, l2Wallet, ethereumName, baseName, 'base', txs);
-    /**
-     * Wait until the message is relayed
-     * Now you simply wait until the message is relayed.
-     */
-    // Waiting for the official base bridge to forward the message to L2
-    const rec = await messenger.waitForMessageReceipt(message);
-    console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
+    await syncL2Requests(hre, messenger, l2Wallet, ethereumName, baseName, 'base', txs);
+
     console.log('Done!');
 
     // Example txs:

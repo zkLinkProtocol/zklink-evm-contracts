@@ -66,14 +66,8 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
     console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
-    const message = await syncL2Requests(hre, messenger, l2Wallet, ethereumName, mantaName, 'manta', txs);
-    /**
-     * Wait until the message is relayed
-     * Now you simply wait until the message is relayed.
-     */
-    // Waiting for the official manta bridge to forward the message to L2
-    const rec = await messenger.waitForMessageReceipt(message);
-    console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
+    await syncL2Requests(hre, messenger, l2Wallet, ethereumName, mantaName, 'manta', txs);
+
     console.log('Done!');
 
     // Example txs:

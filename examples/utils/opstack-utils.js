@@ -229,15 +229,6 @@ async function syncL2Requests(hre, messenger, l2Wallet, ethereumName, opChainNam
   console.log(`The relay tx hash: ${tx.hash}`);
   await tx.wait();
   console.log(`The message has been relayed`);
-  /**
-   * Wait until the message is relayed
-   * Now you simply wait until the message is relayed.
-   */
-  await messenger.waitForMessageStatus(txHash, MessageStatus.RELAYED);
-  const message = (await messenger.getMessagesByTransaction(txHash)).pop();
-  console.log(`The message: ${JSON.stringify(message)}`);
-
-  return message;
 }
 
 async function encodeSetValidator(hre, messenger, ethereumName, opChainName, chainName, validatorAddr, isActive) {

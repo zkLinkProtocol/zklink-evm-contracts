@@ -67,10 +67,8 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
     console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
-    const message = await syncL2Requests(hre, messenger, l2Wallet, ethereumName, optimismName, 'optimism', txs);
-    // Waiting for the official optimism bridge to forward the message to L2
-    const rec = await messenger.waitForMessageReceipt(message);
-    console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
+    await syncL2Requests(hre, messenger, l2Wallet, ethereumName, optimismName, 'optimism', txs);
+
     console.log('Done! Your transaction is executed');
 
     // Example txs:
