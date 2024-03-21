@@ -39,6 +39,7 @@ abstract contract BaseGateway is IGateway, OwnableUpgradeable, UUPSUpgradeable, 
     /// @param _remoteGateway remote gateway address
     function setRemoteGateway(address _remoteGateway) external onlyOwner {
         require(remoteGateway == address(0), "Duplicate init remote gateway");
+        require(_remoteGateway != address(0), "Invalid gateway");
         remoteGateway = _remoteGateway;
         emit SetRemoteGateway(_remoteGateway);
     }
