@@ -1,8 +1,5 @@
 require('@nomiclabs/hardhat-ethers');
-require('./scripts/syncL2Requests');
-require('./scripts/syncBatchRoot');
-require('./scripts/setValidator');
-require('./scripts/changeFeeParams');
+require('./scripts/blastTasks');
 
 const BaseConfig = require('../../hardhat.base.config');
 

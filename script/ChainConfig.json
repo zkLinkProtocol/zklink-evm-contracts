@@ -240,9 +240,9 @@
       "initializeParams": []
     },
     "l1Gateway": {
-      "netName": "GOERLI",
+      "netName": "SEPOLIA",
       "contractName": "OptimismL1Gateway",
-      "constructParams": ["0x7Ad11bB9216BC9Dc4CBd488D7618CbFD433d1E75"],
+      "constructParams": ["0xFe7cF31c4579bb1C578716e04E1Ae16Ac5549fF0"],
       "initializeParams": []
     }
   },
