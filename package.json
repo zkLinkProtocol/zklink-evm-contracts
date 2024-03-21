@@ -16,7 +16,7 @@
     "hardhat": "^2.19.3",
     "prettier": "^3.0.0",
     "prettier-plugin-solidity": "^1.1.0",
-    "solhint": "^4.1.1"
+    "solhint": "^4.5.2"
   },
   "scripts": {
     "compile": "npx hardhat compile",

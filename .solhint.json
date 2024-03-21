@@ -3,7 +3,6 @@
   "plugins": [],
   "rules": {
     "compiler-version": "off",
-    "custom-errors": "off",
     "func-name-mixedcase": "off",
     "func-visibility": ["warn",{"ignoreConstructors": true}],
     "mark-callable-contracts": "off",
