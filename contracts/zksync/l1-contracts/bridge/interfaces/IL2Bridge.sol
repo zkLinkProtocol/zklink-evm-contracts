@@ -12,6 +12,14 @@ interface IL2Bridge {
         bytes calldata _data
     ) external payable;
 
+    function finalizeDepositToMerge(
+        address _l1Sender,
+        address _l2Receiver,
+        address _l1Token,
+        uint256 _amount,
+        bytes calldata _data
+    ) external payable;
+
     function withdraw(address _l1Receiver, address _l2Token, uint256 _amount) external;
 
     function l1TokenAddress(address _l2Token) external view returns (address);
