@@ -60,9 +60,9 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     }
 
     function initialize() external initializer {
-        __Ownable_init();
-        __UUPSUpgradeable_init();
-        __ReentrancyGuard_init();
+        __Ownable_init_unchained();
+        __UUPSUpgradeable_init_unchained();
+        __ReentrancyGuard_init_unchained();
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
