@@ -186,6 +186,7 @@ contract ZkLink is
     /// @dev Init gateway, can only be called by the owner
     function setGateway(IL2Gateway _gateway) external onlyOwner {
         require(address(gateway) == address(0), "Duplicate init gateway");
+        require(address(_gateway) != address(0), "Invalid gateway");
         gateway = _gateway;
         emit InitGateway(_gateway);
     }
