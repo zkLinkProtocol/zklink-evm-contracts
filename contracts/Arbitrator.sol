@@ -91,11 +91,13 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes calldata _adapterParams
     ) external payable onlyOwner {
         require(_gateway != primaryChainGateway, "Invalid gateway");
-        secondaryChainGateways[_gateway] = _active;
-        bytes memory callData = abi.encodeCall(IZkSync.setSecondaryChainGateway, (address(_gateway), _active));
-        // Forward fee to send message
-        primaryChainGateway.sendMessage{value: msg.value}(0, callData, _adapterParams);
-        emit SecondaryChainStatusUpdate(_gateway, _active);
+        if (_active != secondaryChainGateways[_gateway]) {
+            secondaryChainGateways[_gateway] = _active;
+            bytes memory callData = abi.encodeCall(IZkSync.setSecondaryChainGateway, (address(_gateway), _active));
+            // Forward fee to send message
+            primaryChainGateway.sendMessage{value: msg.value}(0, callData, _adapterParams);
+            emit SecondaryChainStatusUpdate(_gateway, _active);
+        }
     }
 
     /// @dev Set relayer
