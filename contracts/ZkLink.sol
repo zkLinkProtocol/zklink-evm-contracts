@@ -137,10 +137,10 @@ contract ZkLink is
     }
 
     function initialize() external initializer {
-        __Ownable_init();
-        __UUPSUpgradeable_init();
-        __ReentrancyGuard_init();
-        __Pausable_init();
+        __Ownable_init_unchained();
+        __UUPSUpgradeable_init_unchained();
+        __ReentrancyGuard_init_unchained();
+        __Pausable_init_unchained();
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
