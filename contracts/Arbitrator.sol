@@ -65,7 +65,9 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         __ReentrancyGuard_init_unchained();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // can only call by owner
+    }
 
     /// @notice Return the message hash at a position stored in queue
     function getMessageHash(IL1Gateway _gateway, uint256 _index) external view returns (bytes32 messageHash) {
