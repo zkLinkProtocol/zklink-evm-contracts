@@ -107,7 +107,7 @@ contract ZkLink is
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
-    event WithdrawForwardFee(address receiver, uint256 amount);
+    event WithdrawForwardFee(address indexed receiver, uint256 amount);
     /// @notice Emitted when the withdrawal is finalized on L1 and funds are released.
     /// @param to The address to which the funds were sent
     /// @param amount The amount of funds that were sent
