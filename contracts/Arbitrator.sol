@@ -39,7 +39,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @notice SecondaryChain's status changed
     event SecondaryChainStatusUpdate(IL1Gateway indexed gateway, bool isActive);
     /// @notice Relayer's status changed
-    event RelayerStatusUpdate(address relayer, bool isActive);
+    event RelayerStatusUpdate(address indexed relayer, bool isActive);
     /// @notice Validator's status changed
     event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
