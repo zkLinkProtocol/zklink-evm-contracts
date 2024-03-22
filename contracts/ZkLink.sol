@@ -197,22 +197,29 @@ contract ZkLink is
 
     /// @dev Update the permit status of contract, can only be called by the owner
     function setAllowList(address _contractAddress, bool _permitted) external onlyOwner {
-        allowLists[_contractAddress] = _permitted;
-        emit ContractAllowStatusUpdate(_contractAddress, _permitted);
+        if (allowLists[_contractAddress] != _permitted) {
+            allowLists[_contractAddress] = _permitted;
+            emit ContractAllowStatusUpdate(_contractAddress, _permitted);
+        }
     }
 
     /// @dev Update the tx gas price
     function setTxGasPrice(uint256 _newTxGasPrice) external onlyOwner {
         uint256 oldTxGasPrice = txGasPrice;
-        txGasPrice = _newTxGasPrice;
-        emit TxGasPriceUpdate(oldTxGasPrice, _newTxGasPrice);
+        if (oldTxGasPrice != _newTxGasPrice) {
+            txGasPrice = _newTxGasPrice;
+            emit TxGasPriceUpdate(oldTxGasPrice, _newTxGasPrice);
+        }
     }
 
     function setValidator(address _validator, bool _active) external onlyGateway {
-        validators[_validator] = _active;
-        emit ValidatorStatusUpdate(_validator, _active);
+        if (validators[_validator] != _active) {
+            validators[_validator] = _active;
+            emit ValidatorStatusUpdate(_validator, _active);
+        }
     }
 
+    /// @dev https://github.com/matter-labs/era-contracts/blob/e0a33ce73c4decd381446a6eb812b14c2ff69c47/l1-contracts/contracts/zksync/facets/Admin.sol#L88
     function changeFeeParams(FeeParams calldata _newFeeParams) external onlyGateway {
         // Double checking that the new fee params are valid, i.e.
         // the maximal pubdata per batch is not less than the maximal pubdata per priority transaction.
@@ -228,8 +235,10 @@ contract ZkLink is
     function setForwardFeeAllocator(address _newForwardFeeAllocator) external onlyOwner {
         require(_newForwardFeeAllocator != address(0), "Invalid allocator");
         address oldAllocator = forwardFeeAllocator;
-        forwardFeeAllocator = _newForwardFeeAllocator;
-        emit ForwardFeeAllocatorUpdate(oldAllocator, _newForwardFeeAllocator);
+        if (oldAllocator != _newForwardFeeAllocator) {
+            forwardFeeAllocator = _newForwardFeeAllocator;
+            emit ForwardFeeAllocatorUpdate(oldAllocator, _newForwardFeeAllocator);
+        }
     }
 
     function l2TransactionBaseCost(
