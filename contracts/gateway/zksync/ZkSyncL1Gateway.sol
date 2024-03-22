@@ -50,6 +50,8 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
             _l2GasPerPubdataByteLimit,
             new bytes[](0),
             // solhint-disable-next-line avoid-tx-origin
+            // The origin address paid the network fees of L2 on L1
+            // So the origin address is set as the refund address for the excess network fees on L2.
             tx.origin
         );
     }
