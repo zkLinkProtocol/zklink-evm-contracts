@@ -21,10 +21,6 @@ contract ZkPolygonL1Gateway is IBridgeMessageReceiver, L1BaseGateway, BaseGatewa
         _;
     }
 
-    /// @dev A mapping L2 batch number => message number => flag
-    /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
-    mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
-
     constructor(IArbitrator _arbitrator, IZkPolygon _messageService) L1BaseGateway(_arbitrator) {
         _disableInitializers();
         MESSAGE_SERVICE = _messageService;
