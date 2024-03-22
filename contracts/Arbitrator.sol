@@ -35,19 +35,19 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     uint256[50] private __gap;
 
     /// @notice Primary chain gateway init
-    event InitPrimaryChain(IL1Gateway gateway);
+    event InitPrimaryChain(IL1Gateway indexed gateway);
     /// @notice SecondaryChain's status changed
-    event SecondaryChainStatusUpdate(IL1Gateway gateway, bool isActive);
+    event SecondaryChainStatusUpdate(IL1Gateway indexed gateway, bool isActive);
     /// @notice Relayer's status changed
     event RelayerStatusUpdate(address relayer, bool isActive);
     /// @notice Validator's status changed
-    event ValidatorStatusUpdate(IL1Gateway gateway, address validatorAddress, bool isActive);
+    event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
-    event NewFeeParams(IL1Gateway gateway, FeeParams newFeeParams);
+    event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
     /// @notice Emit when receive message from l1 gateway
     event MessageReceived(uint256 value, bytes callData);
     /// @notice Emit when forward message to l1 gateway
-    event MessageForwarded(IL1Gateway gateway, uint256 value, bytes callData);
+    event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
