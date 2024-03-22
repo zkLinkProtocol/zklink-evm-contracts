@@ -104,8 +104,10 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
 
     /// @dev Set relayer
     function setRelayer(address _relayer, bool _active) external onlyOwner {
-        relayers[_relayer] = _active;
-        emit RelayerStatusUpdate(_relayer, _active);
+        if (relayers[_relayer] != _active) {
+            relayers[_relayer] = _active;
+            emit RelayerStatusUpdate(_relayer, _active);
+        }
     }
 
     /// @dev Set validator for a chain
