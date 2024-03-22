@@ -36,9 +36,14 @@ contract ZkLink is
 {
     using UncheckedMath for uint256;
 
-    // keccak256("ForwardL2Request(address gateway,bool isContractCall,address sender,uint256 txId,address contractAddressL2,uint256 l2Value,bytes32 l2CallDataHash,uint256 l2GasLimit,uint256 l2GasPricePerPubdata,bytes32 factoryDepsHash,address refundRecipient)")
+    /// @dev The forward request type hash
     bytes32 public constant FORWARD_REQUEST_TYPE_HASH =
-        0xe0aaca1722ef50bb0c9b032e5b16ce2b79fa9f23638835456b27fd6894f8292c;
+        keccak256(
+            "ForwardL2Request(address gateway,bool isContractCall,address sender,uint256 txId,address contractAddressL2,uint256 l2Value,bytes32 l2CallDataHash,uint256 l2GasLimit,uint256 l2GasPricePerPubdata,bytes32 factoryDepsHash,address refundRecipient)"
+        );
+
+    /// @dev The length of withdraw message sent to secondary chain
+    uint256 private constant L2_WITHDRAW_MESSAGE_LENGTH = 108;
 
     /// @dev Whether eth is the gas token
     bool public immutable IS_ETH_GAS_TOKEN;
@@ -87,13 +92,13 @@ contract ZkLink is
     uint256[50] private __gap;
 
     /// @notice Gateway init
-    event InitGateway(IL2Gateway gateway);
+    event InitGateway(IL2Gateway indexed gateway);
     /// @notice Contract's permit status changed
-    event ContractAllowStatusUpdate(address contractAddress, bool isPermit);
+    event ContractAllowStatusUpdate(address indexed contractAddress, bool isPermit);
     /// @notice Tx gas price changed
     event TxGasPriceUpdate(uint256 oldTxGasPrice, uint256 newTxGasPrice);
     /// @notice Validator's status changed
-    event ValidatorStatusUpdate(address validatorAddress, bool isActive);
+    event ValidatorStatusUpdate(address indexed validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(FeeParams oldFeeParams, FeeParams newFeeParams);
     /// @notice New priority request event. Emitted when a request is placed into the priority queue
@@ -105,7 +110,7 @@ contract ZkLink is
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
-    event WithdrawForwardFee(address receiver, uint256 amount);
+    event WithdrawForwardFee(address indexed receiver, uint256 amount);
     /// @notice Emitted when the withdrawal is finalized on L1 and funds are released.
     /// @param to The address to which the funds were sent
     /// @param amount The amount of funds that were sent
@@ -137,13 +142,15 @@ contract ZkLink is
     }
 
     function initialize() external initializer {
-        __Ownable_init();
-        __UUPSUpgradeable_init();
-        __ReentrancyGuard_init();
-        __Pausable_init();
+        __Ownable_init_unchained();
+        __UUPSUpgradeable_init_unchained();
+        __ReentrancyGuard_init_unchained();
+        __Pausable_init_unchained();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // can only called by owner
+    }
 
     /// @dev Pause the contract, can only be called by the owner
     function pause() external onlyOwner {
@@ -186,28 +193,36 @@ contract ZkLink is
     /// @dev Init gateway, can only be called by the owner
     function setGateway(IL2Gateway _gateway) external onlyOwner {
         require(address(gateway) == address(0), "Duplicate init gateway");
+        require(address(_gateway) != address(0), "Invalid gateway");
         gateway = _gateway;
         emit InitGateway(_gateway);
     }
 
     /// @dev Update the permit status of contract, can only be called by the owner
     function setAllowList(address _contractAddress, bool _permitted) external onlyOwner {
-        allowLists[_contractAddress] = _permitted;
-        emit ContractAllowStatusUpdate(_contractAddress, _permitted);
+        if (allowLists[_contractAddress] != _permitted) {
+            allowLists[_contractAddress] = _permitted;
+            emit ContractAllowStatusUpdate(_contractAddress, _permitted);
+        }
     }
 
     /// @dev Update the tx gas price
     function setTxGasPrice(uint256 _newTxGasPrice) external onlyOwner {
         uint256 oldTxGasPrice = txGasPrice;
-        txGasPrice = _newTxGasPrice;
-        emit TxGasPriceUpdate(oldTxGasPrice, _newTxGasPrice);
+        if (oldTxGasPrice != _newTxGasPrice) {
+            txGasPrice = _newTxGasPrice;
+            emit TxGasPriceUpdate(oldTxGasPrice, _newTxGasPrice);
+        }
     }
 
     function setValidator(address _validator, bool _active) external onlyGateway {
-        validators[_validator] = _active;
-        emit ValidatorStatusUpdate(_validator, _active);
+        if (validators[_validator] != _active) {
+            validators[_validator] = _active;
+            emit ValidatorStatusUpdate(_validator, _active);
+        }
     }
 
+    /// @dev https://github.com/matter-labs/era-contracts/blob/e0a33ce73c4decd381446a6eb812b14c2ff69c47/l1-contracts/contracts/zksync/facets/Admin.sol#L88
     function changeFeeParams(FeeParams calldata _newFeeParams) external onlyGateway {
         // Double checking that the new fee params are valid, i.e.
         // the maximal pubdata per batch is not less than the maximal pubdata per priority transaction.
@@ -223,8 +238,10 @@ contract ZkLink is
     function setForwardFeeAllocator(address _newForwardFeeAllocator) external onlyOwner {
         require(_newForwardFeeAllocator != address(0), "Invalid allocator");
         address oldAllocator = forwardFeeAllocator;
-        forwardFeeAllocator = _newForwardFeeAllocator;
-        emit ForwardFeeAllocatorUpdate(oldAllocator, _newForwardFeeAllocator);
+        if (oldAllocator != _newForwardFeeAllocator) {
+            forwardFeeAllocator = _newForwardFeeAllocator;
+            emit ForwardFeeAllocatorUpdate(oldAllocator, _newForwardFeeAllocator);
+        }
     }
 
     function l2TransactionBaseCost(
@@ -460,6 +477,7 @@ contract ZkLink is
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
+    /// @dev https://github.com/matter-labs/era-contracts/blob/e0a33ce73c4decd381446a6eb812b14c2ff69c47/l1-contracts/contracts/zksync/facets/Mailbox.sol#L147
     /// @param _l1GasPrice The gas price on L1.
     /// @param _gasPerPubdata The price for each pubdata byte in L2 gas
     /// @return The price of L2 gas in ETH
@@ -555,7 +573,7 @@ contract ZkLink is
         // bytes4 function signature + address l1Gateway + uint256 amount + address l2Sender + bytes _additionalData
         // (where the _additionalData = abi.encode(l1Receiver))
         // = 4 + 20 + 32 + 20 + 32 == 108 (bytes).
-        require(_message.length == 108, "pm");
+        require(_message.length == L2_WITHDRAW_MESSAGE_LENGTH, "pm");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
         require(bytes4(functionSignature) == this.finalizeEthWithdrawal.selector, "is");

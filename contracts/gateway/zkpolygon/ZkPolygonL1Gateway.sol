@@ -11,18 +11,15 @@ contract ZkPolygonL1Gateway is IBridgeMessageReceiver, L1BaseGateway, BaseGatewa
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public immutable MESSAGE_SERVICE;
 
+    /// @dev The destination network of Polygon zkEVM
     uint32 public constant ETH_NETWORK_ID = 1;
-    // Default to true
+    // @dev Set to true for claiming asset on the destination network
     bool public constant FORCE_UPDATE_GLOBAL_EXIT_ROOT = true;
 
     modifier onlyMessageService() {
         require(msg.sender == address(MESSAGE_SERVICE), "Not remote gateway");
         _;
     }
-
-    /// @dev A mapping L2 batch number => message number => flag
-    /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
-    mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
 
     constructor(IArbitrator _arbitrator, IZkPolygon _messageService) L1BaseGateway(_arbitrator) {
         _disableInitializers();

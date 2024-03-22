@@ -7,9 +7,12 @@ import {OptimismGateway} from "./OptimismGateway.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 
 contract OptimismL2Gateway is L2BaseGateway, OptimismGateway {
-    constructor(
-        address _zkLink
-    ) L2BaseGateway(_zkLink) OptimismGateway(IOptimismMessenger(0x4200000000000000000000000000000000000007)) {
+    /// @dev The L2CrossDomainMessenger deployed on OP
+    /// see https://docs.optimism.io/chain/addresses
+    IOptimismMessenger private constant L2_CROSS_DOMAIN_MESSENGER =
+        IOptimismMessenger(0x4200000000000000000000000000000000000007);
+
+    constructor(address _zkLink) L2BaseGateway(_zkLink) OptimismGateway(L2_CROSS_DOMAIN_MESSENGER) {
         _disableInitializers();
     }
 

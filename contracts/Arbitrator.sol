@@ -35,19 +35,19 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     uint256[50] private __gap;
 
     /// @notice Primary chain gateway init
-    event InitPrimaryChain(IL1Gateway gateway);
+    event InitPrimaryChain(IL1Gateway indexed gateway);
     /// @notice SecondaryChain's status changed
-    event SecondaryChainStatusUpdate(IL1Gateway gateway, bool isActive);
+    event SecondaryChainStatusUpdate(IL1Gateway indexed gateway, bool isActive);
     /// @notice Relayer's status changed
-    event RelayerStatusUpdate(address relayer, bool isActive);
+    event RelayerStatusUpdate(address indexed relayer, bool isActive);
     /// @notice Validator's status changed
-    event ValidatorStatusUpdate(IL1Gateway gateway, address validatorAddress, bool isActive);
+    event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
-    event NewFeeParams(IL1Gateway gateway, FeeParams newFeeParams);
+    event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
     /// @notice Emit when receive message from l1 gateway
     event MessageReceived(uint256 value, bytes callData);
     /// @notice Emit when forward message to l1 gateway
-    event MessageForwarded(IL1Gateway gateway, uint256 value, bytes callData);
+    event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
@@ -60,12 +60,14 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     }
 
     function initialize() external initializer {
-        __Ownable_init();
-        __UUPSUpgradeable_init();
-        __ReentrancyGuard_init();
+        __Ownable_init_unchained();
+        __UUPSUpgradeable_init_unchained();
+        __ReentrancyGuard_init_unchained();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // can only call by owner
+    }
 
     /// @notice Return the message hash at a position stored in queue
     function getMessageHash(IL1Gateway _gateway, uint256 _index) external view returns (bytes32 messageHash) {
@@ -79,6 +81,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @dev Set primary chain
     function setPrimaryChainGateway(IL1Gateway _gateway) external onlyOwner {
         require(address(primaryChainGateway) == address(0), "Duplicate init gateway");
+        require(address(_gateway) != address(0), "Invalid gateway");
         primaryChainGateway = _gateway;
         emit InitPrimaryChain(_gateway);
     }
@@ -90,17 +93,21 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes calldata _adapterParams
     ) external payable onlyOwner {
         require(_gateway != primaryChainGateway, "Invalid gateway");
-        secondaryChainGateways[_gateway] = _active;
-        bytes memory callData = abi.encodeCall(IZkSync.setSecondaryChainGateway, (address(_gateway), _active));
-        // Forward fee to send message
-        primaryChainGateway.sendMessage{value: msg.value}(0, callData, _adapterParams);
-        emit SecondaryChainStatusUpdate(_gateway, _active);
+        if (_active != secondaryChainGateways[_gateway]) {
+            secondaryChainGateways[_gateway] = _active;
+            bytes memory callData = abi.encodeCall(IZkSync.setSecondaryChainGateway, (address(_gateway), _active));
+            // Forward fee to send message
+            primaryChainGateway.sendMessage{value: msg.value}(0, callData, _adapterParams);
+            emit SecondaryChainStatusUpdate(_gateway, _active);
+        }
     }
 
     /// @dev Set relayer
     function setRelayer(address _relayer, bool _active) external onlyOwner {
-        relayers[_relayer] = _active;
-        emit RelayerStatusUpdate(_relayer, _active);
+        if (relayers[_relayer] != _active) {
+            relayers[_relayer] = _active;
+            emit RelayerStatusUpdate(_relayer, _active);
+        }
     }
 
     /// @dev Set validator for a chain

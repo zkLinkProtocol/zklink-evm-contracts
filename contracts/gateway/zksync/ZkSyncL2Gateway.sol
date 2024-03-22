@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IL2Messenger} from "../../interfaces/zksync/IL2Messenger.sol";
 import {IL2ETHToken} from "../../interfaces/zksync/IL2ETHToken.sol";
 import {L2BaseGateway} from "../L2BaseGateway.sol";
 import {AddressAliasHelper} from "../../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
@@ -10,9 +9,6 @@ import {BaseGateway} from "../BaseGateway.sol";
 
 contract ZkSyncL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
     uint160 internal constant SYSTEM_CONTRACTS_OFFSET = 0x8000; // 2^15
-
-    /// @notice ZkSync system message service on local chain
-    IL2Messenger public constant L2_MESSENGER = IL2Messenger(address(SYSTEM_CONTRACTS_OFFSET + 0x08));
 
     /// @notice ZkSync eth bridge service on local chain
     IL2ETHToken public constant L2_ETH_ADDRESS = IL2ETHToken(address(SYSTEM_CONTRACTS_OFFSET + 0x0a));

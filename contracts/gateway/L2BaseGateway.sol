@@ -14,8 +14,6 @@ abstract contract L2BaseGateway is IL2Gateway {
      */
     uint256[50] private __gap;
 
-    event L2GatewayMessageSent(uint256 value, bytes callData);
-
     /// @dev Ensure withdraw come from zkLink
     modifier onlyZkLink() {
         require(msg.sender == ZKLINK, "Not zkLink contract");
