@@ -81,7 +81,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @dev Set primary chain
     function setPrimaryChainGateway(IL1Gateway _gateway) external onlyOwner {
         require(address(primaryChainGateway) == address(0), "Duplicate init gateway");
-        require(address(primaryChainGateway) != address(0), "Invalid gateway");
+        require(address(_gateway) != address(0), "Invalid gateway");
         primaryChainGateway = _gateway;
         emit InitPrimaryChain(_gateway);
     }
