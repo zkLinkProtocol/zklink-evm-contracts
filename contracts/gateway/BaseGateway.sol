@@ -17,7 +17,7 @@ abstract contract BaseGateway is IGateway, OwnableUpgradeable, UUPSUpgradeable, 
      */
     uint256[49] private __gap;
 
-    event SetRemoteGateway(address remoteGateWay);
+    event NewRemoteGateway(address remoteGateWay);
 
     function __BaseGateway_init() internal onlyInitializing {
         __BaseGateway_init_unchained();
@@ -41,6 +41,6 @@ abstract contract BaseGateway is IGateway, OwnableUpgradeable, UUPSUpgradeable, 
         require(remoteGateway == address(0), "Duplicate init remote gateway");
         require(_remoteGateway != address(0), "Invalid gateway");
         remoteGateway = _remoteGateway;
-        emit SetRemoteGateway(_remoteGateway);
+        emit NewRemoteGateway(_remoteGateway);
     }
 }
