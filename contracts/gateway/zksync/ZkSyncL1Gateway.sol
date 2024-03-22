@@ -26,7 +26,9 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     }
 
     /// @dev Receive eth from zkSync canonical bridge
-    receive() external payable {}
+    receive() external payable {
+        // nothing to do here
+    }
 
     function initialize() external initializer {
         __BaseGateway_init();
