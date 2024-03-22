@@ -13,6 +13,9 @@ import {UnsafeBytes} from "../../zksync/l1-contracts/common/libraries/UnsafeByte
 import {L2_ETH_TOKEN_SYSTEM_CONTRACT_ADDR} from "../../zksync/l1-contracts/common/L2ContractAddresses.sol";
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
+    /// @dev The L2 eth withdraw message minimum length
+    uint256 constant private L2_ETH_WITHDRAW_MESSAGE_MINIMUM_LENGTH = 108;
+
     /// @notice ZkSync message service on local chain
     IMailbox public immutable MESSAGE_SERVICE;
 
@@ -112,7 +115,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         // additionalData (sendMessage): l2Value + l2CallData >= 32 (bytes)
         // It should be equal to the length of the function signature + eth receiver address + uint256 amount + l2Sender
         // + additionalData >= 4 + 20 + 32 + 20 + 32 = 108 (bytes).
-        require(_message.length >= 108, "Incorrect message length");
+        require(_message.length >= L2_ETH_WITHDRAW_MESSAGE_MINIMUM_LENGTH, "Incorrect message length");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
         require(bytes4(functionSignature) == IMailbox.finalizeEthWithdrawal.selector, "Incorrect function selector");
