@@ -10,8 +10,9 @@ contract ZkPolygonL2Gateway is IBridgeMessageReceiver, L2BaseGateway, BaseGatewa
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public immutable MESSAGE_SERVICE;
 
+    /// @dev The destination network of Ethereum
     uint32 public constant ETH_NETWORK_ID = 0;
-    // Default to true
+    // @dev Set to true for claiming asset on the destination network
     bool public constant FORCE_UPDATE_GLOBAL_EXIT_ROOT = true;
 
     /// @dev Modifier to make sure the original sender is messageService on remote chain.
