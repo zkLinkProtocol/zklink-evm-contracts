@@ -14,7 +14,7 @@ import {L2_ETH_TOKEN_SYSTEM_CONTRACT_ADDR} from "../../zksync/l1-contracts/commo
 
 contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @dev The L2 eth withdraw message minimum length
-    uint256 constant private L2_ETH_WITHDRAW_MESSAGE_MINIMUM_LENGTH = 108;
+    uint256 private constant L2_ETH_WITHDRAW_MESSAGE_MINIMUM_LENGTH = 108;
 
     /// @notice ZkSync message service on local chain
     IMailbox public immutable MESSAGE_SERVICE;
