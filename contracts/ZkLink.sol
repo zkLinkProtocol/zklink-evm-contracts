@@ -89,7 +89,7 @@ contract ZkLink is
     uint256[50] private __gap;
 
     /// @notice Gateway init
-    event InitGateway(IL2Gateway gateway);
+    event InitGateway(IL2Gateway indexed gateway);
     /// @notice Contract's permit status changed
     event ContractAllowStatusUpdate(address contractAddress, bool isPermit);
     /// @notice Tx gas price changed
