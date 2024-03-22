@@ -42,6 +42,9 @@ contract ZkLink is
             "ForwardL2Request(address gateway,bool isContractCall,address sender,uint256 txId,address contractAddressL2,uint256 l2Value,bytes32 l2CallDataHash,uint256 l2GasLimit,uint256 l2GasPricePerPubdata,bytes32 factoryDepsHash,address refundRecipient)"
         );
 
+    /// @dev The length of withdraw message sent to secondary chain
+    uint256 private constant L2_WITHDRAW_MESSAGE_LENGTH = 108;
+
     /// @dev Whether eth is the gas token
     bool public immutable IS_ETH_GAS_TOKEN;
 
@@ -570,7 +573,7 @@ contract ZkLink is
         // bytes4 function signature + address l1Gateway + uint256 amount + address l2Sender + bytes _additionalData
         // (where the _additionalData = abi.encode(l1Receiver))
         // = 4 + 20 + 32 + 20 + 32 == 108 (bytes).
-        require(_message.length == 108, "pm");
+        require(_message.length == L2_WITHDRAW_MESSAGE_LENGTH, "pm");
 
         (uint32 functionSignature, uint256 offset) = UnsafeBytes.readUint32(_message, 0);
         require(bytes4(functionSignature) == this.finalizeEthWithdrawal.selector, "is");
