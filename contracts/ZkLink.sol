@@ -474,6 +474,7 @@ contract ZkLink is
     }
 
     /// @notice Derives the price for L2 gas in ETH to be paid.
+    /// @dev https://github.com/matter-labs/era-contracts/blob/e0a33ce73c4decd381446a6eb812b14c2ff69c47/l1-contracts/contracts/zksync/facets/Mailbox.sol#L147
     /// @param _l1GasPrice The gas price on L1.
     /// @param _gasPerPubdata The price for each pubdata byte in L2 gas
     /// @return The price of L2 gas in ETH
