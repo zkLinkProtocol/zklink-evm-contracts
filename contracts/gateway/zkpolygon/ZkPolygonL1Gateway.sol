@@ -11,8 +11,9 @@ contract ZkPolygonL1Gateway is IBridgeMessageReceiver, L1BaseGateway, BaseGatewa
     /// @notice ZkPolygon message service on local chain
     IZkPolygon public immutable MESSAGE_SERVICE;
 
+    /// @dev The destination network of Polygon zkEVM
     uint32 public constant ETH_NETWORK_ID = 1;
-    // Default to true
+    // @dev Set to true for claiming asset on the destination network
     bool public constant FORCE_UPDATE_GLOBAL_EXIT_ROOT = true;
 
     modifier onlyMessageService() {
