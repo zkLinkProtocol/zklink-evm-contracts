@@ -91,7 +91,7 @@ contract ZkLink is
     /// @notice Gateway init
     event InitGateway(IL2Gateway indexed gateway);
     /// @notice Contract's permit status changed
-    event ContractAllowStatusUpdate(address contractAddress, bool isPermit);
+    event ContractAllowStatusUpdate(address indexed contractAddress, bool isPermit);
     /// @notice Tx gas price changed
     event TxGasPriceUpdate(uint256 oldTxGasPrice, uint256 newTxGasPrice);
     /// @notice Validator's status changed
