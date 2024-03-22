@@ -95,7 +95,7 @@ contract ZkLink is
     /// @notice Tx gas price changed
     event TxGasPriceUpdate(uint256 oldTxGasPrice, uint256 newTxGasPrice);
     /// @notice Validator's status changed
-    event ValidatorStatusUpdate(address validatorAddress, bool isActive);
+    event ValidatorStatusUpdate(address indexed validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(FeeParams oldFeeParams, FeeParams newFeeParams);
     /// @notice New priority request event. Emitted when a request is placed into the priority queue
