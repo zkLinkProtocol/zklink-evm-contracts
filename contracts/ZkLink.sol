@@ -145,7 +145,9 @@ contract ZkLink is
         __Pausable_init_unchained();
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
+        // can only called by owner
+    }
 
     /// @dev Pause the contract, can only be called by the owner
     function pause() external onlyOwner {
