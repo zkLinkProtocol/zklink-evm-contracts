@@ -33,6 +33,8 @@ contract ScrollL1Gateway is ScrollGateway, L1BaseGateway {
             executeData,
             _finalizeMessageGasLimit,
             // solhint-disable-next-line avoid-tx-origin
+            // The origin address paid the network fees of L2 on L1
+            // So the origin address is set as the refund address for the excess network fees on L2.
             tx.origin
         );
     }
