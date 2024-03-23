@@ -1,11 +1,23 @@
 const fs = require('fs');
-const { verifyContractCode, createOrGetDeployLog, ChainContractDeployer, getDeployTx } = require('./utils');
+const {
+  verifyContractCode,
+  createOrGetDeployLog,
+  ChainContractDeployer,
+  getDeployTx,
+  readDeployContract,
+} = require('./utils');
 const logName = require('./deploy_log_name');
 const { task, types } = require('hardhat/config');
 
 task('deployGovernance', 'Deploy governance')
   .addParam('admin', 'The admin address (default is the deployer)', undefined, types.string, true)
-  .addParam('securityCouncil', 'The security council address (default is the zero address)', "0x0000000000000000000000000000000000000000", types.string, true)
+  .addParam(
+    'securityCouncil',
+    'The security council address (default is the zero address)',
+    '0x0000000000000000000000000000000000000000',
+    types.string,
+    true,
+  )
   .addParam('minDelay', 'The initial minimum delay (in seconds) to be set for operations', 0, types.int, true)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
@@ -54,42 +66,89 @@ task('deployGovernance', 'Deploy governance')
     }
   });
 
-task('encodeUUPSUpgradeOperation', 'Encode operation for uups upgrade')
+task('encodeUUPSUpgradeCalldata', 'Encode calldata for uups upgrade')
   .addParam('proxy', 'The proxy', undefined, types.string, false)
   .addParam('newImplementation', 'The new implementation', undefined, types.string, false)
-  .addParam('predecessor', 'The predecessor of operation', "0x0000000000000000000000000000000000000000000000000000000000000000", types.string, true)
-  .addParam('salt', 'The salt of operation', "0x0000000000000000000000000000000000000000000000000000000000000000", types.string, true)
-  .addParam('delay', 'The delay', 0, types.int, true)
   .setAction(async (taskArgs, hardhat) => {
     let proxy = taskArgs.proxy;
     let newImplementation = taskArgs.newImplementation;
+    console.log('proxy', proxy);
+    console.log('new implementation', newImplementation);
+
+    const contractFactory = await hardhat.ethers.getContractAt(
+      'UUPSUpgradeable',
+      '0x0000000000000000000000000000000000000000',
+    );
+    const upgradeToCalldata = contractFactory.interface.encodeFunctionData('upgradeTo', [newImplementation]);
+    console.log('upgradeTo calldata', upgradeToCalldata);
+  });
+
+task('encodeOperation', 'Encode operation')
+  .addParam('target', 'The target address', undefined, types.string, false)
+  .addParam('value', 'The call value to target', undefined, types.int, false)
+  .addParam('data', 'The call data to target', undefined, types.string, false)
+  .addParam(
+    'predecessor',
+    'The predecessor of operation',
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    types.string,
+    true,
+  )
+  .addParam(
+    'salt',
+    'The salt of operation',
+    '0x0000000000000000000000000000000000000000000000000000000000000000',
+    types.string,
+    true,
+  )
+  .addParam('delay', 'The delay', 0, types.int, true)
+  .setAction(async (taskArgs, hardhat) => {
+    let target = taskArgs.target;
+    let value = taskArgs.value;
+    let data = taskArgs.data;
     let predecessor = taskArgs.predecessor;
     let salt = taskArgs.salt;
     let delay = taskArgs.delay;
-    console.log('proxy', proxy);
-    console.log('new implementation', newImplementation);
+    console.log('target', target);
+    console.log('value', value);
+    console.log('data', data);
     console.log('predecessor', predecessor);
     console.log('salt', salt);
     console.log('delay', delay);
 
-    const contractFactory = await hardhat.ethers.getContractAt('UUPSUpgradeable', "0x0000000000000000000000000000000000000000");
-    const upgradeToCalldata = contractFactory.interface.encodeFunctionData('upgradeTo', [newImplementation]);
-    console.log('upgradeTo calldata', upgradeToCalldata);
+    const governanceAddr = readDeployContract(logName.DEPLOY_GOVERNANCE_LOG_PREFIX, logName.DEPLOY_LOG_GOVERNANCE);
+    if (!governanceAddr) {
+      console.log('governance address not found');
+      return;
+    }
+    console.log('governance', governanceAddr);
+    const governance = await hardhat.ethers.getContractAt('Governance', governanceAddr);
+    if (value > 0) {
+      const governanceBalance = await hardhat.ethers.provider.getBalance(governanceAddr);
+      console.log('governance balance', governanceBalance);
+      if (governanceBalance < value) {
+        console.log('insufficient balance for execute transaction, please transfer some eth to governance');
+        return;
+      }
+    }
+
     const call = {
-      target: proxy,
-      value: 0,
-      data: upgradeToCalldata
+      target,
+      value,
+      data,
     };
     const operation = {
       calls: [call],
       predecessor: predecessor,
-      salt: salt
-    }
+      salt: salt,
+    };
 
-    const governanceFactory = await hardhat.ethers.getContractFactory('Governance');
-    const scheduleTransparentCalldata = governanceFactory.interface.encodeFunctionData('scheduleTransparent', [operation, 0]);
+    const scheduleTransparentCalldata = governance.interface.encodeFunctionData('scheduleTransparent', [
+      operation,
+      delay,
+    ]);
     console.log('scheduleTransparentCalldata', scheduleTransparentCalldata);
 
-    const executeCalldata = governanceFactory.interface.encodeFunctionData('execute', [operation]);
+    const executeCalldata = governance.interface.encodeFunctionData('execute', [operation]);
     console.log('executeCalldata', executeCalldata);
   });

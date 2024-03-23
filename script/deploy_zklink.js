@@ -139,6 +139,50 @@ task('upgradeZkLink', 'Upgrade zkLink')
     }
   });
 
+task('deployZkLinkTarget', 'Deploy zkLink target')
+  .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
+  .addOptionalParam('dummy', 'Deploy dummy contract for test', false, types.boolean)
+  .setAction(async (taskArgs, hardhat) => {
+    let skipVerify = taskArgs.skipVerify;
+    let dummy = taskArgs.dummy;
+    console.log('skip verify contracts?', skipVerify);
+    console.log('deploy dummy contracts?', dummy);
+
+    const netName = process.env.NET;
+    const chainInfo = zkLinkConfig[netName];
+    if (chainInfo === undefined) {
+      console.log('current net not support');
+      return;
+    }
+    const isEthGasToken = chainInfo.eth;
+    console.log(`is eth the gas token of ${netName}?`, isEthGasToken);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+
+    const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ZKLINK_LOG_PREFIX);
+
+    // deploy zkLink target
+    let zkLinkTargetAddr;
+    console.log('deploy zkLink target...');
+    const contractName = getZkLinkContractName(dummy);
+    const contract = await contractDeployer.deployContract(contractName, [isEthGasToken]);
+    const transaction = await getDeployTx(contract);
+    console.log('deploy tx hash', transaction.hash);
+    zkLinkTargetAddr = await contract.getAddress();
+    console.log('zkLink target', zkLinkTargetAddr);
+    deployLog[logName.DEPLOY_LOG_ZKLINK_IS_ETH_GAS_TOKEN] = isEthGasToken;
+    deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET] = zkLinkTargetAddr;
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+
+    // verify target contract
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, zkLinkTargetAddr, [isEthGasToken]);
+      deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET_VERIFIED] = true;
+      fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    }
+  });
+
 task('setGateway', 'Set gateway for zkLink').setAction(async (taskArgs, hardhat) => {
   const l2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY);
   if (l2GatewayAddr === undefined) {
