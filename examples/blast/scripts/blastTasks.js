@@ -7,6 +7,8 @@ const {
   changeFeeParams,
   encodeSetValidator,
   encodeChangeFeeParams,
+  encodeL1ToL2Calldata,
+  checkL1TxStatus,
 } = require('../../optimism/scripts/opstack-utils');
 const {
   MESSAGE_PASSER_ABI,
@@ -34,8 +36,8 @@ async function initMessenger() {
   const yieldManagerAddress =
     ethereumName !== 'ETHEREUM' ? YIELD_MANAGER_TESTNET_ADDRESS : YIELD_MANAGER_MAINNET_ADDRESS;
   const messenger = new blast.CrossChainMessenger({
-    l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
-    l2ChainId: await l2Wallet.getChainId(), // 168587773 for Blast Testnet, 81457 for Blast Mainnet
+    l1ChainId: await l1Wallet.getChainId(),
+    l2ChainId: await l2Wallet.getChainId(),
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
     bedrock: true,
@@ -53,6 +55,19 @@ async function initMessenger() {
 
   return { messenger, messengerL1Contracts, yieldManagerAddress, ethereumName, blastName };
 }
+
+task('depositETH', 'Deposit eth to L2')
+  .addParam('amount', 'The deposit amount', undefined, types.string, false)
+  .setAction(async taskArgs => {
+    const amount = taskArgs.amount;
+    console.log(`The deposit amount: ${amount}`);
+    const { messenger } = await initMessenger();
+
+    const tx = await messenger.depositETH(ethers.utils.parseEther(amount));
+    console.log(`The tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`Deposit success`);
+  });
 
 task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
   const { messenger, ethereumName, blastName } = await initMessenger();
@@ -270,4 +285,39 @@ task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
     const { messenger, ethereumName, blastName } = await initMessenger();
 
     await encodeSetValidator(hre, messenger, ethereumName, blastName, validatorAddr, isActive);
+  });
+
+task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
+  .addParam('to', 'The l2 target address', undefined, types.string)
+  .addParam('l2CallData', 'The l2 call data to target address', undefined, types.string)
+  .addParam('l2CallValue', 'The l2 call value to target address', undefined, types.int)
+  .setAction(async (taskArgs, hre) => {
+    const l2ToContractAddress = taskArgs.to;
+    const l2CallData = taskArgs.l2CallData;
+    const l2CallValue = taskArgs.l2CallValue;
+    console.log(`The l2 target contract address: ${l2ToContractAddress}`);
+    console.log(`The l2 call data to target address: ${l2CallData}`);
+    console.log(`The l2 call value to target address: ${l2CallValue}`);
+
+    const initInfo = await initMessenger();
+
+    await encodeL1ToL2Calldata(
+      hre,
+      initInfo.messenger,
+      initInfo.ethereumName,
+      initInfo.blastName,
+      l2ToContractAddress,
+      l2CallData,
+      l2CallValue,
+    );
+  });
+
+task('checkL1TxStatus', 'Check the l1 tx status')
+  .addParam('l1TxHash', 'The l1 tx hash', undefined, types.string)
+  .setAction(async (taskArgs, hre) => {
+    const l1TxHash = taskArgs.l1TxHash;
+    console.log(`The l1 tx hash: ${l1TxHash}`);
+
+    const initInfo = await initMessenger();
+    await checkL1TxStatus(hre, initInfo.messenger, initInfo.ethereumName, initInfo.blastName, l1TxHash);
   });
