@@ -131,15 +131,7 @@ task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
 
     const { messenger, ethereumName, mantaName } = await initMessenger();
 
-    await encodeL1ToL2Calldata(
-      hre,
-      messenger,
-      ethereumName,
-      mantaName,
-      l2ToContractAddress,
-      l2CallData,
-      l2CallValue,
-    );
+    await encodeL1ToL2Calldata(hre, messenger, ethereumName, mantaName, l2ToContractAddress, l2CallData, l2CallValue);
   });
 
 task('checkL1TxStatus', 'Check the l1 tx status')

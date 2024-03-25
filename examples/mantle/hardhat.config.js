@@ -3,6 +3,7 @@ require('./scripts/syncL2Requests');
 require('./scripts/syncBatchRoot');
 require('./scripts/setValidator');
 require('./scripts/changeFeeParams');
+require('./scripts/governance');
 
 const BaseConfig = require('../../hardhat.base.config');
 

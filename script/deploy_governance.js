@@ -83,6 +83,26 @@ task('encodeUUPSUpgradeCalldata', 'Encode calldata for uups upgrade')
     console.log('upgradeTo calldata', upgradeToCalldata);
   });
 
+task('encodeERC20Approve', 'Encode calldata for erc20 approve')
+  .addParam('spender', 'The spender address', undefined, types.string, false)
+  .addParam(
+    'amount',
+    'The approve amount',
+    '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    types.string,
+    true,
+  )
+  .setAction(async (taskArgs, hardhat) => {
+    let spender = taskArgs.spender;
+    let amount = taskArgs.amount;
+    console.log('spender', spender);
+    console.log('approve amount', amount);
+
+    const contractFactory = await hardhat.ethers.getContractAt('IERC20', '0x0000000000000000000000000000000000000000');
+    const approveCalldata = contractFactory.interface.encodeFunctionData('approve', [spender, amount]);
+    console.log('approve calldata', approveCalldata);
+  });
+
 task('encodeOperation', 'Encode operation')
   .addParam('target', 'The target address', undefined, types.string, false)
   .addParam('value', 'The call value to target', undefined, types.int, false)
