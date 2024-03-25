@@ -1,7 +1,9 @@
 const ethers = require('ethers');
-const { readDeployContract, getLogName } = require('../../script/utils');
-const logName = require('../../script/deploy_log_name');
-const { INIT_FEE_PARAMS } = require('../../script/zksync_era');
+const { readDeployContract, getLogName } = require('../../../script/utils');
+const logName = require('../../../script/deploy_log_name');
+const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
+const { zkLinkConfig } = require('../../../script/zklink_config');
+const { DepositTx, applyL1ToL2Alias } = require('@eth-optimism/core-utils');
 
 const MessageStatus = {
   UNCONFIRMED_L1_TO_L2_MESSAGE: 0,
@@ -17,11 +19,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function getContractAddresses(ethereumName, opChainName, chainName) {
-  if (chainName === undefined) {
-    chainName = 'op stack chain';
-  }
-
+async function getContractAddresses(ethereumName, opChainName) {
   const arbitratorAddr = readDeployContract(
     logName.DEPLOY_ARBITRATOR_LOG_PREFIX,
     logName.DEPLOY_LOG_ARBITRATOR,
@@ -43,17 +41,17 @@ async function getContractAddresses(ethereumName, opChainName, chainName) {
   const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, opChainName);
   const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
   if (l1GatewayAddr === undefined) {
-    console.log(`${chainName} l1 gateway address not exist`);
+    console.log(`${opChainName} l1 gateway address not exist`);
     return;
   }
-  console.log(`The ${chainName} l1 gateway address: ${l1GatewayAddr}`);
+  console.log(`The ${opChainName} l1 gateway address: ${l1GatewayAddr}`);
 
   const l2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, opChainName);
   if (l2GatewayAddr === undefined) {
-    console.log(`${chainName} l2 gateway address not exist`);
+    console.log(`${opChainName} l2 gateway address not exist`);
     return;
   }
-  console.log(`The ${chainName} l2 gateway address: ${l2GatewayAddr}`);
+  console.log(`The ${opChainName} l2 gateway address: ${l2GatewayAddr}`);
 
   return {
     arbitratorAddr,
@@ -80,11 +78,10 @@ async function generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalld
   return adapterParams;
 }
 
-async function syncBatchRoot(hre, messenger, ethereumName, opChainName, chainName) {
+async function syncBatchRoot(hre, messenger, ethereumName, opChainName) {
   const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
     ethereumName,
     opChainName,
-    chainName,
   );
   const l1Wallet = messenger.l1Signer;
   const l2Provider = messenger.l2Provider;
@@ -138,11 +135,10 @@ async function syncBatchRoot(hre, messenger, ethereumName, opChainName, chainNam
   return message;
 }
 
-async function setValidator(hre, messenger, ethereumName, opChainName, chainName, validatorAddr, isActive) {
+async function setValidator(hre, messenger, ethereumName, opChainName, validatorAddr, isActive) {
   const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
     ethereumName,
     opChainName,
-    chainName,
   );
   const l1Wallet = messenger.l1Signer;
   const l1WalletAddress = await l1Wallet.getAddress();
@@ -188,11 +184,10 @@ async function setValidator(hre, messenger, ethereumName, opChainName, chainName
   return message;
 }
 
-async function changeFeeParams(hre, messenger, ethereumName, opChainName, chainName) {
+async function changeFeeParams(hre, messenger, ethereumName, opChainName) {
   const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
     ethereumName,
     opChainName,
-    chainName,
   );
   const l1Wallet = messenger.l1Signer;
   const l1WalletAddress = await l1Wallet.getAddress();
@@ -237,8 +232,8 @@ async function changeFeeParams(hre, messenger, ethereumName, opChainName, chainN
   return message;
 }
 
-async function syncL2Requests(hre, messenger, ethereumName, opChainName, chainName, txs) {
-  const { zkLinkAddr } = await getContractAddresses(ethereumName, opChainName, chainName);
+async function syncL2Requests(hre, messenger, ethereumName, opChainName, txs) {
+  const { zkLinkAddr } = await getContractAddresses(ethereumName, opChainName);
   const l2Wallet = messenger.l2Signer;
   const l1Wallet = messenger.l1Signer;
 
@@ -304,8 +299,8 @@ async function syncL2Requests(hre, messenger, ethereumName, opChainName, chainNa
   console.log(`The message has been relayed`);
 }
 
-async function encodeSetValidator(hre, messenger, ethereumName, opChainName, chainName, validatorAddr, isActive) {
-  const { zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(ethereumName, opChainName, chainName);
+async function encodeSetValidator(hre, messenger, ethereumName, opChainName, validatorAddr, isActive) {
+  const { zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
   const executeCalldata = zkLink.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
@@ -323,8 +318,8 @@ async function encodeSetValidator(hre, messenger, ethereumName, opChainName, cha
   return calldata;
 }
 
-async function encodeChangeFeeParams(hre, messenger, ethereumName, opChainName, chainName) {
-  const { zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(ethereumName, opChainName, chainName);
+async function encodeChangeFeeParams(hre, messenger, ethereumName, opChainName) {
+  const { zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
   // pre-execution calldata
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
   console.log(`The zkLink address: ${zkLink.address}`);
@@ -342,6 +337,76 @@ async function encodeChangeFeeParams(hre, messenger, ethereumName, opChainName, 
   return calldata;
 }
 
+async function encodeL1ToL2Calldata(
+  hre,
+  messenger,
+  ethereumName,
+  opChainName,
+  l2ToContractAddress,
+  l2CallData,
+  l2CallValue,
+) {
+  const l2ChainInfo = zkLinkConfig[opChainName];
+  if (l2ChainInfo === undefined) {
+    console.log('The l2 chain info not exist');
+    return;
+  }
+  const portalContract = messenger.contracts.l1.OptimismPortal;
+  console.log(`The optimism portal address: ${portalContract.address}`);
+
+  const l1GovernanceAddr = readDeployContract(
+    logName.DEPLOY_GOVERNANCE_LOG_PREFIX,
+    logName.DEPLOY_LOG_GOVERNANCE,
+    ethereumName,
+  );
+  if (l1GovernanceAddr === undefined) {
+    console.log('governance address not exist');
+    return;
+  }
+  console.log(`The l1 governance address: ${l1GovernanceAddr}`);
+  const l2GovernanceAddr = applyL1ToL2Alias(l1GovernanceAddr);
+  console.log(`The l2 governance address: ${l2GovernanceAddr}`);
+
+  const l2Provider = messenger.l2Provider;
+  let l2GasLimit = await l2Provider.estimateGas({
+    from: l2GovernanceAddr,
+    to: l2ToContractAddress,
+    data: l2CallData,
+    value: l2CallValue,
+  });
+  l2GasLimit = l2GasLimit.mul(120).div(100); // Add 20% buffer
+  console.log(`The l2 gas limit: ${l2GasLimit.toString()}`);
+
+  const sendMessageCalldata = portalContract.interface.encodeFunctionData('depositTransaction', [
+    l2ToContractAddress,
+    l2CallValue,
+    l2GasLimit,
+    false,
+    l2CallData,
+  ]);
+  console.log(`The l1 to l2 call target: ${portalContract.address}`);
+  console.log(`The l1 to l2 call data: ${sendMessageCalldata}`);
+  console.log(`The l1 to l2 call value: ${l2CallValue}`);
+}
+
+async function checkL1TxStatus(hre, messenger, ethereumName, opChainName, l1TxHash) {
+  const l1Provider = messenger.l1Provider;
+  const l2Provider = messenger.l2Provider;
+  const l1TxReceipt = await l1Provider.getTransactionReceipt(l1TxHash);
+  const eventFilter =
+    'TransactionDeposited(address indexed from, address indexed to, uint256 indexed version, bytes opaqueData)';
+  const event = (
+    await messenger.contracts.l1.OptimismPortal.queryFilter(
+      eventFilter,
+      l1TxReceipt.blockNumber,
+      l1TxReceipt.blockNumber,
+    )
+  ).pop();
+  const deposit = DepositTx.fromL1Event(event);
+  await l2Provider.waitForTransaction(deposit.hash());
+  console.log(`L1 to l2 tx is executed 🥳`);
+}
+
 module.exports = {
   getContractAddresses,
   syncBatchRoot,
@@ -350,4 +415,6 @@ module.exports = {
   syncL2Requests,
   encodeSetValidator,
   encodeChangeFeeParams,
+  encodeL1ToL2Calldata,
+  checkL1TxStatus,
 };

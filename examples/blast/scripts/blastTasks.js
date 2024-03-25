@@ -7,7 +7,7 @@ const {
   changeFeeParams,
   encodeSetValidator,
   encodeChangeFeeParams,
-} = require('../../utils/opstack-utils');
+} = require('../../optimism/scripts/opstack-utils');
 const {
   MESSAGE_PASSER_ABI,
   MESSAGE_PASSER_ADDRESS,
@@ -61,7 +61,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
   const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
   console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-  const message = await syncBatchRoot(hre, messenger, ethereumName, blastName, 'blast');
+  const message = await syncBatchRoot(hre, messenger, ethereumName, blastName);
 
   await messenger.waitForMessageStatus(message, blast.MessageStatus.RELAYED);
   const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -100,7 +100,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     const l2WalletBalance = ethers.utils.formatEther(await l2Wallet.getBalance());
     console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
-    const { zkLinkAddr } = await getContractAddresses(ethereumName, blastName, 'blast');
+    const { zkLinkAddr } = await getContractAddresses(ethereumName, blastName);
 
     const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
     const calldata = zkLink.interface.encodeFunctionData('syncL2Requests', [txs]);
@@ -230,7 +230,7 @@ task('setValidator', 'Set validator for zkLink')
     const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
     console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-    const message = await setValidator(hre, messenger, ethereumName, blastName, 'blast', validatorAddr, isActive);
+    const message = await setValidator(hre, messenger, ethereumName, blastName, validatorAddr, isActive);
 
     await messenger.waitForMessageStatus(message, blast.MessageStatus.RELAYED);
     const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -245,7 +245,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
   console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-  const message = await changeFeeParams(hre, messenger, ethereumName, blastName, 'blast');
+  const message = await changeFeeParams(hre, messenger, ethereumName, blastName);
 
   await messenger.waitForMessageStatus(message, blast.MessageStatus.RELAYED);
   const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -256,7 +256,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
 task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (_, hre) => {
   const { messenger, ethereumName, blastName } = await initMessenger();
 
-  await encodeChangeFeeParams(hre, messenger, ethereumName, blastName, 'blast');
+  await encodeChangeFeeParams(hre, messenger, ethereumName, blastName);
 });
 
 task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
@@ -269,5 +269,5 @@ task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
 
     const { messenger, ethereumName, blastName } = await initMessenger();
 
-    await encodeSetValidator(hre, messenger, ethereumName, blastName, 'blast', validatorAddr, isActive);
+    await encodeSetValidator(hre, messenger, ethereumName, blastName, validatorAddr, isActive);
   });
