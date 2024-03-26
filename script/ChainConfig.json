@@ -180,13 +180,13 @@
     "eth": true,
     "l2Gateway": {
       "contractName": "LineaL2Gateway",
-      "constructParams": ["0xC499a572640B64eA1C8c194c43Bc3E19940719dC"],
+      "constructParams": ["0x971e727e956690b9957be6d51Ec16E73AcAC83A7"],
       "initializeParams": []
     },
     "l1Gateway": {
-      "netName": "GOERLI",
+      "netName": "SEPOLIA",
       "contractName": "LineaL1Gateway",
-      "constructParams": ["0x70BaD09280FD342D02fe64119779BC1f0791BAC2"],
+      "constructParams": ["0xB218f8A4Bc926cF1cA7b3423c154a0D627Bdb7E5"],
       "initializeParams": []
     }
   },
