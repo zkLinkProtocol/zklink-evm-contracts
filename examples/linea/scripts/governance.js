@@ -1,9 +1,9 @@
 const { JsonRpcProvider, formatEther } = require('ethers');
-const { LineaSDK, OnChainMessageStatus } = require('@consensys/linea-sdk');
 const { readDeployContract } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task, types } = require('hardhat/config');
 const { zkLinkConfig } = require('../../../script/zklink_config');
+const { claimL1ToL2Message } = require('./common');
 
 require('dotenv').config();
 
@@ -82,47 +82,5 @@ task('checkL1TxStatus', 'Check the l1 tx status')
   .setAction(async taskArgs => {
     const l1TxHash = taskArgs.l1TxHash;
     console.log(`The l1 tx hash: ${l1TxHash}`);
-
-    const walletPrivateKey = process.env.DEVNET_PRIVKEY;
-    const ethereumName = process.env.ETHEREUM;
-    const sdk = new LineaSDK({
-      l1RpcUrl: process.env.L1RPC ?? '',
-      l2RpcUrl: process.env.L2RPC ?? '',
-      l1SignerPrivateKey: walletPrivateKey ?? '',
-      l2SignerPrivateKey: walletPrivateKey ?? '',
-      network: ethereumName === 'GOERLI' ? 'linea-goerli' : ethereumName === 'SEPOLIA' ? 'localhost' : 'linea-mainnet',
-      mode: 'read-write',
-    });
-    const sepoliaContracts = {
-      l1ContractAddress: '0xB218f8A4Bc926cF1cA7b3423c154a0D627Bdb7E5',
-      l2ContractAddress: '0x971e727e956690b9957be6d51Ec16E73AcAC83A7',
-    };
-    const lineaL1Contract = sdk.getL1Contract(sepoliaContracts.l1ContractAddress);
-    const lineaL2Contract = sdk.getL2Contract(sepoliaContracts.l2ContractAddress);
-
-    /**
-     * Query the transaction status on L2 via messageHash.
-     */
-    const message = (await lineaL1Contract.getMessagesByTransactionHash(l1TxHash)).pop();
-
-    // Waiting for the official Linea bridge to forward the message to L2
-    // And manually claim the message on L2
-    /*eslint no-constant-condition: ["error", { "checkLoops": false }]*/
-    while (true) {
-      const messageStatus = await lineaL2Contract.getMessageStatus(message.messageHash);
-      console.log(`The message status: ${messageStatus}`);
-      if (messageStatus === OnChainMessageStatus.CLAIMABLE) {
-        const tx = await lineaL2Contract.claim(message);
-        console.log(`The tx hash: ${tx.hash}`);
-        await tx.wait();
-        console.log(`The tx confirmed`);
-        break;
-      }
-      await sleep(60 * 1000);
-    }
-    console.log('Done');
+    await claimL1ToL2Message(l1TxHash);
   });
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
