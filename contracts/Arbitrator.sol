@@ -27,12 +27,16 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     mapping(IL1Gateway => DoubleEndedQueueUpgradeable.Bytes32Deque) public secondaryChainMessageHashQueues;
     /// @notice List of permitted relayers
     mapping(address relayerAddress => bool isRelayer) public relayers;
+    /// @dev The msg value and adapter params are used to forward a l2 message from source chain to target chain
+    bool private claiming;
+    uint256 private claimMsgValue;
+    bytes private claimAdapterParams;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[50] private __gap;
+    uint256[47] private __gap;
 
     /// @notice Primary chain gateway init
     event InitPrimaryChain(IL1Gateway indexed gateway);
@@ -44,8 +48,6 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
-    /// @notice Emit when receive message from l1 gateway
-    event MessageReceived(uint256 value, bytes callData);
     /// @notice Emit when forward message to l1 gateway
     event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
 
@@ -137,18 +139,26 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         emit NewFeeParams(_gateway, _newFeeParams);
     }
 
+    /// @dev This function is called within the `claimMessageCallback` of L1 gateway
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
+        // `claiming`, `claimMsgValue` and `claimAdapterParams` are transient values and set in `claimMessage`
+        // Ensure claim start from call `claimMessage`
+        require(claiming, "Invalid claim");
         require(msg.value == _value, "Invalid msg value");
-        // store message hash for forwarding
-        bytes32 finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         IL1Gateway gateway = IL1Gateway(msg.sender);
+        // Ensure the caller is L1 gateway
         if (gateway == primaryChainGateway) {
-            primaryChainMessageHashQueue.pushBack(finalizeMessageHash);
+            // Unpack destination chain and final callData
+            (IL1Gateway secondaryChainGateway, bytes memory finalCallData) = abi.decode(_callData, (IL1Gateway, bytes));
+            require(secondaryChainGateways[secondaryChainGateway], "Invalid secondary chain gateway");
+            // Forward fee to send message
+            secondaryChainGateway.sendMessage{value: claimMsgValue + _value}(_value, finalCallData, claimAdapterParams);
         } else {
             require(secondaryChainGateways[gateway], "Not secondary chain gateway");
-            secondaryChainMessageHashQueues[gateway].pushBack(finalizeMessageHash);
+            // Forward fee to send message
+            primaryChainGateway.sendMessage{value: claimMsgValue + _value}(_value, _callData, claimAdapterParams);
         }
-        emit MessageReceived(_value, _callData);
+        emit MessageForwarded(gateway, _value, _callData);
     }
 
     function forwardMessage(
@@ -175,5 +185,27 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             primaryChainGateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);
         }
         emit MessageForwarded(_gateway, _value, _callData);
+    }
+
+    function claimMessage(
+        address _sourceChainCanonicalMessageService,
+        bytes calldata _sourceChainClaimCallData,
+        bytes memory _targetChainAdapterParams
+    ) external payable nonReentrant onlyRelayer {
+        // The `claiming`, `claimMsgValue` and `claimAdapterParams` will be cleared after tx executed
+        assembly {
+            tstore(claiming.slot, true)
+            tstore(claimMsgValue.slot, callvalue())
+            tstore(claimAdapterParams.slot, _targetChainAdapterParams)
+        }
+        // Call the claim interface of source chain message service
+        // And it will inner call the `claimCallback` interface of source chain L1Gateway
+        (bool success, bytes memory returnData) = _sourceChainCanonicalMessageService.call(_sourceChainClaimCallData);
+        if (!success) {
+            // Propagate an error if the call fails.
+            assembly {
+                revert(add(returnData, 0x20), mload(returnData))
+            }
+        }
     }
 }

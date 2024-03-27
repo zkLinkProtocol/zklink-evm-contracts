@@ -15,6 +15,19 @@ const hardhatUserConfig = {
         },
       },
     ],
+    overrides: {
+      "contracts/Arbitrator.sol": {
+        version: "0.8.25",
+        settings: {
+          viaIR: true,
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+          evmVersion: "cancun",
+        },
+      }
+    }
   },
   networks: {
     hardhat: {
