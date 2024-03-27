@@ -33,4 +33,12 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
         // Forward fee to send message
         _gateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);
     }
+
+    function claimMessage(
+        address,
+        bytes calldata,
+        bytes memory
+    ) external payable {
+        // do nothing
+    }
 }
