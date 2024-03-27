@@ -6,6 +6,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {DoubleEndedQueueUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/DoubleEndedQueueUpgradeable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {IL1Gateway} from "./interfaces/IL1Gateway.sol";
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
@@ -200,12 +201,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         }
         // Call the claim interface of source chain message service
         // And it will inner call the `claimCallback` interface of source chain L1Gateway
-        (bool success, bytes memory returnData) = _sourceChainCanonicalMessageService.call(_sourceChainClaimCallData);
-        if (!success) {
-            // Propagate an error if the call fails.
-            assembly {
-                revert(add(returnData, 0x20), mload(returnData))
-            }
-        }
+        // No use of return value
+        Address.functionCall(_sourceChainCanonicalMessageService, _sourceChainClaimCallData);
     }
 }

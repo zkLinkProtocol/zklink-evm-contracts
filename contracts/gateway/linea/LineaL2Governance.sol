@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IMessageService} from "../../interfaces/linea/IMessageService.sol";
 
 contract LineaL2Governance is Ownable {
@@ -38,13 +39,9 @@ contract LineaL2Governance is Ownable {
     /// @param _calls The array of calls to be executed.
     function execute(Call[] calldata _calls) external payable onlyOwner {
         for (uint256 i = 0; i < _calls.length; ++i) {
-            (bool success, bytes memory returnData) = _calls[i].target.call{value: _calls[i].value}(_calls[i].data);
-            if (!success) {
-                // Propagate an error if the call fails.
-                assembly {
-                    revert(add(returnData, 0x20), mload(returnData))
-                }
-            }
+            Call memory _call = _calls[i];
+            // No use of return value
+            Address.functionCallWithValue(_call.target, _call.data, _call.value);
         }
     }
 
