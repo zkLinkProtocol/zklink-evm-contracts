@@ -6,7 +6,7 @@ const { task, types } = require('hardhat/config');
 const { zkLinkConfig } = require('../../../script/zklink_config');
 const ethers = require('ethers');
 const { L1_TESTNET_CONTRACTS, L1_MAINNET_CONTRACTS } = require('./constants');
-const { BigNumber } = require('ethers');
+const { BigNumber, Contract } = require('ethers');
 
 require('dotenv').config();
 
@@ -69,22 +69,45 @@ task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
     const l2GovernanceAddr = applyL1ToL2Alias(l1GovernanceAddr);
     console.log(`The l2 governance address: ${l2GovernanceAddr}`);
 
-    // const l2Provider = messenger.l2Provider;
-    // const l2GovernanceBalance = await l2Provider.getBalance(l2GovernanceAddr);
-    // console.log(`The l2 governance balance: ${l2GovernanceBalance.toString()}`);
-    // if (l2GovernanceBalance.eq(BigNumber.from(0))) {
-    //   console.log(`Estimate gas will failed with error: insufficient funds for transfer`);
-    //   console.log(`Please transfer some mnt token to the l2 governance address for estimating gas`);
-    //   return;
-    // }
-    // let l2GasLimit = await l2Provider.estimateGas({
-    //   from: l2GovernanceAddr,
-    //   to: l2ToContractAddress,
-    //   data: l2CallData,
-    //   value: l2CallValue,
-    // }); // 191060862
-    // l2GasLimit = l2GasLimit.mul(120).div(100); // Add 20% buffer
-    const l2GasLimit = BigNumber.from(400000);
+    const l2Provider = messenger.l2Provider;
+    const l2GovernanceBalance = await l2Provider.getBalance(l2GovernanceAddr);
+    console.log(`The l2 governance balance: ${l2GovernanceBalance.toString()}`);
+    if (l2GovernanceBalance.eq(BigNumber.from(0))) {
+      console.log(`Estimate gas will failed with error: insufficient funds for transfer`);
+      console.log(`Please transfer some mnt token to the l2 governance address for estimating gas`);
+      return;
+    }
+    let l2GasLimit = await l2Provider.estimateGas({
+      from: l2GovernanceAddr,
+      to: l2ToContractAddress,
+      data: l2CallData,
+      value: l2CallValue,
+    });
+    const tokenRatioAbi =
+      '[{\n' +
+      '        "inputs": [],\n' +
+      '        "name": "tokenRatio",\n' +
+      '        "outputs": [\n' +
+      '            {\n' +
+      '                "internalType": "uint256",\n' +
+      '                "name": "",\n' +
+      '                "type": "uint256"\n' +
+      '            }\n' +
+      '        ],\n' +
+      '        "stateMutability": "view",\n' +
+      '        "type": "function"\n' +
+      '    }]';
+    const tokenRatioInterface = new ethers.utils.Interface(tokenRatioAbi);
+    const l2GasPriceOracle = new Contract(
+      messenger.contracts.l2.BVM_GasPriceOracle.address,
+      tokenRatioInterface,
+      l2Provider,
+    );
+    const tokenRatio = await l2GasPriceOracle.tokenRatio();
+    console.log(`The eth/mnt token ratio: ${tokenRatio}`);
+    l2GasLimit = l2GasLimit.div(BigNumber.from(tokenRatio));
+    console.log(`The l2 gas limit: ${l2GasLimit.toString()}`);
+    l2GasLimit = l2GasLimit.mul(120).div(100); // Add 20% buffer
     console.log(`The l2 gas limit: ${l2GasLimit.toString()}`);
 
     const sendMessageCalldata = portalContract.interface.encodeFunctionData('depositTransaction', [
