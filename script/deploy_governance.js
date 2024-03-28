@@ -67,12 +67,9 @@ task('deployGovernance', 'Deploy governance')
   });
 
 task('encodeUUPSUpgradeCalldata', 'Encode calldata for uups upgrade')
-  .addParam('proxy', 'The proxy', undefined, types.string, false)
   .addParam('newImplementation', 'The new implementation', undefined, types.string, false)
   .setAction(async (taskArgs, hardhat) => {
-    let proxy = taskArgs.proxy;
     let newImplementation = taskArgs.newImplementation;
-    console.log('proxy', proxy);
     console.log('new implementation', newImplementation);
 
     const contractFactory = await hardhat.ethers.getContractAt(
