@@ -33,6 +33,14 @@ const DEPLOY_LOG_ARBITRATOR_VERIFIED = 'arbitratorVerified';
 const DEPLOY_LOG_ARBITRATOR_TARGET = 'arbitratorTarget';
 const DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED = 'arbitratorTargetVerified';
 
+// consumed in deploy_governance.js
+const DEPLOY_GOVERNANCE_LOG_PREFIX = 'deploy_governance';
+const DEPLOY_LOG_GOVERNANCE = 'governance';
+const DEPLOY_LOG_GOVERNANCE_VERIFIED = 'governanceVerified';
+
+// consumed in deploy_linea_l2_governance.js
+const DEPLOY_LINEA_L2_GOVERNANCE_LOG_PREFIX = 'deploy_linea_l2_governance';
+
 module.exports = {
   DEPLOY_ZKLINK_LOG_PREFIX,
   DEPLOY_LOG_DEPLOYER,
@@ -61,4 +69,8 @@ module.exports = {
   DEPLOY_ERC20_BRIDGE_VERIFIED,
   DEPLOY_ERC20_BRIDGE_TARGET,
   DEPLOY_ERC20_BRIDGE_TARGET_VERIFIED,
+  DEPLOY_GOVERNANCE_LOG_PREFIX,
+  DEPLOY_LOG_GOVERNANCE,
+  DEPLOY_LOG_GOVERNANCE_VERIFIED,
+  DEPLOY_LINEA_L2_GOVERNANCE_LOG_PREFIX,
 };

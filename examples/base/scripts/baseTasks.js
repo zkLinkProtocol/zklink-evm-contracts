@@ -7,8 +7,9 @@ const {
   changeFeeParams,
   encodeSetValidator,
   encodeChangeFeeParams,
-} = require('../../utils/opstack-utils');
-const { L1_MAINNET_CONTRACTS, L1_TESTNET_CONTRACTS } = require('./constants');
+  encodeL1ToL2Calldata,
+  checkL1TxStatus,
+} = require('../../optimism/scripts/opstack-utils');
 const { task, types } = require('hardhat/config');
 require('dotenv').config();
 
@@ -21,16 +22,12 @@ async function initMessenger() {
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
 
-  const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
   const messenger = new base.CrossChainMessenger({
-    l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
-    l2ChainId: await l2Wallet.getChainId(), // 84532 for Base Sepolia, 8453 for Base Mainnet
+    l1ChainId: await l1Wallet.getChainId(),
+    l2ChainId: await l2Wallet.getChainId(),
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
     bedrock: true,
-    contracts: {
-      l1: messengerL1Contracts,
-    },
   });
 
   return { messenger, ethereumName, baseName };
@@ -43,7 +40,7 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
   const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
   console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-  const message = await syncBatchRoot(hre, messenger, ethereumName, baseName, 'base');
+  const message = await syncBatchRoot(hre, messenger, ethereumName, baseName);
   // Waiting for the official base bridge to forward the message to L2
   await messenger.waitForMessageStatus(message, base.MessageStatus.RELAYED);
   const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -63,7 +60,7 @@ task('syncL2Requests', 'Send sync point to arbitrator')
 
     const { messenger, ethereumName, baseName } = await initMessenger();
 
-    await syncL2Requests(hre, messenger, ethereumName, baseName, 'base', txs);
+    await syncL2Requests(hre, messenger, ethereumName, baseName, txs);
 
     console.log('Done!');
 
@@ -86,7 +83,7 @@ task('setValidator', 'Set validator for zkLink')
     const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
     console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-    const message = await setValidator(hre, messenger, ethereumName, baseName, 'base', validatorAddr, isActive);
+    const message = await setValidator(hre, messenger, ethereumName, baseName, validatorAddr, isActive);
     // Waiting for the official base bridge to forward the message to L2
     await messenger.waitForMessageStatus(message, base.MessageStatus.RELAYED);
     const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -101,7 +98,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre)
   const l2CurrentBlock = await l2Wallet.provider.getBlockNumber();
   console.log(`Current block on l2: ${l2CurrentBlock}`);
 
-  const message = await changeFeeParams(hre, messenger, ethereumName, baseName, 'base');
+  const message = await changeFeeParams(hre, messenger, ethereumName, baseName);
   // Waiting for the official base bridge to forward the message to L2
   await messenger.waitForMessageStatus(message, base.MessageStatus.RELAYED);
   const rec = await messenger.getMessageReceipt(message, 0, l2CurrentBlock, 'latest');
@@ -112,7 +109,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre)
 task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (_, hre) => {
   const { messenger, ethereumName, baseName } = await initMessenger();
 
-  await encodeChangeFeeParams(hre, messenger, ethereumName, baseName, 'base');
+  await encodeChangeFeeParams(hre, messenger, ethereumName, baseName);
 });
 
 task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
@@ -125,5 +122,32 @@ task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
 
     const { messenger, ethereumName, baseName } = await initMessenger();
 
-    await encodeSetValidator(hre, messenger, ethereumName, baseName, 'base', validatorAddr, isActive);
+    await encodeSetValidator(hre, messenger, ethereumName, baseName, validatorAddr, isActive);
+  });
+
+task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
+  .addParam('to', 'The l2 target address', undefined, types.string)
+  .addParam('l2CallData', 'The l2 call data to target address', undefined, types.string)
+  .addParam('l2CallValue', 'The l2 call value to target address', undefined, types.int)
+  .setAction(async (taskArgs, hre) => {
+    const l2ToContractAddress = taskArgs.to;
+    const l2CallData = taskArgs.l2CallData;
+    const l2CallValue = taskArgs.l2CallValue;
+    console.log(`The l2 target contract address: ${l2ToContractAddress}`);
+    console.log(`The l2 call data to target address: ${l2CallData}`);
+    console.log(`The l2 call value to target address: ${l2CallValue}`);
+
+    const { messenger, ethereumName, baseName } = await initMessenger();
+
+    await encodeL1ToL2Calldata(hre, messenger, ethereumName, baseName, l2ToContractAddress, l2CallData, l2CallValue);
+  });
+
+task('checkL1TxStatus', 'Check the l1 tx status')
+  .addParam('l1TxHash', 'The l1 tx hash', undefined, types.string)
+  .setAction(async (taskArgs, hre) => {
+    const l1TxHash = taskArgs.l1TxHash;
+    console.log(`The l1 tx hash: ${l1TxHash}`);
+
+    const { messenger, ethereumName, baseName } = await initMessenger();
+    await checkL1TxStatus(hre, messenger, ethereumName, baseName, l1TxHash);
   });

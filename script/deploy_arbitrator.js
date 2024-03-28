@@ -121,6 +121,43 @@ task('upgradeArbitrator', 'Upgrade arbitrator')
     }
   });
 
+task('deployArbitratorTarget', 'Deploy arbitrator target')
+  .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
+  .addOptionalParam('dummy', 'Deploy dummy contract for test', false, types.boolean)
+  .setAction(async (taskArgs, hardhat) => {
+    let skipVerify = taskArgs.skipVerify;
+    let dummy = taskArgs.dummy;
+    console.log('skip verify contracts?', skipVerify);
+    console.log('deploy dummy contracts?', dummy);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+    const deployerWallet = contractDeployer.deployerWallet;
+
+    const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ARBITRATOR_LOG_PREFIX);
+    deployLog[logName.DEPLOY_LOG_DEPLOYER] = deployerWallet.address;
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+
+    // deploy arbitrator target
+    let arbitratorTargetAddr;
+    console.log('deploy arbitrator target...');
+    const contractName = getArbitratorContractName(dummy);
+    const contract = await contractDeployer.deployContract(contractName, []);
+    const transaction = await getDeployTx(contract);
+    console.log('deploy tx hash', transaction.hash);
+    arbitratorTargetAddr = await contract.getAddress();
+    deployLog[logName.DEPLOY_LOG_ARBITRATOR_TARGET] = arbitratorTargetAddr;
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    console.log('arbitrator', arbitratorTargetAddr);
+
+    // verify target contract
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, arbitratorTargetAddr, []);
+      deployLog[logName.DEPLOY_LOG_ARBITRATOR_VERIFIED] = true;
+      fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    }
+  });
+
 task('setValidatorForEthereum', 'Set validator for ethereum')
   .addParam('validator', 'Validator Address', undefined, types.string)
   .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)

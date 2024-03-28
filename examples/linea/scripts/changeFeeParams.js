@@ -1,14 +1,10 @@
 const { JsonRpcProvider, Wallet, formatEther } = require('ethers');
-const { LineaSDK, OnChainMessageStatus } = require('@consensys/linea-sdk');
 const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task } = require('hardhat/config');
+const { claimL1ToL2Message } = require('./common');
 
 require('dotenv').config();
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArgs, hre) => {
   const walletPrivateKey = process.env.DEVNET_PRIVKEY;
@@ -18,16 +14,6 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const lineaName = process.env.LINEA;
   const l1Wallet = new Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new Wallet(walletPrivateKey, l2Provider);
-  const sdk = new LineaSDK({
-    l1RpcUrl: process.env.L1RPC ?? '',
-    l2RpcUrl: process.env.L2RPC ?? '',
-    l1SignerPrivateKey: walletPrivateKey ?? '',
-    l2SignerPrivateKey: walletPrivateKey ?? '',
-    network: ethereumName === 'GOERLI' ? 'linea-goerli' : 'linea-mainnet',
-    mode: 'read-write',
-  });
-  const lineaL1Contract = sdk.getL1Contract();
-  const lineaL2Contract = sdk.getL2Contract();
 
   const l1WalletAddress = await l1Wallet.getAddress();
   const l1WalletBalance = formatEther(await l1Provider.getBalance(l1WalletAddress));
@@ -71,29 +57,8 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   const adapterParams = '0x';
   const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   let tx = await arbitrator.changeFeeParams(lineaL1GatewayAddr, INIT_FEE_PARAMS, adapterParams);
-  console.log(`The tx hash: ${tx.hash}`);
+  console.log(`The l1 tx hash: ${tx.hash}`);
   await tx.wait();
-  console.log(`The tx confirmed`);
-
-  /**
-   * Query the transaction status on L2 via messageHash.
-   */
-  const message = (await lineaL1Contract.getMessagesByTransactionHash(tx.hash)).pop();
-
-  // Waiting for the official Linea bridge to forward the message to L2
-  // And manually claim the message on L2
-  /*eslint no-constant-condition: ["error", { "checkLoops": false }]*/
-  while (true) {
-    const messageStatus = await lineaL2Contract.getMessageStatus(message.messageHash);
-    console.log(`The message status: ${messageStatus}`);
-    if (messageStatus === OnChainMessageStatus.CLAIMABLE) {
-      const tx = await lineaL2Contract.claim(message);
-      console.log(`The tx hash: ${tx.hash}`);
-      await tx.wait();
-      console.log(`The tx confirmed`);
-      break;
-    }
-    await sleep(60 * 1000);
-  }
-  console.log('Done');
+  console.log(`The l1 tx confirmed`);
+  await claimL1ToL2Message(tx.hash);
 });

@@ -4,6 +4,7 @@ require('./scripts/syncBatchRoot');
 require('./scripts/setValidator');
 require('./scripts/changeFeeParams');
 require('./scripts/setSecondaryGateway');
+require('./scripts/governance');
 
 const BaseConfig = require('../../hardhat.base.config');
 
