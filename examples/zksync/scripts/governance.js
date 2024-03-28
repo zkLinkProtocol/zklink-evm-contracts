@@ -46,7 +46,7 @@ async function initZkLinkNetwork() {
   const lineaName = process.env.LINEA;
   const zkSyncWallet = new Wallet(walletPrivateKey, l2Provider, l1Provider);
 
-  const mailBoxAddr = await l1Provider.getMainContractAddress();
+  const mailBoxAddr = await l2Provider.getMainContractAddress();
   if (mailBoxAddr === undefined) {
     console.log('The zksync mailbox address not exist');
     return;
