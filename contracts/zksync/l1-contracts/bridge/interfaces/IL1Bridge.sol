@@ -14,6 +14,15 @@ interface IL1Bridge {
         uint256 amount
     );
 
+    event DepositToMergeInitiated(
+        bytes32 indexed l2DepositTxHash,
+        address indexed from,
+        address indexed to,
+        address l1Token,
+        uint256 amount,
+        bool toMerge
+    );
+
     event WithdrawalFinalized(address indexed to, address indexed l1Token, uint256 amount);
 
     event ClaimedFailedDeposit(address indexed to, address indexed l1Token, uint256 amount);
@@ -21,6 +30,15 @@ interface IL1Bridge {
     function isWithdrawalFinalized(uint256 _l2BatchNumber, uint256 _l2MessageIndex) external view returns (bool);
 
     function deposit(
+        address _l2Receiver,
+        address _l1Token,
+        uint256 _amount,
+        uint256 _l2TxGasLimit,
+        uint256 _l2TxGasPerPubdataByte,
+        address _refundRecipient
+    ) external payable returns (bytes32 txHash);
+
+    function depositToMerge(
         address _l2Receiver,
         address _l1Token,
         uint256 _amount,
