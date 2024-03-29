@@ -61,33 +61,24 @@ async function getContractAddresses(ethereumName, opChainName) {
   };
 }
 
-async function generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata) {
-  const l2Gateway = await hre.ethers.getContractAt('IMessageClaimer', l2GatewayAddr);
-  const sendData = l2Gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
-
-  const gasLimit = await messenger.estimateGas.sendMessage({
-    direction: 1, // L2_TO_L1, Estimating the Gas Required on L2
-    target: l2GatewayAddr,
-    message: sendData,
-  });
-  console.log(`The gas limit: ${gasLimit.toString()}`);
-
-  const adapterParams = ethers.AbiCoder.defaultAbiCoder().encode(['uint256'], [gasLimit.toString()]);
+async function generateAdapterParams() {
+  // NOTE: op stack series gateway,
+  // the _minGasaLimit parameter required for SendMessage is defaulted to 0, on L2 GasLimit is fixed to 288648.
+  // This value needs to be adjusted when an OutOfGas error occurs.
+  const minGasLimit = 0;
+  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [minGasLimit]);
   console.log(`The adapter params: ${adapterParams}`);
 
   return adapterParams;
 }
 
 async function syncBatchRoot(hre, messenger, ethereumName, opChainName) {
-  const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
-    ethereumName,
-    opChainName,
-  );
+  const { arbitratorAddr, zkLinkAddr, l1GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
   const l1Wallet = messenger.l1Signer;
   const l2Provider = messenger.l2Provider;
 
   const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.formatEther((await l1Wallet.getBalance()).toString());
+  const l1WalletBalance = ethers.utils.formatEther((await l1Wallet.getBalance()).toString());
   console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
   // pre-execution calldata
@@ -95,11 +86,11 @@ async function syncBatchRoot(hre, messenger, ethereumName, opChainName) {
   const zklinkIface = zkLink.interface;
   const blockNumber = await l2Provider.getBlockNumber();
   console.log(`The current block number on l1: ${blockNumber}`);
-  const l2LogsRootHash = ethers.keccak256(ethers.toUtf8Bytes(`L2 logs root hash ${blockNumber}`));
+  const l2LogsRootHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(`L2 logs root hash ${blockNumber}`));
   console.log(`The l2 logs root hash: ${l2LogsRootHash}`);
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The call data: ${executeCalldata}`);
-  const adapterParams = await generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata);
+  const adapterParams = await generateAdapterParams();
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
   const sendData = arbitrator.interface.encodeFunctionData('forwardMessage', [
@@ -136,19 +127,13 @@ async function syncBatchRoot(hre, messenger, ethereumName, opChainName) {
 }
 
 async function setValidator(hre, messenger, ethereumName, opChainName, validatorAddr, isActive) {
-  const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
-    ethereumName,
-    opChainName,
-  );
+  const { arbitratorAddr, l1GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
   const l1Wallet = messenger.l1Signer;
   const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.formatEther((await l1Wallet.getBalance()).toString());
+  const l1WalletBalance = ethers.utils.formatEther((await l1Wallet.getBalance()).toString());
   console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
-  // pre-execution calldata
-  const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
-  const executeCalldata = zkLink.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
-  const adapterParams = await generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata);
+  const adapterParams = await generateAdapterParams();
 
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
@@ -185,19 +170,13 @@ async function setValidator(hre, messenger, ethereumName, opChainName, validator
 }
 
 async function changeFeeParams(hre, messenger, ethereumName, opChainName) {
-  const { arbitratorAddr, zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(
-    ethereumName,
-    opChainName,
-  );
+  const { arbitratorAddr, l1GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
   const l1Wallet = messenger.l1Signer;
   const l1WalletAddress = await l1Wallet.getAddress();
-  const l1WalletBalance = ethers.formatEther((await l1Wallet.getBalance()).toString());
+  const l1WalletBalance = ethers.utils.formatEther((await l1Wallet.getBalance()).toString());
   console.log(`${l1WalletAddress} balance on l1: ${l1WalletBalance} ether`);
 
-  // pre-execution calldata
-  const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
-  const executeCalldata = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
-  const adapterParams = await generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata);
+  const adapterParams = await generateAdapterParams();
 
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
@@ -238,7 +217,7 @@ async function syncL2Requests(hre, messenger, ethereumName, opChainName, txs) {
   const l1Wallet = messenger.l1Signer;
 
   const l2WalletAddress = await l2Wallet.getAddress();
-  const l2WalletBalance = ethers.formatEther((await l2Wallet.getBalance()).toString());
+  const l2WalletBalance = ethers.utils.formatEther((await l2Wallet.getBalance()).toString());
   console.log(`${l2WalletAddress} balance on l2: ${l2WalletBalance} ether`);
 
   const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr, l2Wallet);
@@ -299,12 +278,9 @@ async function syncL2Requests(hre, messenger, ethereumName, opChainName, txs) {
   console.log(`The message has been relayed`);
 }
 
-async function encodeSetValidator(hre, messenger, ethereumName, opChainName, validatorAddr, isActive) {
-  const { zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
-  // pre-execution calldata
-  const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
-  const executeCalldata = zkLink.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
-  const adapterParams = await generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata);
+async function encodeSetValidator(hre, ethereumName, opChainName, validatorAddr, isActive) {
+  const { l1GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
+  const adapterParams = await generateAdapterParams();
 
   const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
   const calldata = arbitratorFactory.interface.encodeFunctionData('setValidator', [
@@ -318,13 +294,9 @@ async function encodeSetValidator(hre, messenger, ethereumName, opChainName, val
   return calldata;
 }
 
-async function encodeChangeFeeParams(hre, messenger, ethereumName, opChainName) {
-  const { zkLinkAddr, l1GatewayAddr, l2GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
-  // pre-execution calldata
-  const zkLink = await hre.ethers.getContractAt('ZkLink', zkLinkAddr);
-  console.log(`The zkLink address: ${zkLink.address}`);
-  const executeCalldata = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
-  const adapterParams = await generateAdapterParams(hre, messenger, l2GatewayAddr, executeCalldata);
+async function encodeChangeFeeParams(hre, ethereumName, opChainName) {
+  const { l1GatewayAddr } = await getContractAddresses(ethereumName, opChainName);
+  const adapterParams = await generateAdapterParams();
 
   const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
   const calldata = arbitratorFactory.interface.encodeFunctionData('changeFeeParams', [
