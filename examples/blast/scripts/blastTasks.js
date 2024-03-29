@@ -269,9 +269,9 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
 });
 
 task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (_, hre) => {
-  const { messenger, ethereumName, blastName } = await initMessenger();
+  const { ethereumName, blastName } = await initMessenger();
 
-  await encodeChangeFeeParams(hre, messenger, ethereumName, blastName);
+  await encodeChangeFeeParams(hre, ethereumName, blastName);
 });
 
 task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
@@ -282,9 +282,9 @@ task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
     const isActive = taskArgs.active;
     console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
 
-    const { messenger, ethereumName, blastName } = await initMessenger();
+    const { ethereumName, blastName } = await initMessenger();
 
-    await encodeSetValidator(hre, messenger, ethereumName, blastName, validatorAddr, isActive);
+    await encodeSetValidator(hre, ethereumName, blastName, validatorAddr, isActive);
   });
 
 task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
