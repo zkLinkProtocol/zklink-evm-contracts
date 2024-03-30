@@ -142,6 +142,20 @@
       "initializeParams": []
     }
   },
+  "METIS": {
+    "eth": false,
+    "l2Gateway": {
+      "contractName": "OptimismL2Gateway",
+      "constructParams": [],
+      "initializeParams": []
+    },
+    "l1Gateway": {
+      "netName": "ETHEREUM",
+      "contractName": "OptimismL1Gateway",
+      "constructParams": ["0x8bF439ef7167023F009E24b21719Ca5f768Ecb36"],
+      "initializeParams": []
+    }
+  },
   "GOERLI": {
     "eth": true
   },
