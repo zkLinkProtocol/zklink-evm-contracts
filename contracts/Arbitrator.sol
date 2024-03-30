@@ -9,6 +9,7 @@ import {DoubleEndedQueueUpgradeable} from "@openzeppelin/contracts-upgradeable/u
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {IL1Gateway} from "./interfaces/IL1Gateway.sol";
+import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
@@ -17,6 +18,11 @@ import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
 /// @author zk.link
 contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     using DoubleEndedQueueUpgradeable for DoubleEndedQueueUpgradeable.Bytes32Deque;
+
+    struct GatewayAdapterParams {
+        IL1Gateway gateway;
+        bytes adapterParams;
+    }
 
     /// @dev The gateway for sending message from ethereum to primary chain
     IL1Gateway public primaryChainGateway;
@@ -28,16 +34,14 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     mapping(IL1Gateway => DoubleEndedQueueUpgradeable.Bytes32Deque) public secondaryChainMessageHashQueues;
     /// @notice List of permitted relayers
     mapping(address relayerAddress => bool isRelayer) public relayers;
-    /// @dev The msg value and adapter params are used to forward a l2 message from source chain to target chain
-    bool private claiming;
-    uint256 private claimMsgValue;
-    bytes private claimAdapterParams;
+    /// @dev The forward params are used to forward a l2 message from source chain to target chains
+    bytes private forwardParams;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[47] private __gap;
+    uint256[49] private __gap;
 
     /// @notice Primary chain gateway init
     event InitPrimaryChain(IL1Gateway indexed gateway);
@@ -142,22 +146,33 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
 
     /// @dev This function is called within the `claimMessageCallback` of L1 gateway
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
-        // `claiming`, `claimMsgValue` and `claimAdapterParams` are transient values and set in `claimMessage`
-        // Ensure claim start from call `claimMessage`
-        require(claiming, "Invalid claim");
         require(msg.value == _value, "Invalid msg value");
         IL1Gateway gateway = IL1Gateway(msg.sender);
         // Ensure the caller is L1 gateway
         if (gateway == primaryChainGateway) {
             // Unpack destination chain and final callData
-            (IL1Gateway secondaryChainGateway, bytes memory finalCallData) = abi.decode(_callData, (IL1Gateway, bytes));
-            require(secondaryChainGateways[secondaryChainGateway], "Invalid secondary chain gateway");
-            // Forward fee to send message
-            secondaryChainGateway.sendMessage{value: claimMsgValue + _value}(_value, finalCallData, claimAdapterParams);
+            bytes[] memory gatewayCallDataLists = abi.decode(_callData, (bytes[]));
+            // `forwardParams` is set in `claimMessage`
+            bytes[] memory gatewayForwardParams = abi.decode(forwardParams, (bytes[]));
+            uint256 gatewayLength = gatewayCallDataLists.length;
+            require(gatewayLength == gatewayForwardParams.length, "Invalid forward params length");
+            unchecked {
+                for (uint256 i = 0; i < gatewayLength; ++i) {
+                    bytes memory gatewayCallData = gatewayCallDataLists[i];
+                    bytes memory gatewayForwardParam = gatewayForwardParams[i];
+                    (IL1Gateway secondaryChainGateway, uint256 callValue, bytes memory callData) = abi.decode(gatewayCallData, (IL1Gateway, uint256, bytes));
+                    require(secondaryChainGateways[secondaryChainGateway], "Invalid secondary chain gateway");
+                    (uint256 sendMsgFee, bytes memory adapterParams) = abi.decode(gatewayForwardParam, (uint256, bytes));
+                    // Forward fee to send message
+                    secondaryChainGateway.sendMessage{value: sendMsgFee + callValue}(callValue, callData, adapterParams);
+                }
+            }
         } else {
             require(secondaryChainGateways[gateway], "Not secondary chain gateway");
+            // `forwardParams` is set in `claimMessage`
+            (uint256 sendMsgFee, bytes memory adapterParams) = abi.decode(forwardParams, (uint256, bytes));
             // Forward fee to send message
-            primaryChainGateway.sendMessage{value: claimMsgValue + _value}(_value, _callData, claimAdapterParams);
+            primaryChainGateway.sendMessage{value: sendMsgFee + _value}(_value, _callData, adapterParams);
         }
         emit MessageForwarded(gateway, _value, _callData);
     }
@@ -191,13 +206,11 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     function claimMessage(
         address _sourceChainCanonicalMessageService,
         bytes calldata _sourceChainClaimCallData,
-        bytes memory _targetChainAdapterParams
+        bytes memory _forwardParams
     ) external payable nonReentrant onlyRelayer {
-        // The `claiming`, `claimMsgValue` and `claimAdapterParams` will be cleared after tx executed
+        // The `forwardParams` will be cleared after tx executed
         assembly {
-            tstore(claiming.slot, true)
-            tstore(claimMsgValue.slot, callvalue())
-            tstore(claimAdapterParams.slot, _targetChainAdapterParams)
+            tstore(forwardParams.slot, _forwardParams)
         }
         // Call the claim interface of source chain message service
         // And it will inner call the `claimCallback` interface of source chain L1Gateway
