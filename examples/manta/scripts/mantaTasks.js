@@ -25,8 +25,8 @@ async function initMessenger() {
   // https://github.com/Manta-Network/bridging-tutorial/blob/ad640a17264e2f009065811a0ff0872d8063b27b/standard-bridge-custom-token/README.md?plain=1#L152
   const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
   const messenger = new manta.CrossChainMessenger({
-    l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
-    l2ChainId: await l2Wallet.getChainId(), // 3441005 for Manta Pacific Testnet, 169 for Manta Pacific Mainnet
+    l1ChainId: await l1Wallet.getChainId(),
+    l2ChainId: await l2Wallet.getChainId(),
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
     bedrock: true,
