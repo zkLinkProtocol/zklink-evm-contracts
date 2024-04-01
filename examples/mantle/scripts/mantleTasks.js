@@ -1,38 +1,119 @@
 const mantle = require('@mantleio/sdk');
-const { DepositTx, applyL1ToL2Alias } = require('@mantleio/core-utils');
+const { applyL1ToL2Alias } = require('@mantleio/core-utils');
+const ethers = require('ethers');
+const { BigNumber, Contract } = require('ethers');
+const {
+  syncBatchRoot,
+  syncL2Requests,
+  setValidator,
+  changeFeeParams,
+  encodeSetValidator,
+  encodeChangeFeeParams,
+  checkL1TxStatus,
+} = require('../../optimism/scripts/opstack-utils');
+const { zkLinkConfig } = require('../../../script/zklink_config');
 const { readDeployContract } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task, types } = require('hardhat/config');
-const { zkLinkConfig } = require('../../../script/zklink_config');
-const ethers = require('ethers');
-const { L1_TESTNET_CONTRACTS, L1_MAINNET_CONTRACTS } = require('./constants');
-const { BigNumber, Contract } = require('ethers');
-
 require('dotenv').config();
 
 async function initMessenger() {
   const walletPrivateKey = process.env.DEVNET_PRIVKEY;
   const l1Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L1RPC);
   const l2Provider = new ethers.providers.StaticJsonRpcProvider(process.env.L2RPC);
-  const ethereumName = process.env.ETHEREUM;
   const mantleName = process.env.MANTLE;
+  const ethereumName = process.env.ETHEREUM;
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
-  // https://docs-v2.mantle.xyz/intro/system-components/on-chain-system
-  const messengerL1Contracts = ethereumName !== 'ETHEREUM' ? L1_TESTNET_CONTRACTS : L1_MAINNET_CONTRACTS;
   const messenger = new mantle.CrossChainMessenger({
-    l1ChainId: await l1Wallet.getChainId(),
-    l2ChainId: await l2Wallet.getChainId(),
+    l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
+    l2ChainId: await l2Wallet.getChainId(), // 5003 for Mantle Testnet, 5000 for Mantle Mainnet
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
     bedrock: true,
-    contracts: {
-      l1: messengerL1Contracts,
-    },
   });
 
   return { messenger, ethereumName, mantleName };
 }
+
+task('syncBatchRoot', 'Forward message to L2').setAction(async (_, hre) => {
+  const { messenger, ethereumName, mantleName } = await initMessenger();
+
+  const message = await syncBatchRoot(hre, messenger, ethereumName, mantleName);
+  // Waiting for the official manta bridge to forward the message to L2
+  const rec = await messenger.waitForMessageReceipt(message);
+  console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
+  console.log('Done');
+
+  // Example txs:
+  // https://sepolia.etherscan.io/tx/0x021a7a2eb1bf46dbfc1fe91da1c4f85b2891195482fa097d69b7b53bd8b4f041
+  // https://sepolia.mantlescan.xyz/tx/0x97e054f0c3bc5b9033834eb88c59730716e275e460849b489bc7eff86b332225
+});
+
+task('syncL2Requests', 'Send sync point to arbitrator')
+  .addParam('txs', 'New sync point', 100, types.int, true)
+  .setAction(async (taskArgs, hre) => {
+    const txs = taskArgs.txs;
+    console.log(`The sync point: txs: ${txs}`);
+
+    const { messenger, ethereumName, mantleName } = await initMessenger();
+
+    await syncL2Requests(hre, messenger, ethereumName, mantleName, txs);
+
+    console.log('Done!');
+
+    // Example txs:
+    // https://sepolia.mantlescan.xyz/tx/0xfacef5c27c52fc60e059e36c7fb5fd897cd3b85b0861cbaa0fe299c1ca23101b
+    // https://sepolia.etherscan.io/tx/0x1a0f721a5d0c4bcc334ad6d54a60ae4ce4b5e52c71f3e48f62e2f2c980885b61
+  });
+
+task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre) => {
+  const { messenger, ethereumName, mantleName } = await initMessenger();
+
+  const message = await changeFeeParams(hre, messenger, ethereumName, mantleName);
+
+  // Waiting for the official manta bridge to forward the message to L2
+  const rec = await messenger.waitForMessageReceipt(message);
+  console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
+  console.log('Done');
+});
+
+task('setValidator', 'Set validator for zkLink')
+  .addParam('validator', 'Validator Address', undefined, types.string)
+  .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)
+  .setAction(async (taskArgs, hre) => {
+    const validatorAddr = taskArgs.validator;
+    const isActive = taskArgs.active;
+    console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
+
+    const { messenger, ethereumName, mantleName } = await initMessenger();
+
+    const message = await setValidator(hre, messenger, ethereumName, mantleName, validatorAddr, isActive);
+
+    // Waiting for the official manta bridge to forward the message to L2
+    const rec = await messenger.waitForMessageReceipt(message);
+    console.log(`The tx receipt: ${JSON.stringify(rec, null, 2)}`);
+    console.log('Done');
+  });
+
+task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
+  .addParam('validator', 'Validator Address', undefined, types.string)
+  .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)
+  .setAction(async (taskArgs, hre) => {
+    const validatorAddr = taskArgs.validator;
+    const isActive = taskArgs.active;
+    console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
+
+    const { ethereumName, mantleName } = await initMessenger();
+
+    await encodeSetValidator(hre, ethereumName, mantleName, validatorAddr, isActive);
+  });
+
+task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (_, hre) => {
+  const { ethereumName, mantleName } = await initMessenger();
+
+  await encodeChangeFeeParams(hre, ethereumName, mantleName);
+});
 
 task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
   .addParam('to', 'The l2 target address', undefined, types.string)
@@ -125,25 +206,10 @@ task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
 
 task('checkL1TxStatus', 'Check the l1 tx status')
   .addParam('l1TxHash', 'The l1 tx hash', undefined, types.string)
-  .setAction(async taskArgs => {
+  .setAction(async (taskArgs, hre) => {
     const l1TxHash = taskArgs.l1TxHash;
     console.log(`The l1 tx hash: ${l1TxHash}`);
 
-    const { messenger } = await initMessenger();
-
-    const l1Provider = messenger.l1Provider;
-    const l2Provider = messenger.l2Provider;
-    const l1TxReceipt = await l1Provider.getTransactionReceipt(l1TxHash);
-    const eventFilter =
-      'TransactionDeposited(address indexed from, address indexed to, uint256 indexed version, bytes opaqueData)';
-    const event = (
-      await messenger.contracts.l1.OptimismPortal.queryFilter(
-        eventFilter,
-        l1TxReceipt.blockNumber,
-        l1TxReceipt.blockNumber,
-      )
-    ).pop();
-    const deposit = DepositTx.fromL1Event(event);
-    await l2Provider.waitForTransaction(deposit.hash());
-    console.log(`L1 to l2 tx is executed 🥳`);
+    const { messenger, ethereumName, mantleName } = await initMessenger();
+    await checkL1TxStatus(hre, messenger, ethereumName, mantleName, l1TxHash);
   });
