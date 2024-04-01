@@ -84,9 +84,9 @@ contract ZkLink is
         public isEthWithdrawalFinalized;
     /// @dev The forward fee allocator
     address public forwardFeeAllocator;
-    /// @dev The range root hash of [fromBatchNumber, toBatchNumber]
-    /// The range = keccak256(abi.encodePacked(fromBatchNumber, toBatchNumber))
-    mapping(bytes32 range => bytes32 rangeRootHash) public rangRootHashMap;
+    /// @dev The range batch root hash of [fromBatchNumber, toBatchNumber]
+    /// The key is keccak256(abi.encodePacked(fromBatchNumber, toBatchNumber))
+    mapping(bytes32 range => bytes32 rangeBatchRootHash) public rangBatchRootHashes;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
@@ -110,8 +110,13 @@ contract ZkLink is
     event SyncL2Requests(uint256 totalSyncedPriorityTxs, bytes32 syncHash, uint256 forwardEthAmount);
     /// @notice Emitted when receive batch root from primary chain.
     event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash, uint256 forwardEthAmount);
-    /// @notice Emitted when receive range batch root from primary chain.
-    event SyncRangeBatchRoot(uint256 fromBatchNumber, uint256 toBatchNumber, bytes32 rangeRootHash, uint256 forwardEthAmount);
+    /// @notice Emitted when receive range batch root hash from primary chain.
+    event SyncRangeBatchRoot(
+        uint256 fromBatchNumber,
+        uint256 toBatchNumber,
+        bytes32 rangeBatchRootHash,
+        uint256 forwardEthAmount
+    );
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
@@ -464,32 +469,43 @@ contract ZkLink is
     }
 
     function syncRangeBatchRoot(
-        uint256 _fromBatchNumber, uint256 _toBatchNumber, bytes32 _rangeRootHash, uint256 _forwardEthAmount
+        uint256 _fromBatchNumber,
+        uint256 _toBatchNumber,
+        bytes32 _rangeBatchRootHash,
+        uint256 _forwardEthAmount
     ) external payable onlyGateway {
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         require(msg.value == _forwardEthAmount, "Invalid forward amount");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
-        rangRootHashMap[range] = _rangeRootHash;
-        emit SyncRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeRootHash, _forwardEthAmount);
+        rangBatchRootHashes[range] = _rangeBatchRootHash;
+        emit SyncRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeBatchRootHash, _forwardEthAmount);
     }
 
-    function openRangeBatchRoot(uint256 _fromBatchNumber, uint256 _toBatchNumber, bytes32[] memory _l2LogsRootHashes) external onlyValidator {
+    /// @dev Unzip the root hashes in the range
+    /// @param _fromBatchNumber The batch number from
+    /// @param _toBatchNumber The batch number to
+    /// @param _l2LogsRootHashes The l2LogsRootHash list in the range [`_fromBatchNumber`, `_toBatchNumber`]
+    function openRangeBatchRootHash(
+        uint256 _fromBatchNumber,
+        uint256 _toBatchNumber,
+        bytes32[] memory _l2LogsRootHashes
+    ) external onlyValidator {
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
-        bytes32 rangeRootHash = rangRootHashMap[range];
-        require(rangeRootHash != bytes32(0), "Rang root hash not exist");
-        uint256 rootHashLength = _l2LogsRootHashes.length;
-        require(rootHashLength == _toBatchNumber - _fromBatchNumber + 1, "Invalid root hashes length");
-        bytes32 openRangeRootHash = _l2LogsRootHashes[0];
-        l2LogsRootHashes[_fromBatchNumber] = openRangeRootHash;
+        bytes32 rangeBatchRootHash = rangBatchRootHashes[range];
+        require(rangeBatchRootHash != bytes32(0), "Rang batch root hash not exist");
+        uint256 rootHashesLength = _l2LogsRootHashes.length;
+        require(rootHashesLength == _toBatchNumber - _fromBatchNumber + 1, "Invalid root hashes length");
+        bytes32 _rangeBatchRootHash = _l2LogsRootHashes[0];
+        l2LogsRootHashes[_fromBatchNumber] = _rangeBatchRootHash;
         unchecked {
-            for (uint256 i = 1; i < rootHashLength; ++i) {
-                bytes32 l2LogsRootHash = _l2LogsRootHashes[i];
-                l2LogsRootHashes[_fromBatchNumber + i] = l2LogsRootHash;
-                openRangeRootHash = Merkle._efficientHash(openRangeRootHash, l2LogsRootHash);
+            for (uint256 i = 1; i < rootHashesLength; ++i) {
+                bytes32 _l2LogsRootHash = _l2LogsRootHashes[i];
+                l2LogsRootHashes[_fromBatchNumber + i] = _l2LogsRootHash;
+                _rangeBatchRootHash = Merkle._efficientHash(_rangeBatchRootHash, _l2LogsRootHash);
             }
         }
-        require(openRangeRootHash == rangeRootHash, "Incorrect range root hash");
+        require(_rangeBatchRootHash == rangeBatchRootHash, "Incorrect root hash");
         if (_toBatchNumber > totalBatchesExecuted) {
             totalBatchesExecuted = _toBatchNumber;
         }

@@ -147,36 +147,52 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @dev This function is called within the `claimMessageCallback` of L1 gateway
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
-        IL1Gateway gateway = IL1Gateway(msg.sender);
+        IL1Gateway sourceGateway = IL1Gateway(msg.sender);
+        // `forwardParams` is set in `claimMessage`
+        bytes memory _forwardParams;
+        assembly {
+            _forwardParams := tload(forwardParams.slot)
+        }
         // Ensure the caller is L1 gateway
-        if (gateway == primaryChainGateway) {
+        if (sourceGateway == primaryChainGateway) {
             // Unpack destination chain and final callData
-            bytes[] memory gatewayCallDataLists = abi.decode(_callData, (bytes[]));
-            // `forwardParams` is set in `claimMessage`
-            bytes[] memory gatewayForwardParams = abi.decode(forwardParams, (bytes[]));
-            uint256 gatewayLength = gatewayCallDataLists.length;
-            require(gatewayLength == gatewayForwardParams.length, "Invalid forward params length");
+            bytes[] memory gatewayDataList = abi.decode(_callData, (bytes[]));
+            bytes[] memory gatewayForwardParamsList = abi.decode(_forwardParams, (bytes[]));
+            uint256 gatewayLength = gatewayDataList.length;
+            require(gatewayLength == gatewayForwardParamsList.length, "Invalid forward params length");
             unchecked {
                 for (uint256 i = 0; i < gatewayLength; ++i) {
-                    bytes memory gatewayCallData = gatewayCallDataLists[i];
-                    bytes memory gatewayForwardParam = gatewayForwardParams[i];
-                    (IL1Gateway secondaryChainGateway, uint256 callValue, bytes memory callData) = abi.decode(gatewayCallData, (IL1Gateway, uint256, bytes));
-                    require(secondaryChainGateways[secondaryChainGateway], "Invalid secondary chain gateway");
-                    (uint256 sendMsgFee, bytes memory adapterParams) = abi.decode(gatewayForwardParam, (uint256, bytes));
+                    bytes memory gatewayData = gatewayDataList[i];
+                    bytes memory gatewayForwardParams = gatewayForwardParamsList[i];
+                    (IL1Gateway targetGateway, uint256 targetCallValue, bytes memory targetCallData) = abi.decode(
+                        gatewayData,
+                        (IL1Gateway, uint256, bytes)
+                    );
+                    require(secondaryChainGateways[targetGateway], "Invalid secondary chain gateway");
+                    (uint256 sendMsgFee, bytes memory adapterParams) = abi.decode(
+                        gatewayForwardParams,
+                        (uint256, bytes)
+                    );
                     // Forward fee to send message
-                    secondaryChainGateway.sendMessage{value: sendMsgFee + callValue}(callValue, callData, adapterParams);
+                    targetGateway.sendMessage{value: sendMsgFee + targetCallValue}(
+                        targetCallValue,
+                        targetCallData,
+                        adapterParams
+                    );
+                    emit MessageForwarded(targetGateway, targetCallValue, targetCallData);
                 }
             }
         } else {
-            require(secondaryChainGateways[gateway], "Not secondary chain gateway");
-            // `forwardParams` is set in `claimMessage`
-            (uint256 sendMsgFee, bytes memory adapterParams) = abi.decode(forwardParams, (uint256, bytes));
+            require(secondaryChainGateways[sourceGateway], "Not secondary chain gateway");
+            (uint256 sendMsgFee, bytes memory adapterParams) = abi.decode(_forwardParams, (uint256, bytes));
             // Forward fee to send message
-            primaryChainGateway.sendMessage{value: sendMsgFee + _value}(_value, _callData, adapterParams);
+            IL1Gateway targetGateway = primaryChainGateway;
+            targetGateway.sendMessage{value: sendMsgFee + _value}(_value, _callData, adapterParams);
+            emit MessageForwarded(targetGateway, _value, _callData);
         }
-        emit MessageForwarded(gateway, _value, _callData);
     }
 
+    /// @dev Deprecated after dencun upgrade
     function forwardMessage(
         IL1Gateway _gateway,
         uint256 _value,
@@ -213,7 +229,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             tstore(forwardParams.slot, _forwardParams)
         }
         // Call the claim interface of source chain message service
-        // And it will inner call the `claimCallback` interface of source chain L1Gateway
+        // And it will inner call the `claimMessageCallback` interface of source chain L1Gateway
+        // In the `claimMessageCallback` of L1Gateway, it will inner call `receiveMessage` of Arbitrator
         // No use of return value
         Address.functionCall(_sourceChainCanonicalMessageService, _sourceChainClaimCallData);
     }

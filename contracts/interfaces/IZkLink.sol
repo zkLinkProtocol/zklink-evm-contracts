@@ -15,11 +15,17 @@ interface IZkLink {
     /// @param _forwardEthAmount The forward eth amount
     function syncBatchRoot(uint256 _batchNumber, bytes32 _l2LogsRootHash, uint256 _forwardEthAmount) external payable;
 
-    /// @notice Receive range batch root from primary chain
+    /// @notice Receive range batch root hash from primary chain
     /// @param _fromBatchNumber The batch number from
     /// @param _toBatchNumber The batch number to
-    /// @param _rangeRootHash The range root hash
-    function syncRangeBatchRoot(uint256 _fromBatchNumber, uint256 _toBatchNumber, bytes32 _rangeRootHash) external;
+    /// @param _rangeBatchRootHash The accumulation hash of l2LogsRootHash in the range [`_fromBatchNumber`, `_toBatchNumber`]
+    /// @param _forwardEthAmount The forward eth amount
+    function syncRangeBatchRoot(
+        uint256 _fromBatchNumber,
+        uint256 _toBatchNumber,
+        bytes32 _rangeBatchRootHash,
+        uint256 _forwardEthAmount
+    ) external payable;
 
     /// @notice Receive l2 tx hash from primary chain
     /// @param _l2TxHash The l2 tx hash on local chain

@@ -13,6 +13,12 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
     IL2Gateway public gateway;
 
     event ReceiveBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash, uint256 forwardEthAmount);
+    event ReceiveRangeBatchRoot(
+        uint256 fromBatchNumber,
+        uint256 toBatchNumber,
+        bytes32 rangeBatchRootHash,
+        uint256 forwardEthAmount
+    );
     event ReceiveL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
 
     modifier onlyGateway() {
@@ -53,6 +59,15 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
         uint256 _forwardEthAmount
     ) external payable onlyGateway {
         emit ReceiveBatchRoot(_batchNumber, _l2LogsRootHash, _forwardEthAmount);
+    }
+
+    function syncRangeBatchRoot(
+        uint256 _fromBatchNumber,
+        uint256 _toBatchNumber,
+        bytes32 _rangeBatchRootHash,
+        uint256 _forwardEthAmount
+    ) external payable {
+        emit ReceiveRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeBatchRootHash, _forwardEthAmount);
     }
 
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
