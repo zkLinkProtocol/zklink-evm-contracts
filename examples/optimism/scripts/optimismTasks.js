@@ -22,8 +22,8 @@ async function initMessenger() {
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
   const messenger = new optimism.CrossChainMessenger({
-    l1ChainId: await l1Wallet.getChainId(), // 11155111 for Sepolia, 1 for Ethereum
-    l2ChainId: await l2Wallet.getChainId(), // 11155420 for OP Sepolia, 10 for OP Mainnet
+    l1ChainId: await l1Wallet.getChainId(),
+    l2ChainId: await l2Wallet.getChainId(),
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
   });

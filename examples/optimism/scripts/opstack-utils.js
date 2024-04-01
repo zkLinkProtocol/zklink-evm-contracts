@@ -258,7 +258,7 @@ async function syncL2Requests(hre, messenger, ethereumName, opChainName, txs) {
   console.log(`The prove tx hash: ${tx.hash}`);
   await tx.wait();
   console.log(`The message has been proven`);
-  await sleep(60 * 1000); // wait for 60 seconds
+  await sleep(5 * 60 * 1000); // wait for 5 minutes
   /**
    * Wait until the message is ready for relay
    * The final step to sending messages from L2 to L1 is to relay the messages on L1. This can only happen after the fault proof period has elapsed. On OP Sepolia, this is only a few seconds. On OP Mainnet, this takes 7 days.
