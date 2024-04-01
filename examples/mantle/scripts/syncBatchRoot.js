@@ -73,19 +73,9 @@ task('syncBatchRoot', 'Forward message to L2').setAction(async (taskArgs, hre) =
   const executeCalldata = zklinkIface.encodeFunctionData('syncBatchRoot', [blockNumber, l2LogsRootHash, 0]);
   console.log(`The executeCalldata: ${executeCalldata}`);
 
-  const gateway = await hre.ethers.getContractAt('OptimismGateway', mantleL2GatewayAddr, l2Wallet);
-  const sendData = gateway.interface.encodeFunctionData('claimMessageCallback', [0, executeCalldata]);
-
-  const gasLimit = await l1Provider.estimateGas({
-    from: l1WalletAddress,
-    to: mantleL2GatewayAddr,
-    data: sendData,
-  });
-  console.log(`The gas limit: ${gasLimit}`);
-
   // forward message to L2
   const arbitrator = await hre.ethers.getContractAt('DummyArbitrator', arbitratorAddr, l1Wallet);
-  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
+  const adapterParams = ethers.utils.defaultAbiCoder.encode(['uint256'], [0]);
   console.log(`The adapterParams: ${adapterParams}`);
   console.log('Prepare to forward the message to L2...');
   let tx = await arbitrator.forwardMessage(mantleL1GatewayAddr, 0, executeCalldata, adapterParams);
