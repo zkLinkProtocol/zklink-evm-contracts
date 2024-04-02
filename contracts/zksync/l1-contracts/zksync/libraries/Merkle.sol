@@ -37,7 +37,7 @@ library Merkle {
     }
 
     /// @dev Keccak hash of the concatenation of two 32-byte words
-    function _efficientHash(bytes32 _lhs, bytes32 _rhs) public pure returns (bytes32 result) {
+    function _efficientHash(bytes32 _lhs, bytes32 _rhs) internal pure returns (bytes32 result) {
         assembly {
             mstore(0x00, _lhs)
             mstore(0x20, _rhs)
