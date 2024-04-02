@@ -9,7 +9,6 @@ import {DoubleEndedQueueUpgradeable} from "@openzeppelin/contracts-upgradeable/u
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {IL1Gateway} from "./interfaces/IL1Gateway.sol";
-import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
