@@ -18,11 +18,6 @@ import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
 contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     using DoubleEndedQueueUpgradeable for DoubleEndedQueueUpgradeable.Bytes32Deque;
 
-    struct GatewayAdapterParams {
-        IL1Gateway gateway;
-        bytes adapterParams;
-    }
-
     /// @dev The gateway for sending message from ethereum to primary chain
     IL1Gateway public primaryChainGateway;
     /// @dev The gateway for sending message from ethereum to secondary chain
