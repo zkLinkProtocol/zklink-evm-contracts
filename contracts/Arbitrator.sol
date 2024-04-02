@@ -52,6 +52,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
+    /// @notice Emit when receive message from l1 gateway
+    event MessageReceived(uint256 value, bytes callData);
     /// @notice Emit when forward message to l1 gateway
     event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
 
@@ -143,6 +145,20 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         emit NewFeeParams(_gateway, _newFeeParams);
     }
 
+    function enqueueMessage(uint256 _value, bytes calldata _callData) external payable {
+        require(msg.value == _value, "Invalid msg value");
+        // store message hash for forwarding
+        bytes32 finalizeMessageHash = keccak256(abi.encode(_value, _callData));
+        IL1Gateway gateway = IL1Gateway(msg.sender);
+        if (gateway == primaryChainGateway) {
+            primaryChainMessageHashQueue.pushBack(finalizeMessageHash);
+        } else {
+            require(secondaryChainGateways[gateway], "Not secondary chain gateway");
+            secondaryChainMessageHashQueues[gateway].pushBack(finalizeMessageHash);
+        }
+        emit MessageReceived(_value, _callData);
+    }
+
     /// @dev This function is called within the `claimMessageCallback` of L1 gateway
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
@@ -191,7 +207,6 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         }
     }
 
-    /// @dev Deprecated after dencun upgrade
     function forwardMessage(
         IL1Gateway _gateway,
         uint256 _value,

@@ -19,6 +19,11 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    function enqueueMessage(uint256 _value, bytes calldata _callData) external payable {
+        require(msg.value == _value, "Invalid msg value");
+        emit ReceiveMessage(_value, _callData);
+    }
+
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
         emit ReceiveMessage(_value, _callData);

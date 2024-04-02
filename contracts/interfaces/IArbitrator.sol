@@ -4,7 +4,14 @@ pragma solidity ^0.8.0;
 import {IL1Gateway} from "./IL1Gateway.sol";
 
 interface IArbitrator {
-    /// @notice Receive message from one L1 gateway to another L1 gateway
+    /// @notice Enqueue message from EthereumGateway
+    /// @dev Used by EthereumGateway to temporarily store message
+    /// @param _value The msg value
+    /// @param _callData The call data
+    function enqueueMessage(uint256 _value, bytes calldata _callData) external payable;
+
+    /// @notice Deliver message from one L1 gateway to another L1 gateway
+    /// @dev Used by L1Gateways to deliver message
     /// @param _value The msg value
     /// @param _callData The call data
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable;
