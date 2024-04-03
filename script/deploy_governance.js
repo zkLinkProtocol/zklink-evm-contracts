@@ -101,6 +101,7 @@ task('encodeERC20Approve', 'Encode calldata for erc20 approve')
   });
 
 task('encodeOperation', 'Encode operation')
+  .addParam('governance', 'The governance address(default get from deploy log)', undefined, types.string, true)
   .addParam('target', 'The target address', undefined, types.string, false)
   .addParam('value', 'The call value to target', undefined, types.int, false)
   .addParam('data', 'The call data to target', undefined, types.string, false)
@@ -120,6 +121,7 @@ task('encodeOperation', 'Encode operation')
   )
   .addParam('delay', 'The delay', 0, types.int, true)
   .setAction(async (taskArgs, hardhat) => {
+    let governanceAddr = taskArgs.governance;
     let target = taskArgs.target;
     let value = taskArgs.value;
     let data = taskArgs.data;
@@ -133,10 +135,8 @@ task('encodeOperation', 'Encode operation')
     console.log('salt', salt);
     console.log('delay', delay);
 
-    const governanceAddr = readDeployContract(logName.DEPLOY_GOVERNANCE_LOG_PREFIX, logName.DEPLOY_LOG_GOVERNANCE);
     if (!governanceAddr) {
-      console.log('governance address not found');
-      return;
+      governanceAddr = readDeployContract(logName.DEPLOY_GOVERNANCE_LOG_PREFIX, logName.DEPLOY_LOG_GOVERNANCE);
     }
     console.log('governance', governanceAddr);
     const governance = await hardhat.ethers.getContractAt('Governance', governanceAddr);
