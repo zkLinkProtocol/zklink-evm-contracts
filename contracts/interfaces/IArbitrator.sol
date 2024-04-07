@@ -31,10 +31,16 @@ interface IArbitrator {
     /// @notice Claim a message of source chain and deliver it to the target chain
     /// @param _sourceChainCanonicalMessageService The message service to claim message
     /// @param _sourceChainClaimCallData The call data that need to claim message from source chain
+    /// @param _sourceChainL1Gateway The msg.sender passed in the `receiveMessage` interface
+    /// @param _receiveValue The value passed in the `receiveMessage` interface
+    /// @param _receiveCallData The call data passed in the `receiveMessage` interface
     /// @param _forwardParams Some params need to call canonical message service of target chain
     function claimMessage(
         address _sourceChainCanonicalMessageService,
         bytes calldata _sourceChainClaimCallData,
-        bytes memory _forwardParams
+        IL1Gateway _sourceChainL1Gateway,
+        uint256 _receiveValue,
+        bytes calldata _receiveCallData,
+        bytes calldata _forwardParams
     ) external payable;
 }

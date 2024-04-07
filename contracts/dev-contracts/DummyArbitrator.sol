@@ -39,7 +39,14 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
         _gateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);
     }
 
-    function claimMessage(address, bytes calldata, bytes memory) external payable {
+    function claimMessage(
+        address,
+        bytes calldata,
+        IL1Gateway,
+        uint256,
+        bytes calldata,
+        bytes calldata
+    ) external payable {
         // do nothing
     }
 }
