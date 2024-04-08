@@ -117,6 +117,8 @@ contract ZkLink is
         bytes32 rangeBatchRootHash,
         uint256 forwardEthAmount
     );
+    /// @notice Emitted when open range batch root hash.
+    event OpenRangeBatchRoot(uint256 fromBatchNumber, uint256 toBatchNumber);
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
@@ -506,9 +508,11 @@ contract ZkLink is
             }
         }
         require(_rangeBatchRootHash == rangeBatchRootHash, "Incorrect root hash");
+        delete rangBatchRootHashes[range];
         if (_toBatchNumber > totalBatchesExecuted) {
             totalBatchesExecuted = _toBatchNumber;
         }
+        emit OpenRangeBatchRoot(_fromBatchNumber, _toBatchNumber);
     }
 
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {
