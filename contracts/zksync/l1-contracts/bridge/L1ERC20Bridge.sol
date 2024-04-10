@@ -72,6 +72,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
     /// @notice _factoryDeps[1] == a raw bytecode of proxy that is used as L2 bridge
     /// @notice _factoryDeps[2] == a raw bytecode of token proxy
     /// @param _factoryDepByteCodeHashes A list of raw bytecode sha256 hashes that are needed for deployment of the L2 bridge
+    /// @param _l2BridgeConstructorData The data that is needed for constructor of the L2 bridge
     /// @param _l2TokenBeacon Pre-calculated address of the L2 token upgradeable beacon
     /// @notice At the time of the function call, it is not yet deployed in L2, but knowledge of its address
     /// @notice is necessary for determining L2 token address by L1 address, see `l2TokenAddress(address)` function
@@ -82,6 +83,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
     function initialize(
         bytes[] calldata _factoryDeps,
         bytes32[] calldata _factoryDepByteCodeHashes,
+        bytes calldata _l2BridgeConstructorData,
         address _l2TokenBeacon,
         address _governor,
         uint256 _deployBridgeImplementationFee,
@@ -114,7 +116,7 @@ contract L1ERC20Bridge is IL1Bridge, IL1BridgeLegacy, ReentrancyGuard {
             zkSync,
             _deployBridgeImplementationFee,
             l2BridgeImplementationBytecodeHash,
-            "", // Empty constructor data
+            _l2BridgeConstructorData,
             _factoryDeps // All factory deps are needed for L2 bridge
         );
 
