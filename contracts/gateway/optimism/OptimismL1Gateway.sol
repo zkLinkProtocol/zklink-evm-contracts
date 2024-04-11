@@ -34,7 +34,8 @@ contract OptimismL1Gateway is L1BaseGateway, OptimismGateway {
         uint256 _value,
         bytes calldata _callData
     ) external payable onlyMessageService onlyRemoteGateway {
-        require(msg.value == _value, "Invalid value");
+        // Blast will return more value(the stake profit) than burned on L2
+        require(msg.value >= _value, "Invalid value");
         // Forward message to arbitrator
         ARBITRATOR.receiveMessage{value: _value}(_value, _callData);
     }
