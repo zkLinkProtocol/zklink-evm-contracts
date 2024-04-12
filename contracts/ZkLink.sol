@@ -490,7 +490,7 @@ contract ZkLink is
     function openRangeBatchRootHash(
         uint256 _fromBatchNumber,
         uint256 _toBatchNumber,
-        bytes32[] memory _l2LogsRootHashes
+        bytes32[] calldata _l2LogsRootHashes
     ) external onlyValidator {
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
