@@ -41,6 +41,13 @@ const DEPLOY_LOG_GOVERNANCE_VERIFIED = 'governanceVerified';
 // consumed in deploy_linea_l2_governance.js
 const DEPLOY_LINEA_L2_GOVERNANCE_LOG_PREFIX = 'deploy_linea_l2_governance';
 
+// consumed in deploy_zklink_token.js
+const DEPLOY_ZKLINK_TOKEN_LOG_PREFIX = 'deploy_zklink_token';
+const DEPLOY_LOG_ZKLINK_TOKEN_PROXY = 'zkLinkTokenProxy';
+const DEPLOY_LOG_ZKLINK_TOKEN_TARGET = 'zkLinkTokenTarget';
+const DEPLOY_LOG_ZKLINK_TOKEN_PROXY_VERIFIED = 'zkLinkTokenProxyVerified';
+const DEPLOY_LOG_ZKLINK_TOKEN_TARGET_VERIFIED = 'zkLinkTokenTargetVerified';
+
 module.exports = {
   DEPLOY_ZKLINK_LOG_PREFIX,
   DEPLOY_LOG_DEPLOYER,
@@ -73,4 +80,9 @@ module.exports = {
   DEPLOY_LOG_GOVERNANCE,
   DEPLOY_LOG_GOVERNANCE_VERIFIED,
   DEPLOY_LINEA_L2_GOVERNANCE_LOG_PREFIX,
+  DEPLOY_ZKLINK_TOKEN_LOG_PREFIX,
+  DEPLOY_LOG_ZKLINK_TOKEN_PROXY,
+  DEPLOY_LOG_ZKLINK_TOKEN_TARGET,
+  DEPLOY_LOG_ZKLINK_TOKEN_PROXY_VERIFIED,
+  DEPLOY_LOG_ZKLINK_TOKEN_TARGET_VERIFIED,
 };
