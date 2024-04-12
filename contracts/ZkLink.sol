@@ -86,7 +86,7 @@ contract ZkLink is
     address public forwardFeeAllocator;
     /// @dev The range batch root hash of [fromBatchNumber, toBatchNumber]
     /// The key is keccak256(abi.encodePacked(fromBatchNumber, toBatchNumber))
-    mapping(bytes32 range => bytes32 rangeBatchRootHash) public rangBatchRootHashes;
+    mapping(bytes32 range => bytes32 rangeBatchRootHash) public rangeBatchRootHashes;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
@@ -479,7 +479,7 @@ contract ZkLink is
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         require(msg.value == _forwardEthAmount, "Invalid forward amount");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
-        rangBatchRootHashes[range] = _rangeBatchRootHash;
+        rangeBatchRootHashes[range] = _rangeBatchRootHash;
         emit SyncRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeBatchRootHash, _forwardEthAmount);
     }
 
@@ -494,7 +494,7 @@ contract ZkLink is
     ) external onlyValidator {
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
-        bytes32 rangeBatchRootHash = rangBatchRootHashes[range];
+        bytes32 rangeBatchRootHash = rangeBatchRootHashes[range];
         require(rangeBatchRootHash != bytes32(0), "Rang batch root hash not exist");
         uint256 rootHashesLength = _l2LogsRootHashes.length;
         require(rootHashesLength == _toBatchNumber - _fromBatchNumber + 1, "Invalid root hashes length");
@@ -508,7 +508,7 @@ contract ZkLink is
             }
         }
         require(_rangeBatchRootHash == rangeBatchRootHash, "Incorrect root hash");
-        delete rangBatchRootHashes[range];
+        delete rangeBatchRootHashes[range];
         if (_toBatchNumber > totalBatchesExecuted) {
             totalBatchesExecuted = _toBatchNumber;
         }
