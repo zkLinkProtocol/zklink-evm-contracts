@@ -495,7 +495,7 @@ contract ZkLink is
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
         bytes32 rangeBatchRootHash = rangeBatchRootHashes[range];
-        require(rangeBatchRootHash != bytes32(0), "Rang batch root hash not exist");
+        require(rangeBatchRootHash != bytes32(0), "Range batch root hash not exist");
         uint256 rootHashesLength = _l2LogsRootHashes.length;
         require(rootHashesLength == _toBatchNumber - _fromBatchNumber + 1, "Invalid root hashes length");
         bytes32 _rangeBatchRootHash = _l2LogsRootHashes[0];
