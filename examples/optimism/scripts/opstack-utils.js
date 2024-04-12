@@ -379,6 +379,12 @@ async function checkL1TxStatus(hre, messenger, ethereumName, opChainName, l1TxHa
   console.log(`L1 to l2 tx is executed 🥳`);
 }
 
+async function checkL2TxStatus(hre, messenger, ethereumName, opChainName, l2TxHash) {
+  const message = (await messenger.getMessagesByTransaction(l2TxHash)).pop();
+  const messageStatus = await messenger.getMessageStatus(message);
+  console.log(`L1 to l2 message status: ${messageStatus}`);
+}
+
 module.exports = {
   getContractAddresses,
   syncBatchRoot,
@@ -389,4 +395,5 @@ module.exports = {
   encodeChangeFeeParams,
   encodeL1ToL2Calldata,
   checkL1TxStatus,
+  checkL2TxStatus,
 };

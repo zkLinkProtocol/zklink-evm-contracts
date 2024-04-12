@@ -9,6 +9,7 @@ const {
   encodeChangeFeeParams,
   encodeL1ToL2Calldata,
   checkL1TxStatus,
+  checkL2TxStatus,
 } = require('./opstack-utils');
 const { task, types } = require('hardhat/config');
 require('dotenv').config();
@@ -142,4 +143,14 @@ task('checkL1TxStatus', 'Check the l1 tx status')
 
     const { messenger, ethereumName, optimismName } = await initMessenger();
     await checkL1TxStatus(hre, messenger, ethereumName, optimismName, l1TxHash);
+  });
+
+task('checkL2TxStatus', 'Check the l2 tx status')
+  .addParam('l2TxHash', 'The l2 tx hash', undefined, types.string)
+  .setAction(async (taskArgs, hre) => {
+    const l2TxHash = taskArgs.l2TxHash;
+    console.log(`The l2 tx hash: ${l2TxHash}`);
+
+    const { messenger, ethereumName, optimismName } = await initMessenger();
+    await checkL2TxStatus(hre, messenger, ethereumName, optimismName, l2TxHash);
   });
