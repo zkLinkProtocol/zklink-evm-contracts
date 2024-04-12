@@ -42,7 +42,7 @@ contract EthereumGateway is
     function sendMessage(uint256 _value, bytes calldata _callData) external payable override onlyZkLink {
         require(msg.value == _value, "Invalid value");
         // Forward message to arbitrator
-        ARBITRATOR.receiveMessage{value: _value}(_value, _callData);
+        ARBITRATOR.enqueueMessage{value: _value}(_value, _callData);
         emit L2GatewayMessageSent(_value, _callData);
     }
 }

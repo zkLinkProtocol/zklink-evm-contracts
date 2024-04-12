@@ -84,12 +84,15 @@ contract ZkLink is
         public isEthWithdrawalFinalized;
     /// @dev The forward fee allocator
     address public forwardFeeAllocator;
+    /// @dev The range batch root hash of [fromBatchNumber, toBatchNumber]
+    /// The key is keccak256(abi.encodePacked(fromBatchNumber, toBatchNumber))
+    mapping(bytes32 range => bytes32 rangeBatchRootHash) public rangBatchRootHashes;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 
     /// @notice Gateway init
     event InitGateway(IL2Gateway indexed gateway);
@@ -107,6 +110,15 @@ contract ZkLink is
     event SyncL2Requests(uint256 totalSyncedPriorityTxs, bytes32 syncHash, uint256 forwardEthAmount);
     /// @notice Emitted when receive batch root from primary chain.
     event SyncBatchRoot(uint256 batchNumber, bytes32 l2LogsRootHash, uint256 forwardEthAmount);
+    /// @notice Emitted when receive range batch root hash from primary chain.
+    event SyncRangeBatchRoot(
+        uint256 fromBatchNumber,
+        uint256 toBatchNumber,
+        bytes32 rangeBatchRootHash,
+        uint256 forwardEthAmount
+    );
+    /// @notice Emitted when open range batch root hash.
+    event OpenRangeBatchRoot(uint256 fromBatchNumber, uint256 toBatchNumber);
     /// @notice Emitted when receive l2 tx hash from primary chain.
     event SyncL2TxHash(bytes32 l2TxHash, bytes32 primaryChainL2TxHash);
     /// @notice Emitted when validator withdraw forward fee
@@ -456,6 +468,51 @@ contract ZkLink is
         }
         l2LogsRootHashes[_batchNumber] = _l2LogsRootHash;
         emit SyncBatchRoot(_batchNumber, _l2LogsRootHash, _forwardEthAmount);
+    }
+
+    function syncRangeBatchRoot(
+        uint256 _fromBatchNumber,
+        uint256 _toBatchNumber,
+        bytes32 _rangeBatchRootHash,
+        uint256 _forwardEthAmount
+    ) external payable onlyGateway {
+        require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
+        require(msg.value == _forwardEthAmount, "Invalid forward amount");
+        bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
+        rangBatchRootHashes[range] = _rangeBatchRootHash;
+        emit SyncRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeBatchRootHash, _forwardEthAmount);
+    }
+
+    /// @dev Unzip the root hashes in the range
+    /// @param _fromBatchNumber The batch number from
+    /// @param _toBatchNumber The batch number to
+    /// @param _l2LogsRootHashes The l2LogsRootHash list in the range [`_fromBatchNumber`, `_toBatchNumber`]
+    function openRangeBatchRootHash(
+        uint256 _fromBatchNumber,
+        uint256 _toBatchNumber,
+        bytes32[] memory _l2LogsRootHashes
+    ) external onlyValidator {
+        require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
+        bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
+        bytes32 rangeBatchRootHash = rangBatchRootHashes[range];
+        require(rangeBatchRootHash != bytes32(0), "Rang batch root hash not exist");
+        uint256 rootHashesLength = _l2LogsRootHashes.length;
+        require(rootHashesLength == _toBatchNumber - _fromBatchNumber + 1, "Invalid root hashes length");
+        bytes32 _rangeBatchRootHash = _l2LogsRootHashes[0];
+        l2LogsRootHashes[_fromBatchNumber] = _rangeBatchRootHash;
+        unchecked {
+            for (uint256 i = 1; i < rootHashesLength; ++i) {
+                bytes32 _l2LogsRootHash = _l2LogsRootHashes[i];
+                l2LogsRootHashes[_fromBatchNumber + i] = _l2LogsRootHash;
+                _rangeBatchRootHash = Merkle._efficientHash(_rangeBatchRootHash, _l2LogsRootHash);
+            }
+        }
+        require(_rangeBatchRootHash == rangeBatchRootHash, "Incorrect root hash");
+        delete rangBatchRootHashes[range];
+        if (_toBatchNumber > totalBatchesExecuted) {
+            totalBatchesExecuted = _toBatchNumber;
+        }
+        emit OpenRangeBatchRoot(_fromBatchNumber, _toBatchNumber);
     }
 
     function syncL2TxHash(bytes32 _l2TxHash, bytes32 _primaryChainL2TxHash) external onlyGateway {

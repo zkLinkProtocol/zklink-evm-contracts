@@ -9,6 +9,7 @@
     "max-states-count": "off",
     "no-inline-assembly": "off",
     "not-rely-on-time": "off",
-    "no-empty-blocks": "off"
+    "no-empty-blocks": "off",
+    "avoid-tx-origin": "off"
   }
 }
