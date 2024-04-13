@@ -6,6 +6,7 @@
   "devDependencies": {
     "@mantleio/sdk": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@rainbow-me/fee-suggestions": "^2.1.0",
     "ethers": "^5.7.2",
     "hardhat": "^2.9.1"
   },

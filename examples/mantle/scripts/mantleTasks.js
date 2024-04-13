@@ -2,6 +2,7 @@ const mantle = require('@mantleio/sdk');
 const { applyL1ToL2Alias } = require('@mantleio/core-utils');
 const ethers = require('ethers');
 const { BigNumber, Contract } = require('ethers');
+const { suggestFees } = require('@rainbow-me/fee-suggestions');
 const {
   syncBatchRoot,
   syncL2Requests,
@@ -65,6 +66,40 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     // Example txs:
     // https://sepolia.mantlescan.xyz/tx/0xfacef5c27c52fc60e059e36c7fb5fd897cd3b85b0861cbaa0fe299c1ca23101b
     // https://sepolia.etherscan.io/tx/0x1a0f721a5d0c4bcc334ad6d54a60ae4ce4b5e52c71f3e48f62e2f2c980885b61
+  });
+
+task('proveL2Tx', 'Prove L2 tx')
+  .addParam('txHash', 'The tx hash to prove', undefined, types.string)
+  .setAction(async taskArgs => {
+    const txHash = taskArgs.txHash;
+    console.log(`The l2 tx hash: ${txHash}`);
+
+    const { messenger } = await initMessenger();
+
+    const status = await messenger.getMessageStatus(txHash);
+    console.log(`The message status update to: ${mantle.MessageStatus[status]}`);
+
+    const fees = await suggestFees(messenger.l1Provider);
+    console.log(`The suggest fees: ${JSON.stringify(fees)}`);
+    const baseFee = BigNumber.from(fees.baseFeeSuggestion);
+    const maxPriorityFeePerGas = BigNumber.from(fees.maxPriorityFeeSuggestions.fast);
+    const maxFeePerGas = maxPriorityFeePerGas.add(baseFee.mul(BigNumber.from(2)));
+    /**
+     * Wait until the message is ready to prove
+     * This step can take a few minutes.
+     */
+    await messenger.waitForMessageStatus(txHash, mantle.MessageStatus.READY_TO_PROVE);
+    /**
+     * Once the message is ready to be proven, you'll send an L1 transaction to prove that the message was sent on L2.
+     */
+    console.log(`Proving the message...`);
+    const tx = await messenger.proveMessage(txHash, {
+      maxFeePerGas: maxFeePerGas,
+      maxPriorityFeePerGas: maxPriorityFeePerGas,
+    });
+    console.log(`The prove tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The message has been proven`);
   });
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre) => {

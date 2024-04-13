@@ -12,6 +12,7 @@ const {
 } = require('../../optimism/scripts/opstack-utils');
 const { L1_MAINNET_CONTRACTS, L1_TESTNET_CONTRACTS } = require('./constants');
 const { task, types } = require('hardhat/config');
+const { suggestFees } = require('@rainbow-me/fee-suggestions');
 require('dotenv').config();
 
 async function initMessenger() {
@@ -67,6 +68,40 @@ task('syncL2Requests', 'Send sync point to arbitrator')
     // Example txs:
     // https://pacific-explorer.testnet.manta.network/tx/0x1a81ed28c1b74120753b0edf3d98e80b814ec5f065ad44b26c0cd6131dc04d22
     // https://goerli.etherscan.io/tx/0x54ce6421e1d9c1e7d2c35af292c9e3bbaf632b60115556a94b7fb61e53905599
+  });
+
+task('proveL2Tx', 'Prove L2 tx')
+  .addParam('txHash', 'The tx hash to prove', undefined, types.string)
+  .setAction(async taskArgs => {
+    const txHash = taskArgs.txHash;
+    console.log(`The l2 tx hash: ${txHash}`);
+
+    const { messenger } = await initMessenger();
+
+    const status = await messenger.getMessageStatus(txHash);
+    console.log(`The message status update to: ${manta.MessageStatus[status]}`);
+
+    const fees = await suggestFees(messenger.l1Provider);
+    console.log(`The suggest fees: ${JSON.stringify(fees)}`);
+    const baseFee = ethers.BigNumber.from(fees.baseFeeSuggestion);
+    const maxPriorityFeePerGas = ethers.BigNumber.from(fees.maxPriorityFeeSuggestions.fast);
+    const maxFeePerGas = maxPriorityFeePerGas.add(baseFee.mul(ethers.BigNumber.from(2)));
+    /**
+     * Wait until the message is ready to prove
+     * This step can take a few minutes.
+     */
+    await messenger.waitForMessageStatus(txHash, manta.MessageStatus.READY_TO_PROVE);
+    /**
+     * Once the message is ready to be proven, you'll send an L1 transaction to prove that the message was sent on L2.
+     */
+    console.log(`Proving the message...`);
+    const tx = await messenger.proveMessage(txHash, {
+      maxFeePerGas: maxFeePerGas,
+      maxPriorityFeePerGas: maxPriorityFeePerGas,
+    });
+    console.log(`The prove tx hash: ${tx.hash}`);
+    await tx.wait();
+    console.log(`The message has been proven`);
   });
 
 task('changeFeeParams', 'Change fee params for zkLink').setAction(async (_, hre) => {
