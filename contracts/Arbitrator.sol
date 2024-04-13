@@ -30,12 +30,14 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     mapping(address relayerAddress => bool isRelayer) public relayers;
     /// @dev A transient storage value for forwarding message from source chain to target chains
     bytes32 private finalizeMessageHash;
+    /// @dev A transient storage value for represent a valid message claim
+    uint256 private claiming;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @notice Primary chain gateway init
     event InitPrimaryChain(IL1Gateway indexed gateway);
@@ -157,9 +159,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @dev This function is called within the `claimMessageCallback` of L1 gateway
     function receiveMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
-        // temporary store message hash for forwarding
         IL1Gateway gateway = IL1Gateway(msg.sender);
         require(gateway == primaryChainGateway || secondaryChainGateways[gateway], "Invalid gateway");
+        uint256 _claiming;
+        assembly {
+            _claiming := tload(claiming.slot)
+        }
+        // Ensure claim start from this contract
+        require(_claiming == 1, "Claim not from arbitrator");
+        // Temporary store message hash for forwarding
         bytes32 _finalizeMessageHash = keccak256(abi.encode(msg.sender, _value, _callData));
         assembly {
             tstore(finalizeMessageHash.slot, _finalizeMessageHash)
@@ -200,6 +208,10 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes calldata _receiveCallData,
         bytes calldata _forwardParams
     ) external payable nonReentrant onlyRelayer {
+        // Set `claiming` to 1 and check it in `receiveMessage`
+        assembly {
+            tstore(claiming.slot, 1)
+        }
         // Call the claim interface of source chain message service
         // And it will inner call the `claimMessageCallback` interface of source chain L1Gateway
         // In the `claimMessageCallback` of L1Gateway, it will inner call `receiveMessage` of Arbitrator
