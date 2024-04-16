@@ -130,15 +130,15 @@ async function encodeL1ToL2Calldata(taskArgs, hre, networkInfo) {
   console.log(`The l2 call value to target address: ${l2CallValue}`);
   console.log(`The refund address: ${refundAddress}`);
 
-  const l2GovernanceAliasAddr = utils.applyL1ToL2Alias(l1GovernanceAddr);
-  console.log(`The l2 governance address: ${l2GovernanceAliasAddr}`);
+  const l1GovernanceAliasAddr = utils.applyL1ToL2Alias(l1GovernanceAddr);
+  console.log(`The l2 governance address: ${l1GovernanceAliasAddr}`);
 
   /**
    * The estimateL1ToL2Execute method gives us the gasLimit for sending an L1->L2 message
    */
 
   const l2GasLimit = await l2Provider.estimateL1ToL2Execute({
-    caller: l2GovernanceAliasAddr,
+    caller: l1GovernanceAliasAddr,
     contractAddress: l2ToContractAddress,
     calldata: l2CallData,
     l2Value: l2CallValue,
