@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 import {IL1Gateway} from "./IL1Gateway.sol";
 
 interface IArbitrator {
+    /// @notice Return true if relayer is active
+    function isRelayerActive(address _relayer) external view returns (bool);
+
     /// @notice Enqueue message from EthereumGateway
     /// @dev Used by EthereumGateway to temporarily store message
     /// @param _value The msg value
