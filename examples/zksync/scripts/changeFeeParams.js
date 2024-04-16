@@ -69,13 +69,13 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
   /**
    * The estimateL1ToL2Execute method gives us the gasLimit for sending an L1->L2 message
    */
-  const l2Addr = utils.applyL1ToL2Alias(l2GatewayAddr);
+  const l1GatewayAliasAddr = utils.applyL1ToL2Alias(l1GatewayAddr);
   const l2GasLimit = await l2Provider.estimateL1ToL2Execute({
-    contractAddress: l2Addr,
+    caller: l1GatewayAliasAddr,
+    contractAddress: l2GatewayAddr,
     calldata: l2GatewayCallData,
-    overrides: {
-      value: zkLinkCallValue,
-    },
+    l2Value: zkLinkCallValue,
+    gasPerPubdataByte: utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT,
   });
   console.log(`Estimate gasLimit on L1 is ${l2GasLimit.valueOf()}`);
 
