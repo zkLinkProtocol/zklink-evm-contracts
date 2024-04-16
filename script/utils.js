@@ -170,18 +170,17 @@ class ChainContractDeployer {
 
   async upgradeProxy(contractName, contractAddr, constructorArgs) {
     let contract;
+    const opts = {
+      constructorArgs: constructorArgs,
+      unsafeAllow: ['state-variable-immutable', 'constructor'],
+      unsafeAllowRenames: true,
+    };
     if (this.zksync) {
       const artifact = await this.zkSyncDeployer.loadArtifact(contractName);
-      contract = await this.hardhat.zkUpgrades.upgradeProxy(this.deployerWallet, contractAddr, artifact, {
-        constructorArgs: constructorArgs,
-        unsafeAllow: ['state-variable-immutable', 'constructor'],
-      });
+      contract = await this.hardhat.zkUpgrades.upgradeProxy(this.deployerWallet, contractAddr, artifact, opts);
     } else {
       const factory = await this.hardhat.ethers.getContractFactory(contractName, this.deployerWallet);
-      contract = await this.hardhat.upgrades.upgradeProxy(contractAddr, factory, {
-        constructorArgs: constructorArgs,
-        unsafeAllow: ['state-variable-immutable', 'constructor'],
-      });
+      contract = await this.hardhat.upgrades.upgradeProxy(contractAddr, factory, opts);
     }
     await contract.waitForDeployment();
     return contract;

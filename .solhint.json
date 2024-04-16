@@ -10,6 +10,7 @@
     "no-inline-assembly": "off",
     "not-rely-on-time": "off",
     "no-empty-blocks": "off",
-    "avoid-tx-origin": "off"
+    "avoid-tx-origin": "off",
+    "gas-custom-errors": "off"
   }
 }
