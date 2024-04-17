@@ -57,7 +57,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
         bytes32 messageHash = keccak256(executeData);
         // If the l2 transaction fails to execute, for example l2GasLimit is too small
-        // The l2 value will be refunded to the l1 gateway alias address.
+        // The l2 value will be refunded to the l2 gateway address.
         // Then the relayer can retry failed tx from L1
         bytes32 l2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
             remoteGateway,
@@ -66,7 +66,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
             _l2GasLimit,
             _l2GasPerPubdataByteLimit,
             new bytes[](0),
-            address(this)
+            remoteGateway
         );
         executedMessage[l2TxHash] = messageHash;
     }
@@ -123,6 +123,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @param _executeData The message data
     /// @param _l2GasLimit Maximum amount of L2 gas that transaction can consume during execution on L2
     /// @param _l2GasPerPubdataByteLimit The maximum amount L2 gas that the operator may charge the user for single byte of pubdata.
+    /// @param _refundRecipient The address on L2 that will receive the refund for the transaction.
     /// @param _failedL2TxHash The L2 transaction hash of the failed finalization
     /// @param _l2BatchNumber The L2 batch number where the finalization was processed
     /// @param _l2MessageIndex The position in the L2 logs Merkle tree of the l2Log that was sent with the message
@@ -132,6 +133,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         bytes calldata _executeData,
         uint256 _l2GasLimit,
         uint256 _l2GasPerPubdataByteLimit,
+        address _refundRecipient,
         bytes32 _failedL2TxHash,
         uint256 _l2BatchNumber,
         uint256 _l2MessageIndex,
@@ -154,6 +156,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         delete executedMessage[_failedL2TxHash];
 
         // Retry the message without l2 value
+        // Excess fee will be refunded to the `_refundRecipient`
         bytes32 replacedL2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
             remoteGateway,
             0,
@@ -161,7 +164,7 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
             _l2GasLimit,
             _l2GasPerPubdataByteLimit,
             new bytes[](0),
-            address(this)
+            _refundRecipient
         );
         executedMessage[replacedL2TxHash] = messageHash;
         emit RetryFailedMessage(_failedL2TxHash, replacedL2TxHash);
