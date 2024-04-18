@@ -145,3 +145,49 @@ task('upgradeETHGateway', 'Upgrade ETH gateway')
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
   });
+
+task('deployETHGatewayTarget', 'Deploy ETH gateway target')
+  .addParam(
+    'arbitrator',
+    'The arbitrator address (default get from arbitrator deploy log)',
+    undefined,
+    types.string,
+    true,
+  )
+  .addParam('zklink', 'The zklink address (default get from zkLink deploy log)', undefined, types.string, true)
+  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
+  .setAction(async (taskArgs, hardhat) => {
+    let arbitrator = taskArgs.arbitrator;
+    if (arbitrator === undefined) {
+      arbitrator = readDeployLogField(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
+    }
+    let zklink = taskArgs.zklink;
+    if (zklink === undefined) {
+      zklink = readDeployLogField(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+    }
+    let skipVerify = taskArgs.skipVerify;
+    console.log('arbitrator', arbitrator);
+    console.log('zklink', zklink);
+    console.log('skipVerify', skipVerify);
+
+    const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ETH_GATEWAY_LOG_PREFIX);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+
+    console.log('deploy eth gateway target...');
+    const allConstructParams = [arbitrator, zklink];
+    const contract = await contractDeployer.deployContract('EthereumGateway', allConstructParams);
+    const tx = await getDeployTx(contract);
+    console.log('deploy tx', tx.hash);
+    const ethereumGatewayTargetAddr = await contract.getAddress();
+    deployLog[logName.DEPLOY_GATEWAY_TARGET] = ethereumGatewayTargetAddr;
+    console.log('eth gateway target', ethereumGatewayTargetAddr);
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, ethereumGatewayTargetAddr, allConstructParams);
+      deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
+      fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    }
+  });

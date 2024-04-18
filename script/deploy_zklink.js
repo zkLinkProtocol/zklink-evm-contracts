@@ -163,13 +163,12 @@ task('deployZkLinkTarget', 'Deploy zkLink target')
     const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_ZKLINK_LOG_PREFIX);
 
     // deploy zkLink target
-    let zkLinkTargetAddr;
     console.log('deploy zkLink target...');
     const contractName = getZkLinkContractName(dummy);
     const contract = await contractDeployer.deployContract(contractName, [isEthGasToken]);
     const transaction = await getDeployTx(contract);
     console.log('deploy tx hash', transaction.hash);
-    zkLinkTargetAddr = await contract.getAddress();
+    const zkLinkTargetAddr = await contract.getAddress();
     console.log('zkLink target', zkLinkTargetAddr);
     deployLog[logName.DEPLOY_LOG_ZKLINK_IS_ETH_GAS_TOKEN] = isEthGasToken;
     deployLog[logName.DEPLOY_LOG_ZKLINK_TARGET] = zkLinkTargetAddr;

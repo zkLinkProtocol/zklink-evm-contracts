@@ -149,6 +149,53 @@ task('upgradeL2Gateway', 'Upgrade L2 gateway')
     }
   });
 
+task('deployL2GatewayTarget', 'Deploy L2 gateway target')
+  .addParam('zklink', 'The zklink address (default get from zkLink deploy log)', undefined, types.string, true)
+  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
+  .setAction(async (taskArgs, hardhat) => {
+    let zklink = taskArgs.zklink;
+    if (zklink === undefined) {
+      zklink = readDeployLogField(logName.DEPLOY_ZKLINK_LOG_PREFIX, logName.DEPLOY_LOG_ZKLINK_PROXY);
+    }
+    let skipVerify = taskArgs.skipVerify;
+    console.log('zklink', zklink);
+    console.log('skipVerify', skipVerify);
+
+    const chainInfo = zkLinkConfig[process.env.NET];
+    if (chainInfo === undefined) {
+      console.log('current net not support');
+      return;
+    }
+
+    const l2GatewayInfo = chainInfo.l2Gateway;
+    if (l2GatewayInfo === undefined) {
+      console.log('l2 gateway config not exist');
+      return;
+    }
+
+    const { deployLogPath, deployLog } = createOrGetDeployLog(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+
+    // deploy l2 gateway target
+    console.log('deploy l2 gateway target...');
+    const allConstructParams = [zklink].concat(l2GatewayInfo.constructParams);
+    const contract = await contractDeployer.deployContract(l2GatewayInfo.contractName, allConstructParams);
+    const tx = await getDeployTx(contract);
+    console.log('deploy tx', tx.hash);
+    const l2GatewayTargetAddr = await contract.getAddress();
+    deployLog[logName.DEPLOY_GATEWAY_TARGET] = l2GatewayTargetAddr;
+    console.log('l2 gateway target', l2GatewayTargetAddr);
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, l2GatewayTargetAddr, allConstructParams);
+      deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
+      fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    }
+  });
+
 task('setL2GatewayRemoteGateway', 'Set remote gateway for L2 gateway').setAction(async (taskArgs, hardhat) => {
   const chainInfo = zkLinkConfig[process.env.NET];
   if (chainInfo === undefined) {

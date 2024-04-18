@@ -108,8 +108,8 @@ task('upgradeL1Gateway', 'Upgrade l1 gateway')
     types.string,
     true,
   )
-  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .addParam('targetNetwork', 'L2 network name', undefined, types.string, false)
+  .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let arbitrator = taskArgs.arbitrator;
     if (arbitrator === undefined) {
@@ -162,6 +162,62 @@ task('upgradeL1Gateway', 'Upgrade l1 gateway')
 
     if (!skipVerify) {
       await verifyContractCode(hardhat, newContractTargetAddr, allConstructParams);
+      deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
+      fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+    }
+  });
+
+task('deployL1GatewayTarget', 'Deploy L1 gateway target')
+  .addParam(
+    'arbitrator',
+    'The arbitrator address (default get from arbitrator deploy log)',
+    undefined,
+    types.string,
+    true,
+  )
+  .addParam('targetNetwork', 'L2 network name', undefined, types.string, false)
+  .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
+  .setAction(async (taskArgs, hardhat) => {
+    let arbitrator = taskArgs.arbitrator;
+    if (arbitrator === undefined) {
+      arbitrator = readDeployLogField(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
+    }
+    let skipVerify = taskArgs.skipVerify;
+    let targetNetwork = taskArgs.targetNetwork;
+    console.log('arbitrator', arbitrator);
+    console.log('skipVerify', skipVerify);
+    console.log('targetNetwork', targetNetwork);
+
+    const l2ChainInfo = zkLinkConfig[targetNetwork];
+    if (l2ChainInfo === undefined) {
+      console.log('l2 chain info not exist');
+      return;
+    }
+    const l1GatewayInfo = l2ChainInfo.l1Gateway;
+    if (l1GatewayInfo === undefined) {
+      console.log('l1 gateway info of l2 chain not exist');
+      return;
+    }
+
+    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, targetNetwork);
+    const { deployLogPath, deployLog } = createOrGetDeployLog(l1GatewayLogName);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+
+    // deploy l1 gateway target
+    console.log('deploy l1 gateway target...');
+    const allConstructParams = [arbitrator].concat(l1GatewayInfo.constructParams);
+    const contract = await contractDeployer.deployContract(l1GatewayInfo.contractName, allConstructParams);
+    const tx = await getDeployTx(contract);
+    console.log('deploy tx hash', tx.hash);
+    const l1GatewayTargetAddr = await contract.getAddress();
+    deployLog[logName.DEPLOY_GATEWAY_TARGET] = l1GatewayTargetAddr;
+    console.log('l1 gateway target', l1GatewayTargetAddr);
+    fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
+
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, l1GatewayTargetAddr, allConstructParams);
       deployLog[logName.DEPLOY_GATEWAY_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
