@@ -129,6 +129,10 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         emit ValidatorStatusUpdate(_gateway, _validator, _active);
     }
 
+    function isRelayerActive(address _relayer) external view returns (bool) {
+        return relayers[_relayer];
+    }
+
     /// @dev Change fee params for a chain
     function changeFeeParams(
         IL1Gateway _gateway,

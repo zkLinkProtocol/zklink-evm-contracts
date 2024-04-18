@@ -37,8 +37,8 @@ contract ZkSyncL2Gateway is IMessageClaimer, L2BaseGateway, BaseGateway {
     }
 
     function claimMessageCallback(uint256 _value, bytes calldata _callData) external payable onlyRemoteGateway {
-        require(msg.value == _value, "Invalid value");
-
+        // when l1 to l2 executed failed then the l2 value will be refunded to L2 gateway
+        // we can retry the failed tx on l1(without l2 value) so we should not check msg.value here
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = ZKLINK.call{value: _value}(_callData);
         require(success, "Call zkLink failed");

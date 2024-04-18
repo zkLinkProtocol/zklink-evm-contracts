@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {IMailbox} from "../../zksync/l1-contracts/zksync/interfaces/IMailbox.sol";
+import {IMailbox, TxStatus} from "../../zksync/l1-contracts/zksync/interfaces/IMailbox.sol";
 import {IGetters} from "../../zksync/l1-contracts/zksync/interfaces/IGetters.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
@@ -22,6 +22,17 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @dev A mapping L2 batch number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
     mapping(uint256 => mapping(uint256 => bool)) public isMessageFinalized;
+    /// @dev A mapping of executed message
+    mapping(bytes32 l2TxHash => bytes32 messageHash) public executedMessage;
+
+    /// @dev Emit when retry failed message
+    event RetryFailedMessage(bytes32 failedL2TxHash, bytes32 replacedL2TxHash);
+
+    /// @notice Checks if relayer is active
+    modifier onlyRelayer() {
+        require(ARBITRATOR.isRelayerActive(msg.sender), "Not relayer"); // relayer is not active
+        _;
+    }
 
     constructor(IArbitrator _arbitrator, IMailbox _messageService) L1BaseGateway(_arbitrator) {
         _disableInitializers();
@@ -44,19 +55,28 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     ) external payable onlyArbitrator {
         (uint256 _l2GasLimit, uint256 _l2GasPerPubdataByteLimit) = abi.decode(_adapterParams, (uint256, uint256));
         bytes memory executeData = abi.encodeCall(IMessageClaimer.claimMessageCallback, (_value, _callData));
-        // no use of the return value
-        MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
+        bytes32 messageHash = keccak256(executeData);
+        // If the l2 transaction fails to execute, for example l2GasLimit is too small
+        // The l2 value will be refunded to the l2 gateway address.
+        // Then the relayer can retry failed tx from L1
+        uint256 baseCost = MESSAGE_SERVICE.l2TransactionBaseCost(tx.gasprice, _l2GasLimit, _l2GasPerPubdataByteLimit);
+        uint256 totalValue = baseCost + _value;
+        uint256 leftMsgValue = msg.value - totalValue;
+        bytes32 l2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: totalValue}(
             remoteGateway,
             _value,
             executeData,
             _l2GasLimit,
             _l2GasPerPubdataByteLimit,
             new bytes[](0),
-            // solhint-disable-next-line avoid-tx-origin
-            // The origin address paid the network fees of L2 on L1
-            // So the origin address is set as the refund address for the excess network fees on L2.
-            tx.origin
+            remoteGateway
         );
+        executedMessage[l2TxHash] = messageHash;
+        if (leftMsgValue > 0) {
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = tx.origin.call{value: leftMsgValue}("");
+            require(success, "Return excess fee failed");
+        }
     }
 
     function finalizeMessage(
@@ -105,6 +125,57 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
         // Forward message to arbitrator
         ARBITRATOR.receiveMessage{value: value}(value, callData);
+    }
+
+    /// @dev Retry a message that executed failed on L2
+    /// @param _executeData The message data
+    /// @param _l2GasLimit Maximum amount of L2 gas that transaction can consume during execution on L2
+    /// @param _l2GasPerPubdataByteLimit The maximum amount L2 gas that the operator may charge the user for single byte of pubdata.
+    /// @param _refundRecipient The address on L2 that will receive the refund for the transaction.
+    /// @param _failedL2TxHash The L2 transaction hash of the failed finalization
+    /// @param _l2BatchNumber The L2 batch number where the finalization was processed
+    /// @param _l2MessageIndex The position in the L2 logs Merkle tree of the l2Log that was sent with the message
+    /// @param _l2TxNumberInBatch The L2 transaction number in a batch, in which the log was sent
+    /// @param _merkleProof The Merkle proof of the processing L1 -> L2 transaction with deposit finalization
+    function retryFailedMessage(
+        bytes calldata _executeData,
+        uint256 _l2GasLimit,
+        uint256 _l2GasPerPubdataByteLimit,
+        address _refundRecipient,
+        bytes32 _failedL2TxHash,
+        uint256 _l2BatchNumber,
+        uint256 _l2MessageIndex,
+        uint16 _l2TxNumberInBatch,
+        bytes32[] calldata _merkleProof
+    ) external payable nonReentrant onlyRelayer {
+        bool proofValid = MESSAGE_SERVICE.proveL1ToL2TransactionStatus(
+            _failedL2TxHash,
+            _l2BatchNumber,
+            _l2MessageIndex,
+            _l2TxNumberInBatch,
+            _merkleProof,
+            TxStatus.Failure
+        );
+        require(proofValid, "Invalid proof");
+
+        bytes32 messageHash = keccak256(_executeData);
+        require(executedMessage[_failedL2TxHash] == messageHash, "Invalid message");
+
+        delete executedMessage[_failedL2TxHash];
+
+        // Retry the message without l2 value
+        // Excess fee will be refunded to the `_refundRecipient`
+        bytes32 replacedL2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
+            remoteGateway,
+            0,
+            _executeData,
+            _l2GasLimit,
+            _l2GasPerPubdataByteLimit,
+            new bytes[](0),
+            _refundRecipient
+        );
+        executedMessage[replacedL2TxHash] = messageHash;
+        emit RetryFailedMessage(_failedL2TxHash, replacedL2TxHash);
     }
 
     /// @dev Decode the ETH withdraw message with additional data about sendMessage that came from ZkSyncL2Gateway
