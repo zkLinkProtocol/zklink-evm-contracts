@@ -14,7 +14,6 @@ function getRelayerContractName() {
 }
 
 task('deploySyncL2TxHashRelayer', 'Deploy SyncL2TxHashRelayer')
-  .addParam('messageService', 'The primary chain message service', undefined, types.string, false)
   .addParam(
     'arbitrator',
     'The arbitrator address (default get from arbitrator deploy log)',
@@ -28,10 +27,8 @@ task('deploySyncL2TxHashRelayer', 'Deploy SyncL2TxHashRelayer')
     if (arbitrator === undefined) {
       arbitrator = readDeployLogField(logName.DEPLOY_ARBITRATOR_LOG_PREFIX, logName.DEPLOY_LOG_ARBITRATOR);
     }
-    let messageService = taskArgs.messageService;
     let skipVerify = taskArgs.skipVerify;
     console.log('arbitrator', arbitrator);
-    console.log('message service', messageService);
     console.log('skip verify contracts?', skipVerify);
 
     const contractDeployer = new ChainContractDeployer(hardhat);
@@ -47,7 +44,7 @@ task('deploySyncL2TxHashRelayer', 'Deploy SyncL2TxHashRelayer')
     if (!(logName.DEPLOY_LOG_SYNCL2TXHASHRELAYER in deployLog)) {
       console.log('deploy syncL2TxHashRelayer...');
       const contractName = getRelayerContractName();
-      const contract = await contractDeployer.deployContract(contractName, [messageService, arbitrator]);
+      const contract = await contractDeployer.deployContract(contractName, [arbitrator]);
       const transaction = await getDeployTx(contract);
       syncL2TxHashRelayerAddr = await contract.getAddress();
       deployLog[logName.DEPLOY_LOG_SYNCL2TXHASHRELAYER] = syncL2TxHashRelayerAddr;
@@ -61,7 +58,7 @@ task('deploySyncL2TxHashRelayer', 'Deploy SyncL2TxHashRelayer')
 
     // verify target contract
     if (!(logName.DEPLOY_LOG_SYNCL2TXHASHRELAYER_VERIFIED in deployLog) && !skipVerify) {
-      await verifyContractCode(hardhat, syncL2TxHashRelayerAddr, [messageService, arbitrator]);
+      await verifyContractCode(hardhat, syncL2TxHashRelayerAddr, [arbitrator]);
       deployLog[logName.DEPLOY_LOG_SYNCL2TXHASHRELAYER_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
