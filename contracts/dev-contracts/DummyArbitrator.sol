@@ -11,6 +11,8 @@ import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     event ReceiveMessage(uint256 value, bytes callData);
 
+    IL1Gateway public primaryChainGateway;
+
     function initialize() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();

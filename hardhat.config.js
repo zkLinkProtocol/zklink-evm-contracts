@@ -9,6 +9,7 @@ require('./script/deploy_erc20_bridge');
 require('./script/deploy_governance');
 require('./script/deploy_linea_l2_governance');
 require('./script/deploy_zklink_token');
+require('./script/deploy_sync_l2_txHash_relayer');
 
 const BaseConfig = require('./hardhat.base.config');
 

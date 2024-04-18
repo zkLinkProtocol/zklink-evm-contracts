@@ -33,6 +33,11 @@ const DEPLOY_LOG_ARBITRATOR_VERIFIED = 'arbitratorVerified';
 const DEPLOY_LOG_ARBITRATOR_TARGET = 'arbitratorTarget';
 const DEPLOY_LOG_ARBITRATOR_TARGET_VERIFIED = 'arbitratorTargetVerified';
 
+// consumed in deploy_sync_l2_txHash_relayer.js
+const DEPLOY_SYNCL2TXHASHRELAYER_LOG_PREFIX = 'deploy_syncL2TxHashRelayer';
+const DEPLOY_LOG_SYNCL2TXHASHRELAYER = 'syncL2TxHashRelayer';
+const DEPLOY_LOG_SYNCL2TXHASHRELAYER_VERIFIED = 'syncL2TxHashRelayerVerified';
+
 // consumed in deploy_governance.js
 const DEPLOY_GOVERNANCE_LOG_PREFIX = 'deploy_governance';
 const DEPLOY_LOG_GOVERNANCE = 'governance';
@@ -85,4 +90,7 @@ module.exports = {
   DEPLOY_LOG_ZKLINK_TOKEN_TARGET,
   DEPLOY_LOG_ZKLINK_TOKEN_PROXY_VERIFIED,
   DEPLOY_LOG_ZKLINK_TOKEN_TARGET_VERIFIED,
+  DEPLOY_SYNCL2TXHASHRELAYER_LOG_PREFIX,
+  DEPLOY_LOG_SYNCL2TXHASHRELAYER,
+  DEPLOY_LOG_SYNCL2TXHASHRELAYER_VERIFIED,
 };
