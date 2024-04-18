@@ -7,6 +7,9 @@ interface IArbitrator {
     /// @notice Return true if relayer is active
     function isRelayerActive(address _relayer) external view returns (bool);
 
+    /// @notice Return the primary chain gateway
+    function primaryChainGateway() external view returns (IL1Gateway);
+
     /// @notice Enqueue message from EthereumGateway
     /// @dev Used by EthereumGateway to temporarily store message
     /// @param _value The msg value
