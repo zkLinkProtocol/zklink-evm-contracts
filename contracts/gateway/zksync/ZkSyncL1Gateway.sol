@@ -59,7 +59,10 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         // If the l2 transaction fails to execute, for example l2GasLimit is too small
         // The l2 value will be refunded to the l2 gateway address.
         // Then the relayer can retry failed tx from L1
-        bytes32 l2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
+        uint256 baseCost = MESSAGE_SERVICE.l2TransactionBaseCost(tx.gasprice, _l2GasLimit, _l2GasPerPubdataByteLimit);
+        uint256 totalValue = baseCost + _value;
+        uint256 leftMsgValue = msg.value - totalValue;
+        bytes32 l2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: totalValue}(
             remoteGateway,
             _value,
             executeData,
@@ -69,6 +72,11 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
             remoteGateway
         );
         executedMessage[l2TxHash] = messageHash;
+        if (leftMsgValue > 0) {
+            // solhint-disable-next-line avoid-low-level-calls
+            (bool success, ) = tx.origin.call{value: leftMsgValue}("");
+            require(success, "Return excess fee failed");
+        }
     }
 
     function finalizeMessage(
