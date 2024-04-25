@@ -107,7 +107,7 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
       return;
     }
 
-    l1ChainId = (await l1Provider.getNetwork()).chainId;
+    const l1ChainId = (await l1Provider.getNetwork()).chainId;
     console.log(`The l1 chain id is ${l1ChainId}`);
     let canonicalTxHash = novaHash;
     if (Number(l1ChainId) !== LINEATEST_CHIAN_ID && Number(l1ChainId) !== LINEA_CHIAN_ID) {
