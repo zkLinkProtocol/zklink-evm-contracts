@@ -46,6 +46,9 @@ const GETTER_ABI = [
   },
 ];
 
+const LINEATEST_CHIAN_ID = 59141;
+const LINEA_CHIAN_ID = 59144;
+
 task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
   .addParam('l1rpc', 'RPC of the chain in which the deposit', undefined, types.string, false)
   .addParam('novaHash', 'Executing deposit on Nova failed transaction hash', undefined, types.string, false)
@@ -104,10 +107,19 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
       return;
     }
 
-    const lineaProvider = new ethers.JsonRpcProvider(process.env.LINEA_RPC);
-    const getterContract = await hre.ethers.getContractAt(GETTER_ABI, process.env.PRIMARY_CHAIN_ZKLINK, lineaProvider);
-    const secondaryChainOp = await getterContract.getSecondaryChainOp(ethers.hexlify(novaHash));
-    const canonicalTxHash = secondaryChainOp['canonicalTxHash'];
+    l1ChainId = (await l1Provider.getNetwork()).chainId;
+    console.log(`The l1 chain id is ${l1ChainId}`);
+    let canonicalTxHash = novaHash;
+    if (Number(l1ChainId) !== LINEATEST_CHIAN_ID && Number(l1ChainId) !== LINEA_CHIAN_ID) {
+      const lineaProvider = new ethers.JsonRpcProvider(process.env.LINEA_RPC);
+      const getterContract = await hre.ethers.getContractAt(
+        GETTER_ABI,
+        process.env.PRIMARY_CHAIN_ZKLINK,
+        lineaProvider,
+      );
+      const secondaryChainOp = await getterContract.getSecondaryChainOp(ethers.hexlify(novaHash));
+      canonicalTxHash = secondaryChainOp['canonicalTxHash'];
+    }
     console.log('The canonicalTxHash is :>> ', canonicalTxHash);
 
     const claimCalldata = l1Bridge.interface.encodeFunctionData('claimFailedDeposit', [
