@@ -55,11 +55,16 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
   .addParam('isZksync', 'Whether the deposit is in zksync', false, types.boolean, true)
   .setAction(async (taskArgs, hre) => {
     const l1rpc = taskArgs.l1rpc;
-    const novaHash = taskArgs.novaHash;
     const isZksync = taskArgs.isZksync;
     console.log(`The l1rpc is ${l1rpc}`);
-    console.log(`The nova tx hash is ${novaHash}`);
     console.log(`The isZksync is ${isZksync}`);
+    let novaHash = taskArgs.novaHash;
+    if (novaHash.startsWith('0x')) {
+      novaHash = ethers.hexlify(novaHash);
+    } else {
+      novaHash = ethers.hexlify('0x' + novaHash);
+    }
+    console.log(`The nova tx hash is ${novaHash}`);
 
     let l1Provider, l1Wallet;
     if (isZksync) {
@@ -70,7 +75,7 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
       l1Wallet = new ethers.Wallet(process.env.PRIVATE_KEY, l1Provider);
     }
     const l2Provider = new Provider(process.env.L2RPC);
-    const novaTxReceipt = await l2Provider.getTransactionReceipt(ethers.hexlify(novaHash));
+    const novaTxReceipt = await l2Provider.getTransactionReceipt(novaHash);
     const l1BatchNumber = novaTxReceipt.l1BatchNumber;
     const l1BatchTxIndex = novaTxReceipt.l1BatchTxIndex;
     if (!l1BatchNumber && !l1BatchTxIndex) {
@@ -83,7 +88,7 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
     );
     console.log('Success L2 to L1 Log Index :>> ', successL2ToL1LogIndex);
 
-    const novaTx = await l2Provider.getTransaction(ethers.hexlify(novaHash));
+    const novaTx = await l2Provider.getTransaction(novaHash);
 
     const l1ERC20BridgeAddr = undoL1ToL2Alias(novaTxReceipt.from);
     console.log(`The l1 erc20 bridge address is ${l1ERC20BridgeAddr}`);
@@ -117,7 +122,7 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
         process.env.PRIMARY_CHAIN_ZKLINK,
         lineaProvider,
       );
-      const secondaryChainOp = await getterContract.getSecondaryChainOp(ethers.hexlify(novaHash));
+      const secondaryChainOp = await getterContract.getSecondaryChainOp(novaHash);
       canonicalTxHash = secondaryChainOp['canonicalTxHash'];
     }
     console.log('The canonicalTxHash is :>> ', canonicalTxHash);
