@@ -164,6 +164,7 @@ task('claimFailedDeposit', 'Claim failed deposit from L1 to L2.')
       },
     );
     console.log(`The claim tx hash is ${claimTx.hash}`);
-    await claimTx.wait();
+    const receipt = await l1Provider.waitForTransaction(claimTx.hash);
+    console.log('The tx status is :>> ', receipt.status === 1);
     console.log('Claim failed deposit successfully');
   });
