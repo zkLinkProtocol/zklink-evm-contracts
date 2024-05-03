@@ -9,7 +9,7 @@ contract MantleL2Gateway is OptimismL2Gateway {
     }
 
     function claimMessageCallback(
-        uint256 _value,
+        uint256,
         bytes calldata _callData
     ) external payable override onlyMessageService onlyRemoteGateway {
         // eth value bridged to mantle l2 gateway is unexpected
