@@ -7,6 +7,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AddressAliasHelper} from "./zksync/l1-contracts/vendor/AddressAliasHelper.sol";
 import {IZkLink} from "./interfaces/IZkLink.sol";
 import {IL2Gateway} from "./interfaces/IL2Gateway.sol";
@@ -35,6 +37,7 @@ contract ZkLink is
     PausableUpgradeable
 {
     using UncheckedMath for uint256;
+    using SafeERC20 for IERC20;
 
     /// @dev The forward request type hash
     bytes32 public constant FORWARD_REQUEST_TYPE_HASH =
@@ -44,9 +47,6 @@ contract ZkLink is
 
     /// @dev The length of withdraw message sent to secondary chain
     uint256 private constant L2_WITHDRAW_MESSAGE_LENGTH = 108;
-
-    /// @dev Whether eth is the gas token
-    bool public immutable IS_ETH_GAS_TOKEN;
 
     /// @notice The gateway is used for communicating with L1
     IL2Gateway public gateway;
@@ -148,8 +148,7 @@ contract ZkLink is
         _;
     }
 
-    constructor(bool _isEthGasToken) {
-        IS_ETH_GAS_TOKEN = _isEthGasToken;
+    constructor() {
         _disableInitializers();
     }
 
@@ -275,7 +274,7 @@ contract ZkLink is
         address _refundRecipient
     ) external payable nonReentrant whenNotPaused returns (bytes32 canonicalTxHash) {
         // Disable l2 value if eth is not the gas token
-        if (!IS_ETH_GAS_TOKEN) {
+        if (!gateway.isEthGasToken()) {
             require(_l2Value == 0, "Not allow l2 value");
         }
         // Change the sender address if it is a smart contract to prevent address collision between L1 and L2.
@@ -365,7 +364,6 @@ contract ZkLink is
         bytes calldata _message,
         bytes32[] calldata _merkleProof
     ) external nonReentrant {
-        require(IS_ETH_GAS_TOKEN, "Not allow eth withdraw");
         require(!isEthWithdrawalFinalized[_l2BatchNumber][_l2MessageIndex], "jj");
 
         L2Message memory l2ToL1Message = L2Message({
@@ -461,7 +459,7 @@ contract ZkLink is
         bytes32 _l2LogsRootHash,
         uint256 _forwardEthAmount
     ) external payable onlyGateway {
-        if (IS_ETH_GAS_TOKEN) {
+        if (gateway.isEthGasToken()) {
             require(msg.value == _forwardEthAmount, "Invalid forward amount");
         }
         // Allows repeated sending of the forward amount of the batch
@@ -479,7 +477,7 @@ contract ZkLink is
         uint256 _forwardEthAmount
     ) external payable onlyGateway {
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
-        if (IS_ETH_GAS_TOKEN) {
+        if (gateway.isEthGasToken()) {
             require(msg.value == _forwardEthAmount, "Invalid forward amount");
         }
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
@@ -648,12 +646,16 @@ contract ZkLink is
     /// @notice Transfer ether from the contract to the receiver
     /// @dev Reverts only if the transfer call failed
     function _withdrawFunds(address _to, uint256 _amount) internal {
-        bool callSuccess;
-        // Low-level assembly call, to avoid any memory copying (save gas)
-        assembly {
-            callSuccess := call(gas(), _to, _amount, 0, 0, 0, 0)
+        if (gateway.isEthGasToken()) {
+            bool callSuccess;
+            // Low-level assembly call, to avoid any memory copying (save gas)
+            assembly {
+                callSuccess := call(gas(), _to, _amount, 0, 0, 0, 0)
+            }
+            require(callSuccess, "pz");
+        } else {
+            SafeERC20.safeTransfer(gateway.ethToken(), _to, _amount);
         }
-        require(callSuccess, "pz");
     }
 
     function hashForwardL2Request(ForwardL2Request memory _request) internal pure returns (bytes32) {
