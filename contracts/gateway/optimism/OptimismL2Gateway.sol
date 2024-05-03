@@ -33,7 +33,7 @@ contract OptimismL2Gateway is L2BaseGateway, OptimismGateway {
     function claimMessageCallback(
         uint256 _value,
         bytes calldata _callData
-    ) external payable onlyMessageService onlyRemoteGateway {
+    ) external payable virtual onlyMessageService onlyRemoteGateway {
         require(msg.value == _value, "Invalid value");
 
         // solhint-disable-next-line avoid-low-level-calls

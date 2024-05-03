@@ -1,9 +1,7 @@
 {
   "ETHEREUM": {
-    "eth": true
   },
   "ZKSYNC": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
       "constructParams": [],
@@ -17,7 +15,6 @@
     }
   },
   "SCROLL": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ScrollL2Gateway",
       "constructParams": ["0x781e90f1c8Fc4611c9b7497C3B47F99Ef6969CbC"],
@@ -31,7 +28,6 @@
     }
   },
   "LINEA": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "LineaL2Gateway",
       "constructParams": ["0x508Ca82Df566dCD1B0DE8296e70a96332cD644ec"],
@@ -45,7 +41,6 @@
     }
   },
   "ZKPOLYGON": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ZkPolygonL2Gateway",
       "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
@@ -59,7 +54,6 @@
     }
   },
   "ARBITRUM": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
       "constructParams": [],
@@ -73,7 +67,6 @@
     }
   },
   "OPTIMISM": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -87,7 +80,6 @@
     }
   },
   "MANTA": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -101,9 +93,8 @@
     }
   },
   "MANTLE": {
-    "eth": false,
     "l2Gateway": {
-      "contractName": "OptimismL2Gateway",
+      "contractName": "MantleL2Gateway",
       "constructParams": [],
       "initializeParams": []
     },
@@ -115,7 +106,6 @@
     }
   },
   "BLAST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -129,7 +119,6 @@
     }
   },
   "BASE": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -143,7 +132,6 @@
     }
   },
   "METIS": {
-    "eth": false,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -156,14 +144,9 @@
       "initializeParams": []
     }
   },
-  "GOERLI": {
-    "eth": true
-  },
   "SEPOLIA": {
-    "eth": true
   },
   "ZKSYNCTEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ZkSyncL2Gateway",
       "constructParams": [],
@@ -177,7 +160,6 @@
     }
   },
   "SCROLLTEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ScrollL2Gateway",
       "constructParams": ["0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d"],
@@ -191,7 +173,6 @@
     }
   },
   "LINEATEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "LineaL2Gateway",
       "constructParams": ["0x971e727e956690b9957be6d51Ec16E73AcAC83A7"],
@@ -205,7 +186,6 @@
     }
   },
   "ZKPOLYGONTEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ZkPolygonL2Gateway",
       "constructParams": ["0xF6BEEeBB578e214CA9E23B0e9683454Ff88Ed2A7"],
@@ -219,7 +199,6 @@
     }
   },
   "ARBITRUMTEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "ArbitrumL2Gateway",
       "constructParams": [],
@@ -233,7 +212,6 @@
     }
   },
   "OPTIMISMTEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -247,7 +225,6 @@
     }
   },
   "MANTATEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -261,9 +238,8 @@
     }
   },
   "MANTLETEST": {
-    "eth": false,
     "l2Gateway": {
-      "contractName": "OptimismL2Gateway",
+      "contractName": "MantleL2Gateway",
       "constructParams": [],
       "initializeParams": []
     },
@@ -275,7 +251,6 @@
     }
   },
   "BLASTTEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
@@ -289,7 +264,6 @@
     }
   },
   "BASETEST": {
-    "eth": true,
     "l2Gateway": {
       "contractName": "OptimismL2Gateway",
       "constructParams": [],
