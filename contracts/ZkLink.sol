@@ -461,7 +461,9 @@ contract ZkLink is
         bytes32 _l2LogsRootHash,
         uint256 _forwardEthAmount
     ) external payable onlyGateway {
-        require(msg.value == _forwardEthAmount, "Invalid forward amount");
+        if (IS_ETH_GAS_TOKEN) {
+            require(msg.value == _forwardEthAmount, "Invalid forward amount");
+        }
         // Allows repeated sending of the forward amount of the batch
         if (_batchNumber > totalBatchesExecuted) {
             totalBatchesExecuted = _batchNumber;
@@ -477,7 +479,9 @@ contract ZkLink is
         uint256 _forwardEthAmount
     ) external payable onlyGateway {
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
-        require(msg.value == _forwardEthAmount, "Invalid forward amount");
+        if (IS_ETH_GAS_TOKEN) {
+            require(msg.value == _forwardEthAmount, "Invalid forward amount");
+        }
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
         rangeBatchRootHashes[range] = _rangeBatchRootHash;
         emit SyncRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeBatchRootHash, _forwardEthAmount);
