@@ -94,7 +94,7 @@
   },
   "MANTLE": {
     "l2Gateway": {
-      "contractName": "OptimismL2Gateway",
+      "contractName": "MantleL2Gateway",
       "constructParams": [],
       "initializeParams": []
     },
@@ -239,7 +239,7 @@
   },
   "MANTLETEST": {
     "l2Gateway": {
-      "contractName": "OptimismL2Gateway",
+      "contractName": "MantleL2Gateway",
       "constructParams": [],
       "initializeParams": []
     },
