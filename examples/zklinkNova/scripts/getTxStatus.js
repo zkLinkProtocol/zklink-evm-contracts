@@ -8,8 +8,10 @@ require('dotenv').config();
 
 task('getTxStatus', 'Get the tx status of nova')
   .addParam('txHash', 'The tx hash', undefined, types.string)
+  .addOptionalParam('useCommit', 'Use commit as the nova finalize tx', true, types.boolean)
   .setAction(async taskArgs => {
     const txHash = taskArgs.txHash;
+    const useCommit = taskArgs.useCommit;
     console.log(`Get the status of tx: ${txHash}`);
     const zkLinkNovaProvider = new Provider(process.env.ZKLINK_NOVA_RPC);
     const lineaProvider = new ethers.JsonRpcProvider(process.env.LINEA_RPC);
@@ -23,18 +25,19 @@ task('getTxStatus', 'Get the tx status of nova')
     console.log(`Tx block: ${txReceipt.blockNumber}`);
 
     const blockDetails = await zkLinkNovaProvider.getBlockDetails(txReceipt.blockNumber);
-    if (!blockDetails.proveTxHash) {
-      console.log(`Tx status: not proved`);
+    const novaFinalizeTx = useCommit ? blockDetails.commitTxHash : blockDetails.proveTxHash;
+    if (!novaFinalizeTx) {
+      console.log(`Tx status: not finalized on linea`);
       return;
     }
-    console.log(`Block prove tx hash: ${blockDetails.commitTxHash}`);
+    console.log(`Nova finalize tx hash: ${novaFinalizeTx}`);
 
-    const blockCommitTxReceipt = await lineaProvider.getTransactionReceipt(blockDetails.commitTxHash);
-    if (!blockCommitTxReceipt.blockNumber) {
-      console.log(`Tx status: prove tx not confirmed`);
+    const novaFinalizeTxReceipt = await lineaProvider.getTransactionReceipt(novaFinalizeTx);
+    if (!novaFinalizeTxReceipt.blockNumber) {
+      console.log(`Tx status: nova finalize tx not confirmed`);
       return;
     }
-    console.log(`Prove tx block number on linea: ${blockCommitTxReceipt.blockNumber}`);
+    console.log(`Nova finalize tx block number on linea: ${novaFinalizeTxReceipt.blockNumber}`);
 
     const ethereumChainId = (await ethereumProvider.getNetwork()).chainId;
     const network = ethereumChainId === BigInt(1) ? 'linea-mainnet' : 'linea-sepolia';
@@ -49,9 +52,9 @@ task('getTxStatus', 'Get the tx status of nova')
     const lineaRollup = LineaRollup__factory.connect(lineaL1Contract.contractAddress, ethereumProvider);
     const currentFinalizeBlockNumber = await lineaRollup.currentL2BlockNumber();
     console.log(`Linea current finalize block number: ${currentFinalizeBlockNumber}`);
-    if (currentFinalizeBlockNumber >= blockCommitTxReceipt.blockNumber) {
-      console.log(`Tx status: finalized`);
+    if (currentFinalizeBlockNumber >= novaFinalizeTxReceipt.blockNumber) {
+      console.log(`Tx status: finalized on ethereum`);
     } else {
-      console.log(`Tx status: not finalized`);
+      console.log(`Tx status: not finalized on ethereum`);
     }
   });
