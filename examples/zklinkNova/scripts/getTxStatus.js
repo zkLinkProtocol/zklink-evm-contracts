@@ -23,18 +23,18 @@ task('getTxStatus', 'Get the tx status of nova')
     console.log(`Tx block: ${txReceipt.blockNumber}`);
 
     const blockDetails = await zkLinkNovaProvider.getBlockDetails(txReceipt.blockNumber);
-    if (!blockDetails.commitTxHash) {
-      console.log(`Tx status: not committed`);
+    if (!blockDetails.proveTxHash) {
+      console.log(`Tx status: not proved`);
       return;
     }
-    console.log(`Block commit tx hash: ${blockDetails.commitTxHash}`);
+    console.log(`Block prove tx hash: ${blockDetails.commitTxHash}`);
 
     const blockCommitTxReceipt = await lineaProvider.getTransactionReceipt(blockDetails.commitTxHash);
     if (!blockCommitTxReceipt.blockNumber) {
-      console.log(`Tx status: commit tx not confirmed`);
+      console.log(`Tx status: prove tx not confirmed`);
       return;
     }
-    console.log(`Commit tx block number on linea: ${blockCommitTxReceipt.blockNumber}`);
+    console.log(`Prove tx block number on linea: ${blockCommitTxReceipt.blockNumber}`);
 
     const ethereumChainId = (await ethereumProvider.getNetwork()).chainId;
     const network = ethereumChainId === BigInt(1) ? 'linea-mainnet' : 'linea-sepolia';
