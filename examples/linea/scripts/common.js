@@ -24,7 +24,7 @@ function initSDK() {
   return { lineaL1Contract, lineaL2Contract, lineaL1ClaimingService };
 }
 
-async function claimL1ToL2Message(l1TxHash) {
+async function claimL1ToL2Message(l1TxHash, messageIndex) {
   const sdkInit = initSDK();
   const lineaL1Contract = sdkInit.lineaL1Contract;
   const lineaL2Contract = sdkInit.lineaL2Contract;
@@ -32,7 +32,9 @@ async function claimL1ToL2Message(l1TxHash) {
   /**
    * Query the transaction status on L2 via messageHash.
    */
-  const message = (await lineaL1Contract.getMessagesByTransactionHash(l1TxHash)).pop();
+  messageIndex = messageIndex ?? 0;
+  const messages = await lineaL1Contract.getMessagesByTransactionHash(l1TxHash);
+  const message = messages[messageIndex];
 
   // Waiting for the official Linea bridge to forward the message to L2
   // And manually claim the message on L2
