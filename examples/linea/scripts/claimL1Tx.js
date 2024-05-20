@@ -1,5 +1,5 @@
 const { task, types } = require('hardhat/config');
-const { claimL1ToL2Message } = require('./common');
+const { claimL2ToL1Message } = require('./common');
 
 require('dotenv').config();
 
@@ -12,5 +12,5 @@ task('claimL1Tx', 'Claim l1 tx')
     console.log(`The l2 to l1 tx hash: ${l2ToL1TxHash}`);
     console.log(`The message index: ${messageIndex}`);
 
-    await claimL1ToL2Message(l2ToL1TxHash, messageIndex);
+    await claimL2ToL1Message(l2ToL1TxHash, messageIndex);
   });

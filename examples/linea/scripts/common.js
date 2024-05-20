@@ -53,7 +53,7 @@ async function claimL1ToL2Message(l1TxHash, messageIndex) {
   }
 }
 
-async function claimL2ToL1Message(l2TxHash) {
+async function claimL2ToL1Message(l2TxHash, messageIndex) {
   const sdkInit = initSDK();
   const lineaL1ClaimingService = sdkInit.lineaL1ClaimingService;
   const lineaL2Contract = sdkInit.lineaL2Contract;
@@ -61,7 +61,9 @@ async function claimL2ToL1Message(l2TxHash) {
   /**
    * Query the message informations on L2 via txHash.
    */
-  const message = (await lineaL2Contract.getMessagesByTransactionHash(l2TxHash)).pop();
+  messageIndex = messageIndex ?? 0;
+  const messages = await lineaL2Contract.getMessagesByTransactionHash(l2TxHash);
+  const message = messages[messageIndex];
   console.log(`The messageSender: ${message.messageSender}`);
   console.log(`The destination: ${message.destination}`);
   console.log(`The fee: ${message.fee}`);
