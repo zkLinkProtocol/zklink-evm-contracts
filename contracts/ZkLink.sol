@@ -494,6 +494,8 @@ contract ZkLink is
         uint256 _toBatchNumber,
         bytes32[] calldata _l2LogsRootHashes
     ) external onlyValidator {
+        // The first open or the next open
+        require(totalBatchesExecuted == 0 || _fromBatchNumber == totalBatchesExecuted + 1, "Invalid open");
         require(_toBatchNumber >= _fromBatchNumber, "Invalid range");
         bytes32 range = keccak256(abi.encodePacked(_fromBatchNumber, _toBatchNumber));
         bytes32 rangeBatchRootHash = rangeBatchRootHashes[range];
@@ -511,9 +513,7 @@ contract ZkLink is
         }
         require(_rangeBatchRootHash == rangeBatchRootHash, "Incorrect root hash");
         delete rangeBatchRootHashes[range];
-        if (_toBatchNumber > totalBatchesExecuted) {
-            totalBatchesExecuted = _toBatchNumber;
-        }
+        totalBatchesExecuted = _toBatchNumber;
         emit OpenRangeBatchRoot(_fromBatchNumber, _toBatchNumber);
     }
 
