@@ -41,8 +41,7 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
         return gateway;
     }
 
-    function setGateway(IL2Gateway _gateway) external {
-        require(address(gateway) == address(0), "Duplicate init gateway");
+    function setGateway(IL2Gateway _gateway) external onlyOwner {
         gateway = _gateway;
     }
 
@@ -64,7 +63,7 @@ contract DummyZkLink is IZkLink, OwnableUpgradeable, UUPSUpgradeable, Reentrancy
         uint256 _toBatchNumber,
         bytes32 _rangeBatchRootHash,
         uint256 _forwardEthAmount
-    ) external payable {
+    ) external payable onlyGateway {
         emit ReceiveRangeBatchRoot(_fromBatchNumber, _toBatchNumber, _rangeBatchRootHash, _forwardEthAmount);
     }
 

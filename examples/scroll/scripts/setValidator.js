@@ -1,8 +1,8 @@
 const { JsonRpcProvider, Wallet, AbiCoder, formatEther } = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
-const { estimateGas } = require('./utils/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task, types } = require('hardhat/config');
+const { ScrollSDK } = require('./scrollSDK');
 
 require('dotenv').config();
 
@@ -16,8 +16,10 @@ task('setValidator', 'Set validator for zkLink')
 
     const walletPrivateKey = process.env.DEVNET_PRIVKEY;
     const l1Provider = new JsonRpcProvider(process.env.L1RPC);
+    const l2Provider = new JsonRpcProvider(process.env.L2RPC);
     const ethereumName = process.env.ETHEREUM;
     const scrollName = process.env.SCROLL;
+    const scrollSDK = new ScrollSDK(ethereumName, l1Provider, l2Provider);
     const l1Wallet = new Wallet(walletPrivateKey, l1Provider);
 
     const l1WalletAddress = await l1Wallet.getAddress();
@@ -36,12 +38,19 @@ task('setValidator', 'Set validator for zkLink')
     console.log(`The arbitrator address: ${arbitratorAddr}`);
 
     const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, scrollName);
-    const scrollL1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
-    if (scrollL1GatewayAddr === undefined) {
-      console.log('scroll l1 gateway address not exist');
+    const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+    if (l1GatewayAddr === undefined) {
+      console.log('The l1 gateway address not exist');
       return;
     }
-    console.log(`The scroll l1 gateway address: ${scrollL1GatewayAddr}`);
+    console.log(`The l1 gateway address: ${l1GatewayAddr}`);
+
+    const l2GatewayAddr = readDeployContract(logName.DEPLOY_L2_GATEWAY_LOG_PREFIX, logName.DEPLOY_GATEWAY, scrollName);
+    if (l2GatewayAddr === undefined) {
+      console.log('l2 gateway address not exist');
+      return;
+    }
+    console.log(`The l2 gateway address: ${l2GatewayAddr}`);
 
     // forward message to L2
     const arbitrator = await hre.ethers.getContractAt('Arbitrator', arbitratorAddr, l1Wallet);
@@ -49,12 +58,27 @@ task('setValidator', 'Set validator for zkLink')
      * The adapterParams is the parameters for the adapter, which is used to parse the calldata.
      * finalizeMessageGasLimit: the gas limit for the L2 to finalize the message.
      */
-    const finalizeMessageGasLimit = 1000000;
-    const { gasValue } = await estimateGas(finalizeMessageGasLimit, l1Wallet, hre);
-    console.log(`The fee: ${gasValue}`);
+    const zkLink = await hre.ethers.getContractFactory('ZkLink');
+    const zkLinkCallValue = 0;
+    const zkLinkCallData = zkLink.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
+    const l2GatewayFactory = await hre.ethers.getContractFactory('ScrollL2Gateway');
+    const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessageCallback', [
+      zkLinkCallValue,
+      zkLinkCallData,
+    ]);
+    let finalizeMessageGasLimit = await scrollSDK.l2EstimateRelayMessageGasLimit(
+      l1GatewayAddr,
+      l2GatewayAddr,
+      zkLinkCallValue,
+      l2GatewayCallData,
+    );
+    finalizeMessageGasLimit = (finalizeMessageGasLimit * BigInt(120)) / BigInt(100);
+    console.log(`The l1 to l2 gas limit: ${finalizeMessageGasLimit}`);
+    const gasValue = await scrollSDK.l1ToL2GasValue(finalizeMessageGasLimit);
+    console.log(`The fee: ${formatEther(gasValue)} ether`);
     const adapterParams = AbiCoder.defaultAbiCoder().encode(['uint256'], [finalizeMessageGasLimit]);
-    let tx = await arbitrator.setValidator(scrollL1GatewayAddr, validatorAddr, isActive, adapterParams, {
-      value: gasValue,
+    let tx = await arbitrator.setValidator(l1GatewayAddr, validatorAddr, isActive, adapterParams, {
+      value: gasValue + zkLinkCallValue,
     });
     console.log(`The tx hash: ${tx.hash} , waiting confirm...`);
     await tx.wait();

@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "scripts": {},
   "devDependencies": {
+    "@eth-optimism/core-utils": "^0.13.2",
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "axios": "^1.7.2",
     "ethers": "^6.11.1",
     "hardhat": "^2.19.5"
   },
