@@ -59,7 +59,7 @@ task('setValidator', 'Set validator for zkLink')
      * finalizeMessageGasLimit: the gas limit for the L2 to finalize the message.
      */
     const zkLink = await hre.ethers.getContractFactory('ZkLink');
-    const zkLinkCallValue = 0;
+    const zkLinkCallValue = BigInt(0);
     const zkLinkCallData = zkLink.interface.encodeFunctionData('setValidator', [validatorAddr, isActive]);
     const l2GatewayFactory = await hre.ethers.getContractFactory('ScrollL2Gateway');
     const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessageCallback', [

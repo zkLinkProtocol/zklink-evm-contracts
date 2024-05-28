@@ -53,7 +53,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
    */
   const zkLink = await hre.ethers.getContractFactory('ZkLink');
   const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
-  const zkLinkCallValue = 0;
+  const zkLinkCallValue = BigInt(0);
   const zkLinkCallData = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
   const l2GatewayFactory = await hre.ethers.getContractFactory('ScrollL2Gateway');
   const l2GatewayCallData = l2GatewayFactory.interface.encodeFunctionData('claimMessageCallback', [
