@@ -87,3 +87,33 @@ task('setValidator', 'Set validator for zkLink')
     // Waiting for the official Scroll bridge to forward the message to L2
     // No user action is required for follow-up.
   });
+
+task('encodeSetValidator', 'Get the calldata of set validator for zkLink')
+  .addParam('validator', 'Validator Address', undefined, types.string)
+  .addOptionalParam('active', 'Whether to activate the validator address', true, types.boolean)
+  .setAction(async (taskArgs, hre) => {
+    const validatorAddr = taskArgs.validator;
+    const isActive = taskArgs.active;
+    console.log(`The validator: address: ${validatorAddr}, active: ${isActive}`);
+
+    const ethereumName = process.env.ETHEREUM;
+    const scrollName = process.env.SCROLL;
+    const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, scrollName);
+    const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+    if (l1GatewayAddr === undefined) {
+      console.log('The l1 gateway address not exist');
+      return;
+    }
+    console.log(`The l1 gateway address: ${l1GatewayAddr}`);
+
+    const adapterParams = AbiCoder.defaultAbiCoder().encode(['uint256'], [200000]);
+
+    const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
+    const calldata = arbitratorFactory.interface.encodeFunctionData('setValidator', [
+      l1GatewayAddr,
+      validatorAddr,
+      isActive,
+      adapterParams,
+    ]);
+    console.log(`The setValidator calldata: ${calldata}`);
+  });

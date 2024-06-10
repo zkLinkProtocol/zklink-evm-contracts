@@ -3,6 +3,7 @@ const { readDeployContract, getLogName } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
 const { task } = require('hardhat/config');
 const { ScrollSDK } = require('./scrollSDK');
+const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
 
 require('dotenv').config();
 
@@ -52,7 +53,6 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
    * finalizeMessageGasLimit: the gas limit for the L2 to finalize the message.
    */
   const zkLink = await hre.ethers.getContractFactory('ZkLink');
-  const { INIT_FEE_PARAMS } = require('../../../script/zksync_era');
   const zkLinkCallValue = BigInt(0);
   const zkLinkCallData = zkLink.interface.encodeFunctionData('changeFeeParams', [INIT_FEE_PARAMS]);
   const l2GatewayFactory = await hre.ethers.getContractFactory('ScrollL2Gateway');
@@ -80,4 +80,26 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
 
   // Waiting for the official Scroll bridge to forward the message to L2
   // No user action is required for follow-up.
+});
+
+task('encodeChangeFeeParams', 'Get the calldata of changing fee params for zkLink').setAction(async (_, hre) => {
+  const ethereumName = process.env.ETHEREUM;
+  const scrollName = process.env.SCROLL;
+  const l1GatewayLogName = getLogName(logName.DEPLOY_L1_GATEWAY_LOG_PREFIX, scrollName);
+  const l1GatewayAddr = readDeployContract(l1GatewayLogName, logName.DEPLOY_GATEWAY, ethereumName);
+  if (l1GatewayAddr === undefined) {
+    console.log('The l1 gateway address not exist');
+    return;
+  }
+  console.log(`The l1 gateway address: ${l1GatewayAddr}`);
+
+  const adapterParams = AbiCoder.defaultAbiCoder().encode(['uint256'], [200000]);
+
+  const arbitratorFactory = await hre.ethers.getContractFactory('Arbitrator');
+  const calldata = arbitratorFactory.interface.encodeFunctionData('changeFeeParams', [
+    l1GatewayAddr,
+    INIT_FEE_PARAMS,
+    adapterParams,
+  ]);
+  console.log(`The changeFeeParams calldata: ${calldata}`);
 });
