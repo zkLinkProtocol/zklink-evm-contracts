@@ -18,7 +18,7 @@ contract ZkLinkToken is
     function initialize() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
-        __ERC20_init("ZKLink", "ZKL");
+        __ERC20_init("zkLink Token", "ZKL");
         __ERC20Permit_init("ZKLink");
         __ERC20Capped_init(1000000000000000000000000000);
     }
