@@ -59,3 +59,24 @@ task('deployZkLinkToken', 'Deploy zkLink token')
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
   });
+
+task('deployZkLinkTokenTarget', 'Deploy zkLink token target')
+  .addOptionalParam('skipVerify', 'Skip verify', false, types.boolean)
+  .setAction(async (taskArgs, hardhat) => {
+    let skipVerify = taskArgs.skipVerify;
+    console.log('skip verify contracts?', skipVerify);
+
+    const contractDeployer = new ChainContractDeployer(hardhat);
+    await contractDeployer.init();
+
+    // deploy zkLink token target
+    console.log('deploy zkLink token target...');
+    const contract = await contractDeployer.deployContract('ZkLinkToken', [], []);
+    const zkLinkTokenTargetAddr = await contract.getAddress();
+    console.log('zkLinkTokenTarget', zkLinkTokenTargetAddr);
+
+    // verify target contract
+    if (!skipVerify) {
+      await verifyContractCode(hardhat, zkLinkTokenTargetAddr, []);
+    }
+  });
