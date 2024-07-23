@@ -54,7 +54,7 @@ task('getTxStatus', 'Get the tx status of nova')
 
     // After the nova block finalize tx is confirmed on linea, we continue to check the status of Linea's tx finalized on Ethereum
     // Linea deployed a rollup contract on Ethereum and has a readable interface `function currentL2BlockNumber() external view`
-    // When the number of a block on Linea is greater or equal to the value of `currentL2BlockNumber` it means the block is finalized on Ethereum
+    // When the number of a block on Linea is smaller or equal to the value of `currentL2BlockNumber` it means the block is finalized on Ethereum
     const ethereumChainId = (await ethereumProvider.getNetwork()).chainId;
     const network = ethereumChainId === BigInt(1) ? 'linea-mainnet' : 'linea-sepolia';
     const lineaSDK = new LineaSDK({
