@@ -1,6 +1,7 @@
 require('@nomicfoundation/hardhat-toolbox');
 require('./scripts/getTxStatus');
 require('./scripts/decodeRawTx');
+require('./scripts/printGovernanceCall');
 
 const BaseConfig = require('../../hardhat.base.config');
 
