@@ -1,6 +1,67 @@
 const { Provider, Wallet, utils } = require('zksync-ethers');
 const { task, types } = require('hardhat/config');
-const { ethers } = require('ethers');
+const { ethers, Interface, Contract, parseUnits } = require('ethers');
+
+require('dotenv').config();
+
+const L2_TOKEN_ABI = [
+  'function l2Bridge() external view returns (address)',
+  'function name() external view returns (string memory)',
+  'function decimals() external view returns (uint8)',
+  'function transfer(address to, uint256 amount) external returns (bool)',
+];
+
+const L2_ERC20_BRIDGE_ABI = ['function withdraw(address _l1Receiver, address _l2Token, uint256 _amount)'];
+
+task('encodeTransferERC20', 'Encode calldata for transfer erc20 token on nova')
+  .addParam('token', 'The l2 token address', undefined, types.string, false)
+  .addParam('amount', 'The transfer amount(unit: ether)', undefined, types.string, false)
+  .addParam('receiver', 'The transfer receiver', undefined, types.string, false)
+  .setAction(async taskArgs => {
+    const l2TokenAddress = taskArgs.token;
+    const amount = taskArgs.amount;
+    const receiver = taskArgs.receiver;
+    const l2Provider = new Provider(process.env.L2RPC);
+
+    const l2TokenInterface = new Interface(L2_TOKEN_ABI);
+    const l2Token = new Contract(l2TokenAddress, l2TokenInterface, l2Provider);
+    const l2TokenName = await l2Token.name();
+    const l2TokenDecimals = await l2Token.decimals();
+    console.log(`L2 token name: ${l2TokenName}`);
+    console.log(`L2 token decimals: ${l2TokenDecimals}`);
+    const amountWei = parseUnits(amount, l2TokenDecimals);
+    console.log(`Transfer amount in wei: ${amountWei}`);
+
+    const calldata = l2TokenInterface.encodeFunctionData('transfer', [receiver, amountWei]);
+    console.log(`Transfer calldata: ${calldata}`);
+  });
+
+task('encodeWithdrawERC20', 'Encode calldata for withdraw erc20 token on nova')
+  .addParam('token', 'The l2 token address', undefined, types.string, false)
+  .addParam('amount', 'The withdraw amount(unit: ether)', undefined, types.string, false)
+  .addParam('receiver', 'The withdraw receiver', undefined, types.string, false)
+  .setAction(async taskArgs => {
+    const l2TokenAddress = taskArgs.token;
+    const amount = taskArgs.amount;
+    const receiver = taskArgs.receiver;
+    const l2Provider = new Provider(process.env.L2RPC);
+
+    const l2TokenInterface = new Interface(L2_TOKEN_ABI);
+    const l2Token = new Contract(l2TokenAddress, l2TokenInterface, l2Provider);
+    const l2TokenName = await l2Token.name();
+    const l2TokenDecimals = await l2Token.decimals();
+    console.log(`L2 token name: ${l2TokenName}`);
+    console.log(`L2 token decimals: ${l2TokenDecimals}`);
+    const amountWei = parseUnits(amount, l2TokenDecimals);
+    console.log(`Withdraw amount in wei: ${amountWei}`);
+
+    const l2Bridge = await l2Token.l2Bridge();
+    console.log(`L2 erc20 token bridge: ${l2Bridge}`);
+
+    const l2ERC20BridgeInterface = new Interface(L2_ERC20_BRIDGE_ABI);
+    const calldata = l2ERC20BridgeInterface.encodeFunctionData('withdraw', [receiver, l2TokenAddress, amountWei]);
+    console.log(`Withdraw calldata: ${calldata}`);
+  });
 
 task('requestL2Tx', 'Request l2 tx from secondary chain')
   .addParam('senderL1', 'The l1 sender address', undefined, types.string, false)
@@ -101,5 +162,3 @@ task('requestL2Tx', 'Request l2 tx from secondary chain')
       console.log(`The tx confirmed`);
     }
   });
-
-require('dotenv').config();
