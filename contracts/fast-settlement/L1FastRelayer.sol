@@ -157,6 +157,11 @@ contract L1FastRelayer is OwnableUpgradeable {
         // }
     }
 
+    // TODO
+    function getCurrentSyncedPoint() public view returns (uint256) {
+        return 0;
+    }
+
     function registerVault(address vault) external onlyOwner {
         if (vaults.contains(vault)) {
             revert VaultAlreadyRegistred();
