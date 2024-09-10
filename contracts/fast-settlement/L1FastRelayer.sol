@@ -153,7 +153,7 @@ contract L1FastRelayer is OwnableUpgradeable {
         }
         uint256 avaliableStake = totalStake - occupiedStake;
 
-        // TODO:
+        // TODO: call Arbitrator
         // uint256 requiredStake = ....
         // if (avaliableStake < requiredStake) {
         //     sendPayload()
@@ -163,9 +163,9 @@ contract L1FastRelayer is OwnableUpgradeable {
         // }
     }
 
-    // TODO
-    function getCurrentSyncedPoint() public view returns (uint256) {
-        return 0;
+    // TODO: ask Arbitrator if stake for given operator is enough
+    function isOperatorAvaliableStakeEnough(address operator) public view returns (bool) {
+        return false;
     }
 
     function registerVault(address vault) external onlyOwner {
