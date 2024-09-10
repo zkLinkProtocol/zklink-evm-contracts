@@ -96,6 +96,12 @@ contract L1FastRelayer is OwnableUpgradeable {
         lockedEpochsCnt = _lockedEpochsCnt;
     }
 
+    function getOperatorCurrentStake(address operator) public view returns (uint256 stake) {
+        uint48 currentEpoch = getCurrentEpoch();
+        uint256 totalStake = getOperatorStake(operator, currentEpoch);
+        return totalStake;
+    }
+
     function getOperatorStake(address operator, uint48 epoch) public view returns (uint256 stake) {
         uint48 epochStartTs = getEpochStartTs(epoch);
 
