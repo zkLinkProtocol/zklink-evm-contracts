@@ -185,23 +185,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes calldata _adapterParams
     ) external payable nonReentrant onlyRelayer {
         bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
-        if (_gateway == primaryChainGateway) {
-            require(_finalizeMessageHash == primaryChainMessageHashQueue.popFront(), "Invalid finalize message hash");
-            // Unpack destination chain and final callData
-            (IL1Gateway secondaryChainGateway, bytes memory finalCallData) = abi.decode(_callData, (IL1Gateway, bytes));
-            require(secondaryChainGateways[secondaryChainGateway], "Invalid secondary chain gateway");
-            // Forward fee to send message
-            secondaryChainGateway.sendMessage{value: msg.value + _value}(_value, finalCallData, _adapterParams);
-        } else {
-            require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
-            require(
-                _finalizeMessageHash == secondaryChainMessageHashQueues[_gateway].popFront(),
-                "Invalid finalize message hash"
-            );
-            // Forward fee to send message
-            primaryChainGateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);
-        }
-        emit MessageForwarded(_gateway, _value, _callData);
+        require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
+        require(
+            _finalizeMessageHash == secondaryChainMessageHashQueues[_gateway].popFront(),
+            "Invalid finalize message hash"
+        );
+        // Forward fee to send message
+        IL1Gateway targetGateway = primaryChainGateway;
+        targetGateway.sendMessage{value: msg.value + _value}(_value, _callData, _adapterParams);
+        emit MessageForwarded(targetGateway, _value, _callData);
     }
 
     function claimMessage(

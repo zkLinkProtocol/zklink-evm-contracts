@@ -20,7 +20,7 @@ task('sendRawTx', 'Send raw tx to nova')
       to,
       data,
       value,
-      gasPrice
+      gasPrice,
     });
     console.log(`The tx hash: ${tx.hash}`);
     const txReceipt = await tx.wait(1);
