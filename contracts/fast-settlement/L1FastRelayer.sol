@@ -18,6 +18,7 @@ import {Subnetwork} from "./lib/symbiotic/Subnetwork.sol";
 
 import {MapWithTimeData} from "./lib/MapWithTimeData.sol";
 import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
+import {IArbitrator} from "../interfaces/IArbitrator.sol";
 
 contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -41,6 +42,9 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
     error TooOldEpoch();
     error InvalidEpoch();
 
+    /// @notice Arbitrator changed
+    event ArbitratorUpdate(IArbitrator indexed old, IArbitrator indexed new_);
+
     EnumerableMap.AddressToUintMap private operators;
     EnumerableMap.AddressToUintMap private vaults;
     mapping(address => mapping(uint48 => uint256)) public occupiedStakes;
@@ -55,6 +59,8 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
 
     uint32 public lockedEpochsCnt;
     uint256 public subnetworksCnt;
+
+    IArbitrator public arbitrator;
 
     constructor(
         address _network,
@@ -95,6 +101,16 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
 
     function setLockedEpochsCnt(uint32 _lockedEpochsCnt) external onlyOwner {
         lockedEpochsCnt = _lockedEpochsCnt;
+    }
+
+    /// @dev Set new arbitrator
+    function setFastSettlement(IArbitrator _newArbitrator) external onlyOwner {
+        require(address(_newArbitrator) != address(0), "Invalid arbitrator");
+        IArbitrator oldArbitrator = arbitrator;
+        if (oldArbitrator != _newArbitrator) {
+            arbitrator = _newArbitrator;
+            emit ArbitratorUpdate(oldArbitrator, _newArbitrator);
+        }
     }
 
     function getOperatorCurrentStake(address operator) public view returns (uint256 stake) {
