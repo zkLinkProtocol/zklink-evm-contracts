@@ -9,6 +9,7 @@ const {
   encodeChangeFeeParams,
   encodeL1ToL2Calldata,
   checkL1TxStatus,
+  checkL2TxStatus,
 } = require('../../optimism/scripts/opstack-utils');
 const { task, types } = require('hardhat/config');
 require('dotenv').config();
@@ -22,12 +23,23 @@ async function initMessenger() {
   const l1Wallet = new ethers.Wallet(walletPrivateKey, l1Provider);
   const l2Wallet = new ethers.Wallet(walletPrivateKey, l2Provider);
 
+  let contracts = undefined;
+  if (ethereumName === 'SEPOLIA') {
+    contracts = {
+      l1: {
+        OptimismPortal2: '0x49f53e41452C74589E85cA1677426Ba426459e85',
+        DisputeGameFactory: '0xd6E6dBf4F7EA0ac412fD8b65ED297e64BB7a06E1',
+      },
+    };
+  }
+
   const messenger = new base.CrossChainMessenger({
     l1ChainId: await l1Wallet.getChainId(),
     l2ChainId: await l2Wallet.getChainId(),
     l1SignerOrProvider: l1Wallet,
     l2SignerOrProvider: l2Wallet,
     bedrock: true,
+    contracts,
   });
 
   return { messenger, ethereumName, baseName };
@@ -150,4 +162,14 @@ task('checkL1TxStatus', 'Check the l1 tx status')
 
     const { messenger, ethereumName, baseName } = await initMessenger();
     await checkL1TxStatus(hre, messenger, ethereumName, baseName, l1TxHash);
+  });
+
+task('checkL2TxStatus', 'Check the l2 tx status')
+  .addParam('l2TxHash', 'The l2 tx hash', undefined, types.string)
+  .setAction(async (taskArgs, hre) => {
+    const l2TxHash = taskArgs.l2TxHash;
+    console.log(`The l2 tx hash: ${l2TxHash}`);
+
+    const { messenger, ethereumName, optimismName } = await initMessenger();
+    await checkL2TxStatus(hre, messenger, ethereumName, optimismName, l2TxHash);
   });
