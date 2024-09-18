@@ -45,6 +45,8 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
 
     /// @notice Arbitrator changed
     event ArbitratorUpdate(IArbitrator indexed old, IArbitrator indexed new_);
+    /// @notice Fast sync message sent
+    event SendFastSyncMessage(IL1Gateway secondaryChainGateway, uint256 newTotalSyncedPriorityTxs, uint256 syncHash);
 
     EnumerableMap.AddressToUintMap private operators;
     EnumerableMap.AddressToUintMap private vaults;
@@ -183,6 +185,7 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
         require(address(_secondaryChainGateway) != address(0), "Invalid secondary chain gateway");
         uint256 margin = avaliableStake(msg.sender);
         arbitrator.sendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, margin);
+        emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, uint256(_syncHash));
     }
 
     function registerVault(address vault) external onlyOwner {
