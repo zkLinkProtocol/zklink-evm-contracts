@@ -17,8 +17,9 @@ import {IVetoSlasher} from "./lib/symbiotic/interfaces/slasher/IVetoSlasher.sol"
 import {Subnetwork} from "./lib/symbiotic/Subnetwork.sol";
 
 import {MapWithTimeData} from "./lib/MapWithTimeData.sol";
+import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
 
-contract L1FastRelayer is OwnableUpgradeable {
+contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using MapWithTimeData for EnumerableMap.AddressToUintMap;
     using Subnetwork for address;
