@@ -9,6 +9,7 @@ import {DoubleEndedQueueUpgradeable} from "@openzeppelin/contracts-upgradeable/u
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {IL1Gateway} from "./interfaces/IL1Gateway.sol";
+import {IFastSettlement} from "./interfaces/IFastSettlement.sol";
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
@@ -32,12 +33,14 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     bytes32 private finalizeMessageHash;
     /// @dev A transient storage value for represent a valid message claim
     uint256 private claiming;
+    /// @notice The fast settlement contract
+    IFastSettlement public fastSettlement;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 
     /// @notice Primary chain gateway init
     event InitPrimaryChain(IL1Gateway indexed gateway);
@@ -47,16 +50,24 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     event RelayerStatusUpdate(address indexed relayer, bool isActive);
     /// @notice Validator's status changed
     event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
+    /// @notice FastSettlement changed
+    event FastSettlementUpdate(IFastSettlement indexed oldFastSettlement, IFastSettlement indexed newFastSettlement);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
     /// @notice Emit when receive message from l1 gateway
-    event MessageReceived(uint256 value, bytes callData);
+    event MessageReceived(IL1Gateway indexed gateway, uint256 value, bytes callData);
     /// @notice Emit when forward message to l1 gateway
     event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
         require(relayers[msg.sender], "Not relayer"); // relayer is not active
+        _;
+    }
+
+    /// @notice Checks if caller is fastSettlement
+    modifier onlyFastSettlement() {
+        require(msg.sender == address(fastSettlement), "Not fast settlement");
         _;
     }
 
@@ -129,6 +140,16 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         emit ValidatorStatusUpdate(_gateway, _validator, _active);
     }
 
+    /// @dev Set new fast settlement
+    function setFastSettlement(IFastSettlement _newFastSettlement) external onlyOwner {
+        require(address(_newFastSettlement) != address(0), "Invalid fastSettlement");
+        IFastSettlement oldFastSettlement = fastSettlement;
+        if (oldFastSettlement != _newFastSettlement) {
+            fastSettlement = _newFastSettlement;
+            emit FastSettlementUpdate(oldFastSettlement, _newFastSettlement);
+        }
+    }
+
     function isRelayerActive(address _relayer) external view returns (bool) {
         return relayers[_relayer];
     }
@@ -148,16 +169,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
 
     function enqueueMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
-        // store message hash for forwarding
-        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         IL1Gateway gateway = IL1Gateway(msg.sender);
-        if (gateway == primaryChainGateway) {
-            primaryChainMessageHashQueue.pushBack(_finalizeMessageHash);
-        } else {
-            require(secondaryChainGateways[gateway], "Not secondary chain gateway");
-            secondaryChainMessageHashQueues[gateway].pushBack(_finalizeMessageHash);
-        }
-        emit MessageReceived(_value, _callData);
+        _enqueueMessage(gateway, _value, _callData);
     }
 
     /// @dev This function is called within the `claimMessageCallback` of L1 gateway
@@ -270,5 +283,23 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             );
             emit MessageForwarded(targetGateway, _receiveValue, _receiveCallData);
         }
+    }
+
+    function sendFastSyncMessage(
+        IL1Gateway _secondaryChainGateway,
+        uint256 _newTotalSyncedPriorityTxs,
+        bytes32 _syncHash,
+        uint256 _margin
+    ) external onlyFastSettlement {
+        bytes memory _callData = abi.encodeCall(IZkSync.fastSyncL2Requests, (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _margin));
+        _enqueueMessage(_secondaryChainGateway, 0, _callData);
+    }
+
+    function _enqueueMessage(IL1Gateway _gateway, uint256 _value, bytes memory _callData) internal {
+        // store message hash for forwarding
+        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
+        require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
+        secondaryChainMessageHashQueues[_gateway].pushBack(_finalizeMessageHash);
+        emit MessageReceived(_gateway, _value, _callData);
     }
 }

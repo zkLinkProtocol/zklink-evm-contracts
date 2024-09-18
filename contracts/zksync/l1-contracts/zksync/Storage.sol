@@ -60,7 +60,9 @@ struct FeeParams {
 /// @dev The sync status for priority op of secondary chain
 /// @param hash The cumulative canonicalTxHash
 /// @param amount The cumulative l2 value
+/// @param credit The cumulative credit
 struct SecondaryChainSyncStatus {
     bytes32 hash;
     uint256 amount;
+    uint256 credit;
 }

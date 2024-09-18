@@ -23,6 +23,7 @@ import {UnsafeBytes} from "./zksync/l1-contracts/common/libraries/UnsafeBytes.so
 import {REQUIRED_L2_GAS_PRICE_PER_PUBDATA, MAX_NEW_FACTORY_DEPS, L1_GAS_PER_PUBDATA_BYTE, L2_L1_LOGS_TREE_DEFAULT_LEAF_HASH} from "./zksync/l1-contracts/zksync/Config.sol";
 import {L2_TO_L1_MESSENGER_SYSTEM_CONTRACT_ADDR, L2_BOOTLOADER_ADDRESS, L2_ETH_TOKEN_SYSTEM_CONTRACT_ADDR} from "./zksync/l1-contracts/common/L2ContractAddresses.sol";
 import {IGetters} from "./zksync/l1-contracts/zksync/interfaces/IGetters.sol";
+import {ICreditOracle} from "./interfaces/ICreditOracle.sol";
 
 /// @title ZkLink contract
 /// @author zk.link
@@ -42,7 +43,7 @@ contract ZkLink is
     /// @dev The forward request type hash
     bytes32 public constant FORWARD_REQUEST_TYPE_HASH =
         keccak256(
-            "ForwardL2Request(address gateway,bool isContractCall,address sender,uint256 txId,address contractAddressL2,uint256 l2Value,bytes32 l2CallDataHash,uint256 l2GasLimit,uint256 l2GasPricePerPubdata,bytes32 factoryDepsHash,address refundRecipient)"
+            "ForwardL2Request(address gateway,bool isContractCall,address sender,uint256 txId,address contractAddressL2,uint256 l2Value,bytes32 l2CallDataHash,uint256 l2GasLimit,uint256 l2GasPricePerPubdata,bytes32 factoryDepsHash,address refundRecipient,uint256 credit)"
         );
 
     /// @dev The length of withdraw message sent to secondary chain
@@ -87,12 +88,14 @@ contract ZkLink is
     /// @dev The range batch root hash of [fromBatchNumber, toBatchNumber]
     /// The key is keccak256(abi.encodePacked(fromBatchNumber, toBatchNumber))
     mapping(bytes32 range => bytes32 rangeBatchRootHash) public rangeBatchRootHashes;
+    /// @notice The oracle for obtaining the credit required for an L2 request
+    ICreditOracle public creditOracle;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 
     /// @notice Gateway init
     event InitGateway(IL2Gateway indexed gateway);
@@ -128,7 +131,9 @@ contract ZkLink is
     /// @param amount The amount of funds that were sent
     event EthWithdrawalFinalized(address indexed to, uint256 amount);
     /// @notice Forward fee allocator changed
-    event ForwardFeeAllocatorUpdate(address oldAllocator, address newAllocator);
+    event ForwardFeeAllocatorUpdate(address indexed oldAllocator, address indexed newAllocator);
+    /// @notice Credit oracle changed
+    event CreditOracleUpdate(ICreditOracle indexed oldCreditOracle, ICreditOracle indexed newCreditOracle);
 
     /// @notice Check if msg sender is gateway
     modifier onlyGateway() {
@@ -255,6 +260,16 @@ contract ZkLink is
         }
     }
 
+    /// @dev Update the credit oracle
+    function setCreditOracle(ICreditOracle _newCreditOracle) external onlyOwner {
+        require(address(_newCreditOracle) != address(0), "Invalid credit oracle");
+        ICreditOracle oldCreditOracle = creditOracle;
+        if (oldCreditOracle != _newCreditOracle) {
+            creditOracle = _newCreditOracle;
+            emit CreditOracleUpdate(oldCreditOracle, _newCreditOracle);
+        }
+    }
+
     function l2TransactionBaseCost(
         uint256 _gasPrice,
         uint256 _l2GasLimit,
@@ -313,6 +328,9 @@ contract ZkLink is
             refundRecipient = AddressAliasHelper.applyL1ToL2Alias(refundRecipient);
         }
 
+        // Get the required credit for l2 request from oracle
+        uint256 credit = creditOracle.getCredit(sender, _contractL2, _l2Value, _calldata);
+
         // Build l2 request params
         uint256 _totalPriorityTxs = totalPriorityTxs;
         ForwardL2Request memory request = ForwardL2Request(
@@ -326,7 +344,8 @@ contract ZkLink is
             _l2GasLimit,
             _l2GasPerPubdataByteLimit,
             _factoryDeps,
-            refundRecipient
+            refundRecipient,
+            credit
         );
         // Validate l2 transaction
         {
@@ -346,10 +365,12 @@ contract ZkLink is
         if (_totalPriorityTxs == 0) {
             syncStatus.hash = canonicalTxHash;
             syncStatus.amount = _l2Value;
+            syncStatus.credit = credit;
         } else {
             syncStatus = priorityOpSyncStatus[_totalPriorityTxs - 1];
             syncStatus.hash = keccak256(abi.encodePacked(syncStatus.hash, canonicalTxHash));
             syncStatus.amount = syncStatus.amount + _l2Value;
+            syncStatus.credit = syncStatus.credit + credit;
         }
         priorityOpSyncStatus[_totalPriorityTxs] = syncStatus;
         totalPriorityTxs = _totalPriorityTxs + 1;
@@ -673,7 +694,8 @@ contract ZkLink is
                     _request.l2GasLimit,
                     _request.l2GasPricePerPubdata,
                     keccak256(abi.encode(_request.factoryDeps)),
-                    _request.refundRecipient
+                    _request.refundRecipient,
+                    _request.credit
                 )
             );
     }

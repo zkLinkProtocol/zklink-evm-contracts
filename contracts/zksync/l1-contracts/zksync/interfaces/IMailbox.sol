@@ -76,6 +76,7 @@ interface IMailbox {
     /// @param l2GasPricePerPubdata The price for a single pubdata byte in L2 gas.
     /// @param refundRecipient The recipient of the refund for the transaction on L2. If the transaction fails, then
     /// this address will receive the `l2Value`.
+    /// @param credit The credit required for the transaction on L2.
     struct ForwardL2Request {
         address gateway;
         bool isContractCall;
@@ -88,6 +89,7 @@ interface IMailbox {
         uint256 l2GasPricePerPubdata;
         bytes[] factoryDeps;
         address refundRecipient;
+        uint256 credit;
     }
 
     /// @notice Prove that a specific arbitrary-length message was sent in a specific L2 batch number

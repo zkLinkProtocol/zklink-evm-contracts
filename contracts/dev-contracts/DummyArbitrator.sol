@@ -55,4 +55,13 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
     ) external payable {
         // do nothing
     }
+
+    function sendFastSyncMessage(
+        IL1Gateway _secondaryChainGateway,
+        uint256 _newTotalSyncedPriorityTxs,
+        bytes32 _syncHash,
+        uint256 _margin
+    ) external {
+        // do nothing
+    }
 }
