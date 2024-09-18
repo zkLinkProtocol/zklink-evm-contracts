@@ -19,6 +19,7 @@ import {Subnetwork} from "./lib/symbiotic/Subnetwork.sol";
 import {MapWithTimeData} from "./lib/MapWithTimeData.sol";
 import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
+import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
 contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -113,10 +114,21 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
         }
     }
 
-    function getOperatorCurrentStake(address operator) public view returns (uint256 stake) {
+    function getCurrentStake(address operator) public view returns (uint256 stake) {
         uint48 currentEpoch = getCurrentEpoch();
         uint256 totalStake = getOperatorStake(operator, currentEpoch);
         return totalStake;
+    }
+
+    /// @dev Get avaliable stake for operator
+    function avaliableStake(address operator) public view returns (uint256) {
+        uint48 currentEpoch = getCurrentEpoch();
+        uint256 totalStake = getOperatorStake(operator, currentEpoch);
+        uint256 occupiedStake = 0;
+        for (uint32 i = 0; i < lockedEpochsCnt; ++i) {
+            occupiedStake += occupiedStakes[operator][currentEpoch - i];
+        }
+        return totalStake - occupiedStake;
     }
 
     function getOperatorStake(address operator, uint48 epoch) public view returns (uint256 stake) {
@@ -161,28 +173,16 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
         operators.enable(operator);
     }
 
-    function submission(bytes memory payload, bytes32[] memory signatures) public {
-        uint48 currentEpoch = getCurrentEpoch();
-        uint256 totalStake = getOperatorStake(msg.sender, currentEpoch);
-        uint256 occupiedStake = 0;
-        for (uint32 i = 0; i < lockedEpochsCnt; ++i) {
-            occupiedStake += occupiedStakes[msg.sender][currentEpoch - i];
-        }
-        uint256 avaliableStake = totalStake - occupiedStake;
-
-        // TODO: call Arbitrator
-        // uint256 requiredStake = ....
-        // if (avaliableStake < requiredStake) {
-        //     sendPayload()
-        //     occupiedStakes[msg.sender][currentEpoch] += requiredStake;
-        // } else {
-        //     revert
-        // }
-    }
-
-    // TODO: ask Arbitrator if stake for given operator is enough
-    function isOperatorAvaliableStakeEnough(address operator) public view returns (bool) {
-        return false;
+    /// @dev Send fast sync message to secondary chain via arbitrator
+    function sendFastSyncMessage(
+        IL1Gateway _secondaryChainGateway,
+        uint256 _newTotalSyncedPriorityTxs,
+        bytes32 _syncHash
+    ) external {
+        require(address(arbitrator) != address(0), "Invalid arbitrator");
+        require(address(_secondaryChainGateway) != address(0), "Invalid secondary chain gateway");
+        uint256 margin = avaliableStake(msg.sender);
+        arbitrator.sendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, margin);
     }
 
     function registerVault(address vault) external onlyOwner {
