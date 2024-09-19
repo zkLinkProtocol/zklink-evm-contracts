@@ -64,3 +64,55 @@ task('claimL2Tx', 'Claim the l2 tx')
     await l1ClaimTx.wait();
     console.log('Done! Your transaction is executed');
   });
+
+task('l2ClaimFromBlock', 'Calculate the l2 from block number')
+  .addParam('txHash', 'The l1 tx hash', undefined, types.string, false)
+  .setAction(async taskArgs => {
+    const l1TxHash = taskArgs.txHash;
+    console.log(`The l1 tx hash: ${l1TxHash}`);
+
+    const l1Provider = new JsonRpcProvider(process.env.L1RPC);
+    const l2Provider = new JsonRpcProvider(process.env.L2RPC);
+
+    const l1TxReceipt = await l1Provider.getTransactionReceipt(l1TxHash);
+    const l1Block = await l1Provider.getBlock(l1TxReceipt.blockNumber);
+    const l1TxBlockTime = l1Block.timestamp;
+    console.log(`The l1 tx send time: ${l1TxBlockTime}`);
+    const currentL2BlockNumber = await l2Provider.getBlockNumber();
+    const currentL2Block = await l2Provider.getBlock(currentL2BlockNumber);
+    const currentL2BlockTime = currentL2Block.timestamp;
+    console.log(`The l2 current block number: ${currentL2BlockNumber}, block time: ${currentL2BlockTime}`);
+    const elapseTimeInSeconds = currentL2BlockTime - l1TxBlockTime;
+    const elapseBlocks = Math.ceil(elapseTimeInSeconds / 3);
+    const minFromL2BlockNumber = currentL2BlockNumber - elapseBlocks;
+    console.log(`The l2 min from block number: ${minFromL2BlockNumber}`);
+    const minFromL2Block = await l2Provider.getBlock(minFromL2BlockNumber);
+    const minFromL2BlockTime = minFromL2Block.timestamp;
+    let midBlockNumber = minFromL2BlockNumber;
+    let midBlockTime = minFromL2BlockTime;
+    console.log(`The mid from block number: ${midBlockNumber}, block time: ${midBlockTime}`);
+    let midBlockNumberPlusOne = midBlockNumber + 1;
+    let midBlockPlusOne = await l2Provider.getBlock(midBlockNumberPlusOne);
+    let midBlockTimePlusOne = midBlockPlusOne.timestamp;
+    console.log(`The midPlusOne from block number: ${midBlockNumberPlusOne}, block time: ${midBlockTimePlusOne}`);
+    let highBlockNumber = currentL2BlockNumber;
+    let lowBlockNumber = minFromL2BlockNumber;
+    console.log(`Search range: [${highBlockNumber} - ${lowBlockNumber}]`);
+    while (!(midBlockTime <= l1TxBlockTime && midBlockTimePlusOne > l1TxBlockTime)) {
+      midBlockNumber = Math.ceil((highBlockNumber + lowBlockNumber) / 2);
+      console.log(`The mid from block number: ${midBlockNumber}`);
+      midBlockTime = (await l2Provider.getBlock(midBlockNumber)).timestamp;
+      console.log(`The mid from block time: ${midBlockTime}`);
+      midBlockNumberPlusOne = midBlockNumber + 1;
+      midBlockPlusOne = await l2Provider.getBlock(midBlockNumberPlusOne);
+      midBlockTimePlusOne = midBlockPlusOne.timestamp;
+      console.log(`The midPlusOne from block number: ${midBlockNumberPlusOne}, block time: ${midBlockTimePlusOne}`);
+      if (midBlockTime > l1TxBlockTime) {
+        highBlockNumber = midBlockNumber;
+      } else {
+        lowBlockNumber = midBlockNumber;
+      }
+      console.log(`Search range: [${highBlockNumber} - ${lowBlockNumber}]`);
+    }
+    console.log(`The l2 from block number: ${midBlockNumber}`);
+  });
