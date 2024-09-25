@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IRegistry} from "./lib/symbiotic/interfaces/common/IRegistry.sol";
@@ -21,7 +21,7 @@ import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
 import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
-contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
+contract L1FastRelayer is Ownable, IFastSettlement {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using MapWithTimeData for EnumerableMap.AddressToUintMap;
     using Subnetwork for address;
@@ -56,7 +56,6 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
     address public immutable OPERATOR_REGISTRY;
     address public immutable VAULT_REGISTRY;
     address public immutable OPERATOR_NET_OPTIN;
-    address public immutable OWNER;
     uint48 public immutable EPOCH_DURATION;
     uint48 public immutable START_TIME;
 
@@ -70,14 +69,12 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
         address _operatorRegistry,
         address _vaultRegistry,
         address _operatorNetOptin,
-        address _owner,
         uint48 _epochDuration,
         uint32 _lockedEpochsCnt
-    ) {
+    ) Ownable() {
         START_TIME = SafeCast.toUint48(block.timestamp);
         EPOCH_DURATION = _epochDuration;
         NETWORK = _network;
-        OWNER = _owner;
         OPERATOR_REGISTRY = _operatorRegistry;
         VAULT_REGISTRY = _vaultRegistry;
         OPERATOR_NET_OPTIN = _operatorNetOptin;
@@ -107,7 +104,7 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
     }
 
     /// @dev Set new arbitrator
-    function setFastSettlement(IArbitrator _newArbitrator) external onlyOwner {
+    function setArbitrator(IArbitrator _newArbitrator) external onlyOwner {
         require(address(_newArbitrator) != address(0), "Invalid arbitrator");
         IArbitrator oldArbitrator = arbitrator;
         if (oldArbitrator != _newArbitrator) {
@@ -146,7 +143,10 @@ contract L1FastRelayer is OwnableUpgradeable, IFastSettlement {
 
             for (uint96 j = 0; j < subnetworksCnt; ++j) {
                 stake += IBaseDelegator(IVault(vault).delegator()).stakeAt(
-                    NETWORK.subnetwork(j), operator, epochStartTs, new bytes(0)
+                    NETWORK.subnetwork(j),
+                    operator,
+                    epochStartTs,
+                    new bytes(0)
                 );
             }
         }
