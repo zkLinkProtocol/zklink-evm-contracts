@@ -4,3 +4,4 @@ artifacts-zk/
 cache/
 cache-zk/
 contracts/zksync/
+contracts/fast-settlement/lib/

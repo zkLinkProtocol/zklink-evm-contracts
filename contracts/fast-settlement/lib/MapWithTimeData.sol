@@ -42,22 +42,20 @@ library MapWithTimeData {
         self.set(addr, value);
     }
 
-    function atWithTimes(EnumerableMap.AddressToUintMap storage self, uint256 idx)
-        internal
-        view
-        returns (address key, uint48 enabledTime, uint48 disabledTime)
-    {
+    function atWithTimes(
+        EnumerableMap.AddressToUintMap storage self,
+        uint256 idx
+    ) internal view returns (address key, uint48 enabledTime, uint48 disabledTime) {
         uint256 value;
         (key, value) = self.at(idx);
         enabledTime = uint48(value);
         disabledTime = uint48(value >> 48);
     }
 
-    function getTimes(EnumerableMap.AddressToUintMap storage self, address addr)
-        internal
-        view
-        returns (uint48 enabledTime, uint48 disabledTime)
-    {
+    function getTimes(
+        EnumerableMap.AddressToUintMap storage self,
+        address addr
+    ) internal view returns (uint48 enabledTime, uint48 disabledTime) {
         uint256 value = self.get(addr);
         enabledTime = uint48(value);
         disabledTime = uint48(value >> 48);

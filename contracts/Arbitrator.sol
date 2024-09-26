@@ -94,6 +94,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         }
     }
 
+    /// @notice Return the length of message queue
+    function messageQueueLength(IL1Gateway _gateway) external view returns (uint256 length) {
+        if (_gateway == primaryChainGateway) {
+            length = primaryChainMessageHashQueue.length();
+        } else {
+            length = secondaryChainMessageHashQueues[_gateway].length();
+        }
+    }
+
     /// @dev Set primary chain
     function setPrimaryChainGateway(IL1Gateway _gateway) external onlyOwner {
         require(address(primaryChainGateway) == address(0), "Duplicate init gateway");
@@ -133,7 +142,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bool _active,
         bytes calldata _adapterParams
     ) external payable onlyOwner {
-        require(_gateway == primaryChainGateway || secondaryChainGateways[_gateway], "Invalid gateway");
+        require(secondaryChainGateways[_gateway], "Invalid gateway");
         bytes memory callData = abi.encodeCall(IAdmin.setValidator, (_validator, _active));
         // Forward fee to send message
         _gateway.sendMessage{value: msg.value}(0, callData, _adapterParams);
@@ -160,7 +169,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         FeeParams calldata _newFeeParams,
         bytes calldata _adapterParams
     ) external payable onlyOwner {
-        require(_gateway == primaryChainGateway || secondaryChainGateways[_gateway], "Invalid gateway");
+        require(secondaryChainGateways[_gateway], "Invalid gateway");
         bytes memory callData = abi.encodeCall(IAdmin.changeFeeParams, (_newFeeParams));
         // Forward fee to send message
         _gateway.sendMessage{value: msg.value}(0, callData, _adapterParams);
@@ -197,8 +206,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes calldata _callData,
         bytes calldata _adapterParams
     ) external payable nonReentrant onlyRelayer {
-        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
+        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         require(
             _finalizeMessageHash == secondaryChainMessageHashQueues[_gateway].popFront(),
             "Invalid finalize message hash"
@@ -291,14 +300,17 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes32 _syncHash,
         uint256 _margin
     ) external onlyFastSettlement {
-        bytes memory _callData = abi.encodeCall(IZkSync.fastSyncL2Requests, (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _margin));
+        bytes memory _callData = abi.encodeCall(
+            IZkSync.fastSyncL2Requests,
+            (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _margin)
+        );
         _enqueueMessage(_secondaryChainGateway, 0, _callData);
     }
 
     function _enqueueMessage(IL1Gateway _gateway, uint256 _value, bytes memory _callData) internal {
         // store message hash for forwarding
-        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
+        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         secondaryChainMessageHashQueues[_gateway].pushBack(_finalizeMessageHash);
         emit MessageReceived(_gateway, _value, _callData);
     }

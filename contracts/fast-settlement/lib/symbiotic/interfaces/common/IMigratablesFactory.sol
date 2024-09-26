@@ -36,17 +36,13 @@ interface IMigratablesFactory is IRegistry {
      * @return address of the implementation
      * @dev Reverts when an invalid version.
      */
-    function implementation(
-        uint64 version
-    ) external view returns (address);
+    function implementation(uint64 version) external view returns (address);
 
     /**
      * @notice Whitelist a new implementation for entities.
      * @param implementation address of the new implementation
      */
-    function whitelist(
-        address implementation
-    ) external;
+    function whitelist(address implementation) external;
 
     /**
      * @notice Create a new entity at the factory.
@@ -56,12 +52,7 @@ interface IMigratablesFactory is IRegistry {
      * @param data initial data for the entity creation
      * @return address of the entity
      */
-    function create(
-        uint64 version,
-        address owner,
-        bool withInitialize,
-        bytes calldata data
-    ) external returns (address);
+    function create(uint64 version, address owner, bool withInitialize, bytes calldata data) external returns (address);
 
     /**
      * @notice Migrate a given entity to a given newer version.

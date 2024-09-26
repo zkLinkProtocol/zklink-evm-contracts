@@ -7,5 +7,10 @@ interface ICreditOracle {
     /// @param _l2To The to of l2
     /// @param _l2Value The msg value of l2
     /// @param _l2CallData The msg calldata of l2
-    function getCredit(address _l2Sender, address _l2To, uint256 _l2Value, bytes memory _l2CallData) external view returns (uint256);
+    function getCredit(
+        address _l2Sender,
+        address _l2To,
+        uint256 _l2Value,
+        bytes memory _l2CallData
+    ) external view returns (uint256);
 }
