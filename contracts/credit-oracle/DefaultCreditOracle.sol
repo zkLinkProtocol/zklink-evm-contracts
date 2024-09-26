@@ -7,11 +7,7 @@ import {IL2Bridge} from "../zksync/l1-contracts/bridge/interfaces/IL2Bridge.sol"
 import {AddressAliasHelper} from "../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
 
 contract DefaultCreditOracle is ICreditOracle, Ownable {
-    address immutable l1ERC20Bridge;
-    // The decimal of base token (USD)
-    uint8 constant BASE_TOKEN_DECIMALs = 6;
-    // The decimal of ETH
-    uint8 constant ETH_DECIMALs = 18;
+    address public immutable L1_ERC20_BRIDGE;
     uint8 constant EXPANDED_PRECISION_DECIMALS = 18;
     // mapping from token address to token price in their decimal multipled by 10^18
     mapping(address => uint256) public tokenPrices;
@@ -19,17 +15,7 @@ contract DefaultCreditOracle is ICreditOracle, Ownable {
     uint256 public ethPrice;
 
     constructor(address _l1ERC20Bridge) Ownable() {
-        l1ERC20Bridge = _l1ERC20Bridge;
-    }
-
-    /// @return The price of ETH in wei multiplied by 10^18.
-    function getEthPrice() public view returns (uint256) {
-        return ethPrice;
-    }
-
-    /// @return The price of ERC20 token its decimals multiplied by 10^18.
-    function getTokenPrice(address _token) public view returns (uint256) {
-        return tokenPrices[_token];
+        L1_ERC20_BRIDGE = _l1ERC20Bridge;
     }
 
     /// @param price The USD price of ETH in wei multiple by 10^18.
@@ -55,15 +41,14 @@ contract DefaultCreditOracle is ICreditOracle, Ownable {
         uint256 _l2Value,
         bytes calldata _l2CallData
     ) public view returns (uint256) {
-        require(ethPrice > 0, "ETH price not set");
-        // ETH Credit = ethPrice * 10^6 * value / 10^18 * 10^18
-        uint256 credit = _l2Value * getEthPrice();
-        if (_l2Sender == AddressAliasHelper.applyL1ToL2Alias(l1ERC20Bridge)) {
+        // ETH Credit = value * ethUnitPrice * 10^6 / 10^18 * 10^18
+        uint256 credit = _l2Value * ethPrice;
+        if (_l2Sender == AddressAliasHelper.applyL1ToL2Alias(L1_ERC20_BRIDGE)) {
             uint256 tokenCredit = getTokenCredit(_l2CallData);
             credit += tokenCredit;
         }
         // Convert to price in base token
-        credit /= 10 ** BASE_TOKEN_DECIMALs;
+        credit /= 10 ** EXPANDED_PRECISION_DECIMALS;
         return credit;
     }
 
@@ -75,10 +60,8 @@ contract DefaultCreditOracle is ICreditOracle, Ownable {
                 _l2CallData[4:],
                 (address, address, address, uint256, bytes)
             );
-            // Token Credit = tokenPrice * 10^6 * amount / 10^tokenDecimal * 10^18
-            uint256 tokenPrice = getTokenPrice(l1Token);
-            require(tokenPrice > 0, "Token price not set");
-            credit = amount * tokenPrice;
+            // Token Credit = amount * tokenUnitPrice * 10^6 / 10^tokenDecimal * 10^18
+            credit = amount * tokenPrices[l1Token];
         }
         return credit;
     }
