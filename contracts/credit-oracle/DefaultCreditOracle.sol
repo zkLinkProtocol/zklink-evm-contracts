@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ICreditOracle} from "./interfaces/ICreditOracle.sol";
-import {IL2Bridge} from "./zksync/l1-contracts/bridge/interfaces/IL2Bridge.sol";
-import {AddressAliasHelper} from "./zksync/l1-contracts/vendor/AddressAliasHelper.sol";
+import {ICreditOracle} from "../interfaces/ICreditOracle.sol";
+import {IL2Bridge} from "../zksync/l1-contracts/bridge/interfaces/IL2Bridge.sol";
+import {AddressAliasHelper} from "../zksync/l1-contracts/vendor/AddressAliasHelper.sol";
 
-contract CreditOracle is ICreditOracle, Ownable {
+contract DefaultCreditOracle is ICreditOracle, Ownable {
     address immutable l1ERC20Bridge;
     // The decimal of base token (USD)
     uint8 constant BASE_TOKEN_DECIMALs = 6;
