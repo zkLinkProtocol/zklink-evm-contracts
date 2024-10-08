@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity ^0.8.0;
 
-import {EnumerableMap} from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IRegistry} from "./lib/symbiotic/interfaces/common/IRegistry.sol";
 import {IEntity} from "./lib/symbiotic/interfaces/common/IEntity.sol";
@@ -13,10 +11,8 @@ import {IBaseSlasher} from "./lib/symbiotic/interfaces/slasher/IBaseSlasher.sol"
 import {IOptInService} from "./lib/symbiotic/interfaces/service/IOptInService.sol";
 import {IEntity} from "./lib/symbiotic/interfaces/common/IEntity.sol";
 import {ISlasher} from "./lib/symbiotic/interfaces/slasher/ISlasher.sol";
-import {IVetoSlasher} from "./lib/symbiotic/interfaces/slasher/IVetoSlasher.sol";
 import {Subnetwork} from "./lib/symbiotic/Subnetwork.sol";
 
-import {MapWithTimeData} from "./lib/MapWithTimeData.sol";
 import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
 import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
@@ -29,17 +25,8 @@ contract L1FastRelayer is Ownable, IFastSettlement {
 
     error OperatorNotOptedIn();
     error OperatorNotRegistred();
-    error OperarorGracePeriodNotPassed();
     error OperatorAlreadyRegistred();
-
     error VaultAlreadyRegistred();
-    error VaultEpochTooShort();
-    error VaultGracePeriodNotPassed();
-
-    error InvalidSubnetworksCnt();
-
-    error TooOldEpoch();
-    error InvalidEpoch();
 
     /// @notice Arbitrator changed
     event ArbitratorUpdate(IArbitrator indexed old, IArbitrator indexed new_);
@@ -48,7 +35,6 @@ contract L1FastRelayer is Ownable, IFastSettlement {
 
     mapping(address => bool) public operators;
     address public vault;
-    mapping(address => mapping(uint48 => uint256)) public occupiedStakes;
 
     address public immutable NETWORK;
     address public immutable OPERATOR_REGISTRY;
