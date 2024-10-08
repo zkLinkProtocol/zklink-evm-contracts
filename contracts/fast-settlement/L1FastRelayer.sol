@@ -22,8 +22,6 @@ import {IArbitrator} from "../interfaces/IArbitrator.sol";
 import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
 contract L1FastRelayer is Ownable, IFastSettlement {
-    using EnumerableMap for EnumerableMap.AddressToUintMap;
-    using MapWithTimeData for EnumerableMap.AddressToUintMap;
     using Subnetwork for address;
 
     error NotOperator();
@@ -48,18 +46,15 @@ contract L1FastRelayer is Ownable, IFastSettlement {
     /// @notice Fast sync message sent
     event SendFastSyncMessage(IL1Gateway secondaryChainGateway, uint256 newTotalSyncedPriorityTxs, uint256 syncHash);
 
-    EnumerableMap.AddressToUintMap private operators;
-    EnumerableMap.AddressToUintMap private vaults;
+    mapping(address => bool) public operators;
+    address public vault;
     mapping(address => mapping(uint48 => uint256)) public occupiedStakes;
 
     address public immutable NETWORK;
     address public immutable OPERATOR_REGISTRY;
     address public immutable VAULT_REGISTRY;
     address public immutable OPERATOR_NET_OPTIN;
-    uint48 public immutable EPOCH_DURATION;
-    uint48 public immutable START_TIME;
 
-    uint32 public lockedEpochsCnt;
     uint256 public subnetworksCnt;
 
     IArbitrator public arbitrator;
@@ -68,39 +63,17 @@ contract L1FastRelayer is Ownable, IFastSettlement {
         address _network,
         address _operatorRegistry,
         address _vaultRegistry,
-        address _operatorNetOptin,
-        uint48 _epochDuration,
-        uint32 _lockedEpochsCnt
+        address _operatorNetOptin
     ) Ownable() {
-        START_TIME = SafeCast.toUint48(block.timestamp);
-        EPOCH_DURATION = _epochDuration;
         NETWORK = _network;
         OPERATOR_REGISTRY = _operatorRegistry;
         VAULT_REGISTRY = _vaultRegistry;
         OPERATOR_NET_OPTIN = _operatorNetOptin;
-
-        lockedEpochsCnt = _lockedEpochsCnt;
         subnetworksCnt = 1;
-    }
-
-    function getEpochStartTs(uint48 epoch) public view returns (uint48 timestamp) {
-        return START_TIME + epoch * EPOCH_DURATION;
-    }
-
-    function getEpochAtTs(uint48 timestamp) public view returns (uint48 epoch) {
-        return (timestamp - START_TIME) / EPOCH_DURATION;
-    }
-
-    function getCurrentEpoch() public view returns (uint48 epoch) {
-        return getEpochAtTs(SafeCast.toUint48(block.timestamp));
     }
 
     function setSubnetworksCnt(uint256 _subnetworksCnt) external onlyOwner {
         subnetworksCnt = _subnetworksCnt;
-    }
-
-    function setLockedEpochsCnt(uint32 _lockedEpochsCnt) external onlyOwner {
-        lockedEpochsCnt = _lockedEpochsCnt;
     }
 
     /// @dev Set new arbitrator
@@ -113,53 +86,23 @@ contract L1FastRelayer is Ownable, IFastSettlement {
         }
     }
 
-    function getCurrentStake(address operator) public view returns (uint256 stake) {
-        uint48 currentEpoch = getCurrentEpoch();
-        uint256 totalStake = getOperatorStake(operator, currentEpoch);
-        return totalStake;
-    }
-
     /// @dev Get avaliable stake for operator
-    function avaliableStake(address operator) public view returns (uint256) {
-        uint48 currentEpoch = getCurrentEpoch();
-        uint256 totalStake = getOperatorStake(operator, currentEpoch);
-        uint256 occupiedStake = 0;
-        for (uint32 i = 0; i < lockedEpochsCnt; ++i) {
-            occupiedStake += occupiedStakes[operator][currentEpoch - i];
+    function getOperatorStake(address operator) public view returns (uint256 stake) {
+        for (uint96 j = 0; j < subnetworksCnt; ++j) {
+            stake += IBaseDelegator(IVault(vault).delegator()).stake(NETWORK.subnetwork(j), operator);
         }
-        return totalStake - occupiedStake;
-    }
-
-    function getOperatorStake(address operator, uint48 epoch) public view returns (uint256 stake) {
-        uint48 epochStartTs = getEpochStartTs(epoch);
-
-        for (uint256 i; i < vaults.length(); ++i) {
-            (address vault, uint48 enabledTime, uint48 disabledTime) = vaults.atWithTimes(i);
-
-            // just skip the vault if it was enabled after the target epoch or not enabled
-            if (!_wasActiveAt(enabledTime, disabledTime, epochStartTs)) {
-                continue;
-            }
-
-            for (uint96 j = 0; j < subnetworksCnt; ++j) {
-                stake += IBaseDelegator(IVault(vault).delegator()).stakeAt(
-                    NETWORK.subnetwork(j),
-                    operator,
-                    epochStartTs,
-                    new bytes(0)
-                );
-            }
-        }
-
         return stake;
     }
 
-    function _wasActiveAt(uint48 enabledTime, uint48 disabledTime, uint48 timestamp) private pure returns (bool) {
-        return enabledTime != 0 && enabledTime <= timestamp && (disabledTime == 0 || disabledTime >= timestamp);
+    function setVault(address _vault) external onlyOwner {
+        if (!IRegistry(VAULT_REGISTRY).isEntity(_vault)) {
+            revert NotVault();
+        }
+        vault = _vault;
     }
 
     function registerOperator(address operator) external onlyOwner {
-        if (operators.contains(operator)) {
+        if (operators[operator]) {
             revert OperatorAlreadyRegistred();
         }
 
@@ -171,8 +114,14 @@ contract L1FastRelayer is Ownable, IFastSettlement {
             revert OperatorNotOptedIn();
         }
 
-        operators.add(operator);
-        operators.enable(operator);
+        operators[operator] = true;
+    }
+
+    function unregisterOperator(address operator) external onlyOwner {
+        if (!operators[operator]) {
+            revert OperatorNotRegistred();
+        }
+        operators[operator] = false;
     }
 
     /// @dev Send fast sync message to secondary chain via arbitrator
@@ -183,29 +132,8 @@ contract L1FastRelayer is Ownable, IFastSettlement {
     ) external {
         require(address(arbitrator) != address(0), "Invalid arbitrator");
         require(address(_secondaryChainGateway) != address(0), "Invalid secondary chain gateway");
-        uint256 margin = avaliableStake(msg.sender);
+        uint256 margin = getOperatorStake(msg.sender);
         arbitrator.sendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, margin);
         emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, uint256(_syncHash));
-    }
-
-    function registerVault(address vault) external onlyOwner {
-        if (vaults.contains(vault)) {
-            revert VaultAlreadyRegistred();
-        }
-
-        if (!IRegistry(VAULT_REGISTRY).isEntity(vault)) {
-            revert NotVault();
-        }
-
-        vaults.add(vault);
-        vaults.enable(vault);
-    }
-
-    function pauseVault(address vault) external onlyOwner {
-        vaults.disable(vault);
-    }
-
-    function unpauseVault(address vault) external onlyOwner {
-        vaults.enable(vault);
     }
 }
