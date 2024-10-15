@@ -298,11 +298,11 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         IL1Gateway _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
         bytes32 _syncHash,
-        uint256 _margin
+        uint256 _collateral
     ) external onlyFastSettlement {
         bytes memory _callData = abi.encodeCall(
             IZkSync.fastSyncL2Requests,
-            (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _margin)
+            (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _collateral)
         );
         _enqueueMessage(_secondaryChainGateway, 0, _callData);
     }

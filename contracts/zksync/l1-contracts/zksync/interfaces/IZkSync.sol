@@ -24,11 +24,11 @@ interface IZkSync {
     /// @param _secondaryChainGateway The secondary chain gateway address
     /// @param _newTotalSyncedPriorityTxs New sync point
     /// @param _syncHash New sync hash
-    /// @param _margin The margin that fast settlement provide
+    /// @param _collateral The collateral that fast settlement provide
     function fastSyncL2Requests(
         address _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
         bytes32 _syncHash,
-        uint256 _margin
+        uint256 _collateral
     ) external;
 }
