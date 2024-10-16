@@ -60,8 +60,9 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
         IL1Gateway _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
         bytes32 _syncHash,
-        uint256 _collateral
-    ) external {
+        uint256 _collateral,
+        bytes calldata _forwardParams
+    ) external payable {
         // do nothing
     }
 }

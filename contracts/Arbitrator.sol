@@ -58,6 +58,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     event MessageReceived(IL1Gateway indexed gateway, uint256 value, bytes callData);
     /// @notice Emit when forward message to l1 gateway
     event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
+    /// @notice Emit when send fast settlement message to primary chain
+    event FastSyncMessageForwarded(IL1Gateway indexed secondaryChainGateway, uint256 newTotalSyncedPriorityTxs, bytes32 syncHash, uint256 collateral);
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
@@ -178,8 +180,12 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
 
     function enqueueMessage(uint256 _value, bytes calldata _callData) external payable {
         require(msg.value == _value, "Invalid msg value");
-        IL1Gateway gateway = IL1Gateway(msg.sender);
-        _enqueueMessage(gateway, _value, _callData);
+        IL1Gateway _gateway = IL1Gateway(msg.sender);
+        // store message hash for forwarding
+        require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
+        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
+        secondaryChainMessageHashQueues[_gateway].pushBack(_finalizeMessageHash);
+        emit MessageReceived(_gateway, _value, _callData);
     }
 
     /// @dev This function is called within the `claimMessageCallback` of L1 gateway
@@ -298,20 +304,20 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         IL1Gateway _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
         bytes32 _syncHash,
-        uint256 _collateral
-    ) external onlyFastSettlement {
+        uint256 _collateral,
+        bytes calldata _forwardParams
+    ) external payable nonReentrant onlyFastSettlement {
+        uint256 _value = 0;
         bytes memory _callData = abi.encodeCall(
             IZkSync.fastSyncL2Requests,
             (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _collateral)
         );
-        _enqueueMessage(_secondaryChainGateway, 0, _callData);
-    }
-
-    function _enqueueMessage(IL1Gateway _gateway, uint256 _value, bytes memory _callData) internal {
-        // store message hash for forwarding
-        require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
-        bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
-        secondaryChainMessageHashQueues[_gateway].pushBack(_finalizeMessageHash);
-        emit MessageReceived(_gateway, _value, _callData);
+        // Forward fee to send message
+        primaryChainGateway.sendMessage{value: msg.value}(
+            _value,
+            _callData,
+            _forwardParams
+        );
+        emit FastSyncMessageForwarded(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, _collateral);
     }
 }

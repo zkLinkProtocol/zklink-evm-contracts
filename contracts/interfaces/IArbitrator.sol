@@ -56,10 +56,12 @@ interface IArbitrator {
     /// @param _newTotalSyncedPriorityTxs New sync point
     /// @param _syncHash New sync hash
     /// @param _collateral The collateral that fast settlement provide
+    /// @param _forwardParams Some params need to call canonical message service of primary chain
     function sendFastSyncMessage(
         IL1Gateway _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
         bytes32 _syncHash,
-        uint256 _collateral
-    ) external;
+        uint256 _collateral,
+        bytes calldata _forwardParams
+    ) external payable;
 }
