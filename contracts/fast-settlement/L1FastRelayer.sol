@@ -115,11 +115,13 @@ contract L1FastRelayer is Ownable, IFastSettlement {
         IL1Gateway _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
         bytes32 _syncHash,
+        uint256 _expectCollateral,
         bytes calldata _forwardParams
     ) external {
         require(address(arbitrator) != address(0), "Invalid arbitrator");
         require(address(_secondaryChainGateway) != address(0), "Invalid secondary chain gateway");
         uint256 collateral = getOperatorStake(msg.sender);
+        require(collateral >= _expectCollateral, "Collateral not enough");
         arbitrator.sendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, collateral, _forwardParams);
         emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, uint256(_syncHash));
     }

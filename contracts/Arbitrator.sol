@@ -307,6 +307,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         uint256 _collateral,
         bytes calldata _forwardParams
     ) external payable nonReentrant onlyFastSettlement {
+        require(secondaryChainGateways[_secondaryChainGateway], "Not secondary chain gateway");
         uint256 _value = 0;
         bytes memory _callData = abi.encodeCall(
             IZkSync.fastSyncL2Requests,
