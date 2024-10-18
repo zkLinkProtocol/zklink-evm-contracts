@@ -13,13 +13,6 @@ contract CreditOracle is ICreditOracle, OwnableUpgradeable, UUPSUpgradeable {
     address public immutable L1_ERC20_BRIDGE_ALIAS;
     // @notice The token price oracle
     ITokenPriceOracle public immutable TOKEN_PRICE_ORACLE;
-    // @notice The risk multiplier is used to calculate credit for all tokens if it's not set in tokenRiskMultiplier
-    uint256 public riskMultiplier;
-    // @notice The token risk multiplier will override the riskMultiplier if it's set
-    mapping(address => uint256) public tokenRiskMultiplier;
-
-    event RiskMultiplierUpdate(uint256 riskMultiplier);
-    event TokenRiskMultiplierUpdate(address indexed token, uint256 riskMultiplier);
 
     constructor(address _l1ERC20BridgeAlias, ITokenPriceOracle _tokenPriceOracle) {
         L1_ERC20_BRIDGE_ALIAS = _l1ERC20BridgeAlias;
@@ -45,8 +38,7 @@ contract CreditOracle is ICreditOracle, OwnableUpgradeable, UUPSUpgradeable {
         uint256 credit = 0;
         if (_l2Value > 0) {
             uint256 ethPrice = TOKEN_PRICE_ORACLE.getTokenPrice(ETH_TOKEN_ADDRESS);
-            uint256 _riskMultiplier = getTokenRiskMultiplier(ETH_TOKEN_ADDRESS);
-            credit = _l2Value * ethPrice * _riskMultiplier;
+            credit = _l2Value * ethPrice;
         }
         if (_l2Sender == L1_ERC20_BRIDGE_ALIAS) {
             uint256 tokenCredit = getTokenCredit(_l2CallData);
@@ -64,28 +56,8 @@ contract CreditOracle is ICreditOracle, OwnableUpgradeable, UUPSUpgradeable {
                 (address, address, address, uint256, bytes)
             );
             uint256 tokenPrice = TOKEN_PRICE_ORACLE.getTokenPrice(l1Token);
-            uint256 _riskMultiplier = getTokenRiskMultiplier(l1Token);
-            credit = amount * tokenPrice * _riskMultiplier;
+            credit = amount * tokenPrice;
         }
         return credit;
-    }
-
-    // @notice Return the risk multiplier for token
-    // @dev The risk multiplier will not be less than 1
-    function getTokenRiskMultiplier(address _token) public view returns (uint256) {
-        uint256 risk = tokenRiskMultiplier[_token];
-        return risk > 0 ? risk : riskMultiplier > 0 ? riskMultiplier : 1;
-    }
-
-    function setRiskMultiplier(uint256 _riskMultiplier) external onlyOwner {
-        require(_riskMultiplier > 0, "Invalid risk multiplier");
-        riskMultiplier = _riskMultiplier;
-        emit RiskMultiplierUpdate(_riskMultiplier);
-    }
-
-    function setTokenRiskMultiplier(address _token, uint256 _riskMultiplier) external onlyOwner {
-        require(_riskMultiplier > 0, "Invalid risk multiplier");
-        tokenRiskMultiplier[_token] = _riskMultiplier;
-        emit TokenRiskMultiplierUpdate(_token, _riskMultiplier);
     }
 }

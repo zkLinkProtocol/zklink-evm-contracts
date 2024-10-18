@@ -17,7 +17,7 @@ import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
 import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
-contract L1FastRelayer is Ownable, IFastSettlement {
+contract FastSettlementMiddleware is Ownable, IFastSettlement {
     using Subnetwork for address;
 
     error NotOperator();
