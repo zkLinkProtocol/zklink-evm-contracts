@@ -51,6 +51,7 @@ contract TokenPriceOracle is ITokenPriceOracle, AccessControlUpgradeable, UUPSUp
     }
 
     function setValidTimePeriod(uint256 _validTimePeriod) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_validTimePeriod > 0, "Invalid validTimePeriod");
         validTimePeriod = _validTimePeriod;
         emit ValidTimePeriodUpdate(_validTimePeriod);
     }

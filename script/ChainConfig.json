@@ -1,5 +1,6 @@
 {
   "ETHEREUM": {
+    "pyth": "0x4305FB66699C3B2702D4d05CF36551390A4c69C6"
   },
   "ZKSYNC": {
     "l2Gateway": {
@@ -12,7 +13,8 @@
       "contractName": "ZkSyncL1Gateway",
       "constructParams": ["0x32400084c286cf3e17e7b677ea9583e60a000324"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xf087c864AEccFb6A2Bf1Af6A0382B0d0f6c5D834"
   },
   "SCROLL": {
     "l2Gateway": {
@@ -25,7 +27,8 @@
       "contractName": "ScrollL1Gateway",
       "constructParams": ["0x6774Bcbd5ceCeF1336b5300fb5186a12DDD8b367"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "LINEA": {
     "l2Gateway": {
@@ -38,7 +41,8 @@
       "contractName": "LineaL1Gateway",
       "constructParams": ["0xd19d4B5d358258f05D7B411E21A1460D11B0876F"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "ZKPOLYGON": {
     "l2Gateway": {
@@ -51,7 +55,8 @@
       "contractName": "ZkPolygonL1Gateway",
       "constructParams": ["0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xC5E56d6b40F3e3B5fbfa266bCd35C37426537c65"
   },
   "ARBITRUM": {
     "l2Gateway": {
@@ -64,7 +69,8 @@
       "contractName": "ArbitrumL1Gateway",
       "constructParams": ["0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C"
   },
   "OPTIMISM": {
     "l2Gateway": {
@@ -77,7 +83,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C"
   },
   "MANTA": {
     "l2Gateway": {
@@ -90,7 +97,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x635ba609680c55C3bDd0B3627b4c5dB21b13c310"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "MANTLE": {
     "l2Gateway": {
@@ -103,7 +111,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x676A795fe6E43C17c668de16730c3F690FEB7120"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "BLAST": {
     "l2Gateway": {
@@ -116,7 +125,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x5D4472f31Bd9385709ec61305AFc749F0fA8e9d0"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "BASE": {
     "l2Gateway": {
@@ -129,7 +139,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x866E82a600A1414e583f7F13623F1aC5d58b0Afa"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a"
   },
   "METIS": {
     "l2Gateway": {
@@ -145,6 +156,7 @@
     }
   },
   "SEPOLIA": {
+    "pyth": "0xDd24F84d36BF92C65F92307595335bdFab5Bbd21"
   },
   "ZKSYNCTEST": {
     "l2Gateway": {
@@ -157,7 +169,8 @@
       "contractName": "ZkSyncL1Gateway",
       "constructParams": ["0x9A6DE0f62Aa270A8bCB1e2610078650D539B1Ef9"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0x056f829183Ec806A78c26C98961678c24faB71af"
   },
   "SCROLLTEST": {
     "l2Gateway": {
@@ -170,7 +183,8 @@
       "contractName": "ScrollL1Gateway",
       "constructParams": ["0x50c7d3e7f7c656493D1D76aaa1a836CedfCBB16A"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0x41c9e39574F40Ad34c79f1C99B66A45eFB830d4c"
   },
   "LINEATEST": {
     "l2Gateway": {
@@ -183,7 +197,8 @@
       "contractName": "LineaL1Gateway",
       "constructParams": ["0xB218f8A4Bc926cF1cA7b3423c154a0D627Bdb7E5"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "ZKPOLYGONTEST": {
     "l2Gateway": {
@@ -196,7 +211,8 @@
       "contractName": "ZkPolygonL1Gateway",
       "constructParams": ["0xF6BEEeBB578e214CA9E23B0e9683454Ff88Ed2A7"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xFf255f800044225f54Af4510332Aa3D67CC77635"
   },
   "ARBITRUMTEST": {
     "l2Gateway": {
@@ -209,7 +225,8 @@
       "contractName": "ArbitrumL1Gateway",
       "constructParams": ["0xaAe29B0366299461418F5324a79Afc425BE5ae21"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0x4374e5a8b9C22271E9EB878A2AA31DE97DF15DAF"
   },
   "OPTIMISMTEST": {
     "l2Gateway": {
@@ -222,7 +239,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x58Cc85b8D04EA49cC6DBd3CbFFd00B4B8D6cb3ef"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0x0708325268dF9F66270F1401206434524814508b"
   },
   "MANTATEST": {
     "l2Gateway": {
@@ -235,7 +253,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0xFe7cF31c4579bb1C578716e04E1Ae16Ac5549fF0"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "MANTLETEST": {
     "l2Gateway": {
@@ -248,7 +267,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x7Bfe603647d5380ED3909F6f87580D0Af1B228B4"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0x98046Bd286715D3B0BC227Dd7a956b83D8978603"
   },
   "BLASTTEST": {
     "l2Gateway": {
@@ -261,7 +281,8 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0x9338F298F29D3918D5D1Feb209aeB9915CC96333"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   },
   "BASETEST": {
     "l2Gateway": {
@@ -274,6 +295,7 @@
       "contractName": "OptimismL1Gateway",
       "constructParams": ["0xC34855F4De64F1840e5686e64278da901e261f20"],
       "initializeParams": []
-    }
+    },
+    "pyth": "0xA2aa501b19aff244D90cc15a4Cf739D2725B5729"
   }
 }
