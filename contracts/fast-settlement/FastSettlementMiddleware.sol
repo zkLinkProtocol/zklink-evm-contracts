@@ -13,11 +13,11 @@ import {IEntity} from "./lib/symbiotic/interfaces/common/IEntity.sol";
 import {ISlasher} from "./lib/symbiotic/interfaces/slasher/ISlasher.sol";
 import {Subnetwork} from "./lib/symbiotic/Subnetwork.sol";
 
-import {IFastSettlement} from "../interfaces/IFastSettlement.sol";
+import {IFastSettlementMiddleware} from "../interfaces/IFastSettlementMiddleware.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
 import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
-contract FastSettlementMiddleware is Ownable, IFastSettlement {
+contract FastSettlementMiddleware is Ownable, IFastSettlementMiddleware {
     using Subnetwork for address;
 
     error NotOperator();

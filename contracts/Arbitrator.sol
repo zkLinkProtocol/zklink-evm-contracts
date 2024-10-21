@@ -59,7 +59,12 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @notice Emit when forward message to l1 gateway
     event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
     /// @notice Emit when send fast settlement message to primary chain
-    event FastSyncMessageForwarded(IL1Gateway indexed secondaryChainGateway, uint256 newTotalSyncedPriorityTxs, bytes32 syncHash, uint256 collateral);
+    event FastSyncMessageForwarded(
+        IL1Gateway indexed secondaryChainGateway,
+        uint256 newTotalSyncedPriorityTxs,
+        bytes32 syncHash,
+        uint256 collateral
+    );
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
@@ -314,11 +319,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _collateral)
         );
         // Forward fee to send message
-        primaryChainGateway.sendMessage{value: msg.value}(
-            _value,
-            _callData,
-            _forwardParams
-        );
+        primaryChainGateway.sendMessage{value: msg.value}(_value, _callData, _forwardParams);
         emit FastSyncMessageForwarded(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, _collateral);
     }
 }
