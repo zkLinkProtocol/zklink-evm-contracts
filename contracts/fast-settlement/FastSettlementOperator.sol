@@ -6,7 +6,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {IOperatorRegistry} from "./lib/symbiotic/interfaces/IOperatorRegistry.sol";
 import {IOptInService} from "./lib/symbiotic/interfaces/service/IOptInService.sol";
 import {IRegistry} from "./lib/symbiotic/interfaces/common/IRegistry.sol";
@@ -17,8 +16,7 @@ contract FastSettlementOperator is
     Initializable,
     UUPSUpgradeable,
     AccessControlEnumerableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    PausableUpgradeable
+    ReentrancyGuardUpgradeable
 {
     bytes32 public constant SEND_FAST_SYNC_MESSAGE_ROLE = keccak256("SEND_FAST_SYNC_MESSAGE_ROLE");
     address public immutable OPERATOR_REGISTRY;
