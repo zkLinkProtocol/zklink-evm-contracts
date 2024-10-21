@@ -52,6 +52,7 @@ contract FastSettlementNetwork is
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     modifier checkVault(address vault) {
+        require(vault != address(0), "vault must not be zero address");
         require(IRegistry(VAULT_FACTORY).isEntity(vault), "vault not found");
         _;
     }
@@ -66,6 +67,7 @@ contract FastSettlementNetwork is
     }
 
     function setMetadataURL(string calldata metadataURL) external onlyOwner {
+        require(bytes(metadataURL).length > 0, "metadataURL must not be empty");
         IMetadataService(METADATA_SERVICE).setMetadataURL(metadataURL);
     }
 
