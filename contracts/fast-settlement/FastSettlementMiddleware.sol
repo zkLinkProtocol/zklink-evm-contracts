@@ -122,7 +122,13 @@ contract FastSettlementMiddleware is Ownable, IFastSettlementMiddleware {
         require(address(_secondaryChainGateway) != address(0), "Invalid secondary chain gateway");
         uint256 collateral = getOperatorStake(msg.sender);
         require(collateral >= _expectCollateral, "Collateral not enough");
-        arbitrator.sendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, collateral, _forwardParams);
+        arbitrator.sendFastSyncMessage(
+            _secondaryChainGateway,
+            _newTotalSyncedPriorityTxs,
+            _syncHash,
+            collateral,
+            _forwardParams
+        );
         emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, uint256(_syncHash));
     }
 }
