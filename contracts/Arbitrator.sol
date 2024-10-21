@@ -9,7 +9,7 @@ import {DoubleEndedQueueUpgradeable} from "@openzeppelin/contracts-upgradeable/u
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {IL1Gateway} from "./interfaces/IL1Gateway.sol";
-import {IFastSettlement} from "./interfaces/IFastSettlement.sol";
+import {IFastSettlementMiddleware} from "./interfaces/IFastSettlementMiddleware.sol";
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
@@ -34,7 +34,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @dev A transient storage value for represent a valid message claim
     uint256 private claiming;
     /// @notice The fast settlement contract
-    IFastSettlement public fastSettlement;
+    IFastSettlementMiddleware public fastSettlementMiddleware;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
@@ -51,7 +51,10 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @notice Validator's status changed
     event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
     /// @notice FastSettlement changed
-    event FastSettlementUpdate(IFastSettlement indexed oldFastSettlement, IFastSettlement indexed newFastSettlement);
+    event FastSettlementUpdate(
+        IFastSettlementMiddleware indexed oldFastSettlementMiddleware,
+        IFastSettlementMiddleware indexed newFastSettlementMiddleware
+    );
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
     /// @notice Emit when receive message from l1 gateway
@@ -59,7 +62,12 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @notice Emit when forward message to l1 gateway
     event MessageForwarded(IL1Gateway indexed gateway, uint256 value, bytes callData);
     /// @notice Emit when send fast settlement message to primary chain
-    event FastSyncMessageForwarded(IL1Gateway indexed secondaryChainGateway, uint256 newTotalSyncedPriorityTxs, bytes32 syncHash, uint256 collateral);
+    event FastSyncMessageForwarded(
+        IL1Gateway indexed secondaryChainGateway,
+        uint256 newTotalSyncedPriorityTxs,
+        bytes32 syncHash,
+        uint256 collateral
+    );
 
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
@@ -68,8 +76,8 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     }
 
     /// @notice Checks if caller is fastSettlement
-    modifier onlyFastSettlement() {
-        require(msg.sender == address(fastSettlement), "Not fast settlement");
+    modifier onlyFastSettlementMiddleware() {
+        require(msg.sender == address(fastSettlementMiddleware), "Not fast settlement middleware");
         _;
     }
 
@@ -152,12 +160,12 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     }
 
     /// @dev Set new fast settlement
-    function setFastSettlement(IFastSettlement _newFastSettlement) external onlyOwner {
-        require(address(_newFastSettlement) != address(0), "Invalid fastSettlement");
-        IFastSettlement oldFastSettlement = fastSettlement;
-        if (oldFastSettlement != _newFastSettlement) {
-            fastSettlement = _newFastSettlement;
-            emit FastSettlementUpdate(oldFastSettlement, _newFastSettlement);
+    function setFastSettlement(IFastSettlementMiddleware _newFastSettlementMiddleware) external onlyOwner {
+        require(address(_newFastSettlementMiddleware) != address(0), "Invalid fastSettlementMiddleware");
+        IFastSettlementMiddleware oldFastSettlementMiddleware = fastSettlementMiddleware;
+        if (oldFastSettlementMiddleware != _newFastSettlementMiddleware) {
+            fastSettlementMiddleware = _newFastSettlementMiddleware;
+            emit FastSettlementUpdate(oldFastSettlementMiddleware, _newFastSettlementMiddleware);
         }
     }
 
@@ -306,7 +314,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         bytes32 _syncHash,
         uint256 _collateral,
         bytes calldata _forwardParams
-    ) external payable nonReentrant onlyFastSettlement {
+    ) external payable nonReentrant onlyFastSettlementMiddleware {
         require(secondaryChainGateways[_secondaryChainGateway], "Not secondary chain gateway");
         uint256 _value = 0;
         bytes memory _callData = abi.encodeCall(
@@ -314,11 +322,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
             (address(_secondaryChainGateway), _newTotalSyncedPriorityTxs, _syncHash, _collateral)
         );
         // Forward fee to send message
-        primaryChainGateway.sendMessage{value: msg.value}(
-            _value,
-            _callData,
-            _forwardParams
-        );
+        primaryChainGateway.sendMessage{value: msg.value}(_value, _callData, _forwardParams);
         emit FastSyncMessageForwarded(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, _collateral);
     }
 }

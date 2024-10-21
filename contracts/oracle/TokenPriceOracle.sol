@@ -88,7 +88,9 @@ contract TokenPriceOracle is ITokenPriceOracle, AccessControlUpgradeable, UUPSUp
         TokenInfo memory tokenInfo = tokenInfos[_token];
         if (tokenInfo.priceId != bytes32(0)) {
             PythStructs.Price memory pythPrice = PYTH.getPriceNoOlderThan(tokenInfo.priceId, validTimePeriod);
-            return 10 ** (USD_DECIMALS + 18) * uint(uint64(pythPrice.price)) / (10 ** (uint8(uint32(-1 * pythPrice.expo)) + tokenInfo.decimals));
+            return
+                (10 ** (USD_DECIMALS + 18) * uint(uint64(pythPrice.price))) /
+                (10 ** (uint8(uint32(-1 * pythPrice.expo)) + tokenInfo.decimals));
         } else {
             require(tokenInfo.defaultPrice > 0, "No default price");
             return tokenInfo.defaultPrice;
