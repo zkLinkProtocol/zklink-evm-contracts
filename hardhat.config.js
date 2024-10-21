@@ -10,6 +10,7 @@ require('./script/deploy_governance');
 require('./script/deploy_linea_l2_governance');
 require('./script/deploy_zklink_token');
 require('./script/deploy_sync_l2_txHash_relayer');
+require('./script/deploy_token_price_oracle');
 
 const BaseConfig = require('./hardhat.base.config');
 
