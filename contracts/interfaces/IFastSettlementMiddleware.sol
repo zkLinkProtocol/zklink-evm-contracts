@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IL1Gateway} from "./IL1Gateway.sol";
 interface IFastSettlementMiddleware {
-    function getOperatorStakeValue(address operator) external view returns (uint256);
+    function getOperatorStakeValue(address operator, uint48 epoch) external view returns (uint256);
 
     function sendFastSyncMessage(
         IL1Gateway _secondaryChainGateway,

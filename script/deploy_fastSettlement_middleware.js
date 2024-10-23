@@ -10,6 +10,10 @@ task('deployFastSettlementMiddleware', 'Deploy fastSettlement middleware')
   .addParam('operatorRegistry', 'The OperatorRegistry contract address', undefined, types.string, false)
   .addParam('vaultFactory', 'The VaultFactory contract address', undefined, types.string, false)
   .addParam('networkOptinService', 'The NetworkOptInService contract address', undefined, types.string, false)
+  .addParam('arbitrator', 'The Arbitrator contract address', undefined, types.string, false)
+  .addParam('tokenPriceOracle', 'The TokenPriceOracle contract address', undefined, types.string, false)
+  .addParam('epochDuration', 'The epoch duration', undefined, types.int, false)
+  .addParam('slashingWindow', 'The slash window duration', undefined, types.int, false)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let force = taskArgs.force;
@@ -17,6 +21,10 @@ task('deployFastSettlementMiddleware', 'Deploy fastSettlement middleware')
     let operatorRegistry = taskArgs.operatorRegistry;
     let vaultFactory = taskArgs.vaultFactory;
     let networkOptinService = taskArgs.networkOptinService;
+    let arbitrator = taskArgs.arbitrator;
+    let tokenPriceOracle = taskArgs.tokenPriceOracle;
+    let epochDuration = taskArgs.epochDuration;
+    let slashingWindow = taskArgs.slashingWindow;
     let skipVerify = taskArgs.skipVerify;
     console.log('skip verify contracts?', skipVerify);
 
@@ -34,7 +42,16 @@ task('deployFastSettlementMiddleware', 'Deploy fastSettlement middleware')
       const contract = await contractDeployer.deployProxy(
         'FastSettlementMiddleware',
         [],
-        [fsNetwork, operatorRegistry, vaultFactory, networkOptinService],
+        [
+          fsNetwork,
+          operatorRegistry,
+          vaultFactory,
+          networkOptinService,
+          arbitrator,
+          tokenPriceOracle,
+          epochDuration,
+          slashingWindow,
+        ],
       );
       const transaction = await getDeployTx(contract);
       middlewareAddr = await contract.getAddress();
@@ -65,6 +82,10 @@ task('deployFastSettlementMiddleware', 'Deploy fastSettlement middleware')
         operatorRegistry,
         vaultFactory,
         networkOptinService,
+        arbitrator,
+        tokenPriceOracle,
+        epochDuration,
+        slashingWindow,
       ]);
       deployLog[logName.DEPLOY_LOG_FASTSETTLEMENT_MIDDLEWARE_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
@@ -83,12 +104,20 @@ task('upgradeFastSettlementMiddleware', 'Upgrade fastSettlement middleware')
   .addParam('operatorRegistry', 'The OperatorRegistry contract address', undefined, types.string, false)
   .addParam('vaultFactory', 'The VaultFactory contract address', undefined, types.string, false)
   .addParam('networkOptinService', 'The NetworkOptInService contract address', undefined, types.string, false)
+  .addParam('arbitrator', 'The Arbitrator contract address', undefined, types.string, false)
+  .addParam('tokenPriceOracle', 'The TokenPriceOracle contract address', undefined, types.string, false)
+  .addParam('epochDuration', 'The epoch duration', undefined, types.int, false)
+  .addParam('slashingWindow', 'The slash window duration', undefined, types.int, false)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let fsNetwork = taskArgs.fsNetwork;
     let operatorRegistry = taskArgs.operatorRegistry;
     let vaultFactory = taskArgs.vaultFactory;
     let networkOptinService = taskArgs.networkOptinService;
+    let arbitrator = taskArgs.arbitrator;
+    let tokenPriceOracle = taskArgs.tokenPriceOracle;
+    let epochDuration = taskArgs.epochDuration;
+    let slashingWindow = taskArgs.slashingWindow;
     let skipVerify = taskArgs.skipVerify;
     console.log('skip verify contracts?', skipVerify);
 
@@ -115,6 +144,10 @@ task('upgradeFastSettlementMiddleware', 'Upgrade fastSettlement middleware')
       operatorRegistry,
       vaultFactory,
       networkOptinService,
+      arbitrator,
+      tokenPriceOracle,
+      epochDuration,
+      slashingWindow,
     ]);
     const tx = await getDeployTx(contract);
     console.log('upgrade tx', tx.hash);
@@ -130,6 +163,10 @@ task('upgradeFastSettlementMiddleware', 'Upgrade fastSettlement middleware')
         operatorRegistry,
         vaultFactory,
         networkOptinService,
+        arbitrator,
+        tokenPriceOracle,
+        epochDuration,
+        slashingWindow,
       ]);
       deployLog[logName.DEPLOY_LOG_FASTSETTLEMENT_MIDDLEWARE_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
@@ -141,12 +178,20 @@ task('deployFastSettlementMiddlewareTarget', 'Deploy fastSettlement middleware t
   .addParam('operatorRegistry', 'The OperatorRegistry contract address', undefined, types.string, false)
   .addParam('vaultFactory', 'The VaultFactory contract address', undefined, types.string, false)
   .addParam('networkOptinService', 'The NetworkOptInService contract address', undefined, types.string, false)
+  .addParam('arbitrator', 'The Arbitrator contract address', undefined, types.string, false)
+  .addParam('tokenPriceOracle', 'The TokenPriceOracle contract address', undefined, types.string, false)
+  .addParam('epochDuration', 'The epoch duration', undefined, types.int, false)
+  .addParam('slashingWindow', 'The slash window duration', undefined, types.int, false)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let fsNetwork = taskArgs.fsNetwork;
     let operatorRegistry = taskArgs.operatorRegistry;
     let vaultFactory = taskArgs.vaultFactory;
     let networkOptinService = taskArgs.networkOptinService;
+    let arbitrator = taskArgs.arbitrator;
+    let tokenPriceOracle = taskArgs.tokenPriceOracle;
+    let epochDuration = taskArgs.epochDuration;
+    let slashingWindow = taskArgs.slashingWindow;
     let skipVerify = taskArgs.skipVerify;
     console.log('skip verify contracts?', skipVerify);
 
@@ -160,6 +205,10 @@ task('deployFastSettlementMiddlewareTarget', 'Deploy fastSettlement middleware t
       operatorRegistry,
       vaultFactory,
       networkOptinService,
+      arbitrator,
+      tokenPriceOracle,
+      epochDuration,
+      slashingWindow,
     ]);
     const tx = await getDeployTx(contract);
     console.log('deploy tx', tx.hash);
@@ -169,7 +218,16 @@ task('deployFastSettlementMiddlewareTarget', 'Deploy fastSettlement middleware t
 
     // verify target contract
     if (!skipVerify) {
-      await verifyContractCode(hardhat, contractAddr, [fsNetwork, operatorRegistry, vaultFactory, networkOptinService]);
+      await verifyContractCode(hardhat, contractAddr, [
+        fsNetwork,
+        operatorRegistry,
+        vaultFactory,
+        networkOptinService,
+        arbitrator,
+        tokenPriceOracle,
+        epochDuration,
+        slashingWindow,
+      ]);
       deployLog[logName.DEPLOY_LOG_FASTSETTLEMENT_MIDDLEWARE_TARGET_VERIFIED] = true;
       fs.writeFileSync(deployLogPath, JSON.stringify(deployLog, null, 2));
     }
