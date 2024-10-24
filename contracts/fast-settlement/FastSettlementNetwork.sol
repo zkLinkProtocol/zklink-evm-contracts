@@ -6,13 +6,13 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {IBaseDelegator} from "./lib/symbiotic/interfaces/delegator/IBaseDelegator.sol";
-import {IVault} from "./lib/symbiotic/interfaces/vault/IVault.sol";
-import {IVetoSlasher} from "./lib/symbiotic/interfaces/slasher/IVetoSlasher.sol";
-import {IMetadataService} from "./lib/symbiotic/interfaces/service/IMetadataService.sol";
-import {INetworkMiddlewareService} from "./lib/symbiotic/interfaces/service/INetworkMiddlewareService.sol";
-import {INetworkRegistry} from "./lib/symbiotic/interfaces/INetworkRegistry.sol";
-import {IRegistry} from "./lib/symbiotic/interfaces/common/IRegistry.sol";
+import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
+import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
+import {IVetoSlasher} from "@symbioticfi/core/src/interfaces/slasher/IVetoSlasher.sol";
+import {IMetadataService} from "@symbioticfi/core/src/interfaces/service/IMetadataService.sol";
+import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
+import {INetworkRegistry} from "@symbioticfi/core/src/interfaces/INetworkRegistry.sol";
+import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
 
 contract FastSettlementNetwork is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address public immutable NETWORK_REGISTRY;

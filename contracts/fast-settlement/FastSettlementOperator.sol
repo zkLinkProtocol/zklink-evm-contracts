@@ -6,9 +6,9 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {IOperatorRegistry} from "./lib/symbiotic/interfaces/IOperatorRegistry.sol";
-import {IOptInService} from "./lib/symbiotic/interfaces/service/IOptInService.sol";
-import {IRegistry} from "./lib/symbiotic/interfaces/common/IRegistry.sol";
+import {IOperatorRegistry} from "@symbioticfi/core/src/interfaces/IOperatorRegistry.sol";
+import {IOptInService} from "@symbioticfi/core/src/interfaces/service/IOptInService.sol";
+import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
 import {IFastSettlementMiddleware} from "../interfaces/IFastSettlementMiddleware.sol";
 import {IL1Gateway} from "../interfaces/IL1Gateway.sol";
 
