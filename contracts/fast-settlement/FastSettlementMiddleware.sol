@@ -14,6 +14,7 @@ import {IVetoSlasher} from "@symbioticfi/core/src/interfaces/slasher/IVetoSlashe
 import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
 
 import {MapWithTimeData} from "./libraries/MapWithTimeData.sol";
+import {ICollateral} from "../interfaces/symbioticfi/ICollateral.sol";
 import {ITokenPriceOracle} from "../interfaces/ITokenPriceOracle.sol";
 import {IFastSettlementMiddleware} from "../interfaces/IFastSettlementMiddleware.sol";
 import {IArbitrator} from "../interfaces/IArbitrator.sol";
@@ -45,9 +46,9 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
     mapping(uint48 => mapping(address => uint256)) public operatorStakeCache;
     EnumerableMapUpgradeable.AddressToUintMap private operators;
     EnumerableMapUpgradeable.AddressToUintMap private vaults;
-    // @notice The risk factor is used to calculate credit for all tokens if it's not set in tokenRiskFactor
+    /// @notice The risk factor is used to calculate credit for all tokens if it's not set in tokenRiskFactor
     uint256 public riskFactor;
-    // @notice The token risk factor will override the riskFactor if it's set
+    /// @notice The token risk factor will override the riskFactor if it's set
     mapping(address => uint256) public tokenRiskFactor;
 
     error NotOperator();
@@ -97,30 +98,32 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         _disableInitializers();
     }
 
+    /// @notice Initialize the contract
     function initialize() external initializer {
         __Ownable_init_unchained();
         __UUPSUpgradeable_init_unchained();
     }
 
+    /// @notice Upgrade the contract
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {
         // can only call by owner
     }
 
-    /// @dev Set new risk factor
+    /// @notice Set new risk factor
     function setRiskFactor(uint256 _riskFactor) external onlyOwner {
         require(_riskFactor > 0 && _riskFactor <= RISK_FACTOR_DENOMINATOR, "Invalid risk factor");
         riskFactor = _riskFactor;
         emit RiskFactorUpdate(_riskFactor);
     }
 
-    /// @dev Set new token risk factor
+    /// @notice Set new token risk factor
     function setTokenRiskFactor(address _token, uint256 _riskFactor) external onlyOwner {
         require(_riskFactor > 0 && _riskFactor <= RISK_FACTOR_DENOMINATOR, "Invalid risk factor");
         tokenRiskFactor[_token] = _riskFactor;
         emit TokenRiskFactorUpdate(_token, _riskFactor);
     }
 
-    /// @dev Register operator
+    /// @notice Register operator
     function registerOperator(address operator) external onlyOwner {
         if (operators.contains(operator)) {
             revert OperatorAlreadyRegistered();
@@ -138,14 +141,17 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         operators.enable(operator);
     }
 
+    /// @notice Pause operator
     function pauseOperator(address operator) external onlyOwner {
         operators.disable(operator);
     }
 
+    /// @notice Unpause operator
     function unpauseOperator(address operator) external onlyOwner {
         operators.enable(operator);
     }
 
+    /// @notice Unregister operator
     function unregisterOperator(address operator) external onlyOwner {
         (, uint48 disabledTime) = operators.getTimes(operator);
 
@@ -156,7 +162,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         operators.remove(operator);
     }
 
-    /// @dev Register vault
+    /// @notice Register vault
     function registerVault(address vault) external onlyOwner {
         if (vaults.contains(vault)) {
             revert VaultAlreadyRegistered();
@@ -181,14 +187,17 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         vaults.enable(vault);
     }
 
+    /// @notice Pause vault
     function pauseVault(address vault) external onlyOwner {
         vaults.disable(vault);
     }
 
+    /// @notice Unpause vault
     function unpauseVault(address vault) external onlyOwner {
         vaults.enable(vault);
     }
 
+    /// @notice Unregister vault
     function unregisterVault(address vault) external onlyOwner {
         (, uint48 disabledTime) = vaults.getTimes(vault);
 
@@ -199,7 +208,12 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         vaults.remove(vault);
     }
 
-    /// @dev Send fast sync message to secondary chain via ARBITRATOR
+    /// @notice Send fast sync message to secondary chain via ARBITRATOR
+    /// @param _secondaryChainGateway The secondary chain gateway
+    /// @param _newTotalSyncedPriorityTxs The latest fast sync point
+    /// @param _syncHash The sync hash
+    /// @param _expectCollateral The value of the collateral acquired off-chain
+    /// @param _forwardParams The forward params
     function sendFastSyncMessage(
         IL1Gateway _secondaryChainGateway,
         uint256 _newTotalSyncedPriorityTxs,
@@ -219,7 +233,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, collateral);
     }
 
-    /// @dev Get available stake value for operator
+    /// @notice Return the available stake value for the operator at a specific epoch
     function getOperatorStakeValue(address operator, uint48 epoch) public view returns (uint256 totalStakeValue) {
         if (totalStakeCached[epoch]) {
             return operatorStakeCache[epoch][operator];
@@ -247,18 +261,20 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
             }
 
             address collateralToken = IVault(vault).collateral();
-            // todo ICollateral(collateralToken).asset()
-            uint256 tokenPrice = TOKEN_PRICE_ORACLE.getTokenPrice(collateralToken);
+            address assetToken = ICollateral(collateralToken).asset();
+            uint256 tokenPrice = TOKEN_PRICE_ORACLE.getTokenPrice(assetToken);
             uint256 _riskFactor = getTokenRiskFactor(collateralToken);
             uint256 stakeValue = (vaultCollateral * tokenPrice * _riskFactor) / RISK_FACTOR_DENOMINATOR;
             totalStakeValue += stakeValue;
         }
     }
 
+    /// @notice Return the available stake value for the operator at the current epoch
     function getOperatorStakeCurrentValue(address operator) public view returns (uint256) {
         return getOperatorStakeValue(operator, getCurrentEpoch());
     }
 
+    /// @notice Return the total stake value for all operators at a specific epoch
     function getTotalStakeValue(uint48 epoch) public view returns (uint256) {
         if (totalStakeCached[epoch]) {
             return totalStakeCache[epoch];
@@ -266,6 +282,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         return _calcTotalStake(epoch);
     }
 
+    /// @notice Calculate and cache the available stake value
     function calcAndCacheStakes(uint48 epoch) public returns (uint256 totalStakeValue) {
         uint48 epochStartTs = getEpochStartTs(epoch);
 
@@ -296,14 +313,17 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         totalStakeCache[epoch] = totalStakeValue;
     }
 
+    /// @notice Return the timestamp of a specific epoch
     function getEpochStartTs(uint48 epoch) public view returns (uint48 timestamp) {
         return START_TIME + epoch * EPOCH_DURATION;
     }
 
+    /// @notice Return the epoch of a specific timestamp
     function getEpochAtTs(uint48 timestamp) public view returns (uint48 epoch) {
         return (timestamp - START_TIME) / EPOCH_DURATION;
     }
 
+    /// @notice Return the current epoch
     function getCurrentEpoch() public view returns (uint48 epoch) {
         return getEpochAtTs(uint48(block.timestamp));
     }
