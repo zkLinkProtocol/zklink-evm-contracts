@@ -14,6 +14,7 @@ require('./script/deploy_fastSettlement_network');
 require('./script/deploy_fastSettlement_operator');
 require('./script/deploy_fastSettlement_middleware');
 require('./script/deploy_token_price_oracle');
+require('./script/deploy_credit_oracle');
 
 const BaseConfig = require('./hardhat.base.config');
 

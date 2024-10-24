@@ -24,13 +24,13 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
     using MapWithTimeData for EnumerableMapUpgradeable.AddressToUintMap;
     using Subnetwork for address;
 
-    uint256 private constant RISK_FACTOR_DENUMINATOR = 10000;
+    uint256 private constant RISK_FACTOR_DENOMINATOR = 10000;
     uint96 private constant SUBNETWORK_IDENTIFIER = 0;
 
     address public immutable NETWORK;
     address public immutable VAULT_FACTORY;
     address public immutable OPERATOR_REGISTRY;
-    address public immutable NETWORK_OPTINSERVICE;
+    address public immutable NETWORK_OPT_IN_SERVICE;
     uint48 public immutable EPOCH_DURATION;
     uint48 public immutable SLASHING_WINDOW;
     uint48 public immutable START_TIME;
@@ -53,25 +53,26 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
     error NotOperator();
     error NotVault();
     error OperatorNotOptedIn();
-    error OperatorNotRegistred();
-    error OperatorAlreadyRegistred();
-    error OperarorGracePeriodNotPassed();
-    error VaultNotRegistred();
-    error VaultAlreadyRegistred();
+    error OperatorNotRegistered();
+    error OperatorAlreadyRegistered();
+    error OperatorGracePeriodNotPassed();
+    error VaultNotRegistered();
+    error VaultAlreadyRegistered();
     error VaultEpochTooShort();
     error VaultGracePeriodNotPassed();
     error TooOldEpoch();
     error InvalidEpoch();
-    /// @notice Arbitrator changed
-    event ArbitratorUpdate(IArbitrator indexed old, IArbitrator indexed new_);
     /// @notice Fast sync message sent
-    event SendFastSyncMessage(IL1Gateway secondaryChainGateway, uint256 newTotalSyncedPriorityTxs, uint256 syncHash);
+    event SendFastSyncMessage(
+        IL1Gateway indexed secondaryChainGateway,
+        uint256 newTotalSyncedPriorityTxs,
+        bytes32 syncHash,
+        uint256 collateral
+    );
     /// @notice Risk factor updated
     event RiskFactorUpdate(uint256 riskFactor);
     /// @notice Token risk factor updated
     event TokenRiskFactorUpdate(address indexed token, uint256 riskFactor);
-    /// @notice Token price oracle updated
-    event TokenPriceOracleUpdate(ITokenPriceOracle indexed old, ITokenPriceOracle indexed new_);
 
     constructor(
         address _network,
@@ -87,7 +88,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         NETWORK = _network;
         OPERATOR_REGISTRY = _operatorRegistry;
         VAULT_FACTORY = _vaultFactory;
-        NETWORK_OPTINSERVICE = _networkOptinService;
+        NETWORK_OPT_IN_SERVICE = _networkOptinService;
         EPOCH_DURATION = _epochDuration;
         SLASHING_WINDOW = _slashingWindow;
         ARBITRATOR = _arbitrator;
@@ -107,14 +108,14 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
 
     /// @dev Set new risk factor
     function setRiskFactor(uint256 _riskFactor) external onlyOwner {
-        require(_riskFactor > 0 && _riskFactor <= RISK_FACTOR_DENUMINATOR, "Invalid risk factor");
+        require(_riskFactor > 0 && _riskFactor <= RISK_FACTOR_DENOMINATOR, "Invalid risk factor");
         riskFactor = _riskFactor;
         emit RiskFactorUpdate(_riskFactor);
     }
 
     /// @dev Set new token risk factor
     function setTokenRiskFactor(address _token, uint256 _riskFactor) external onlyOwner {
-        require(_riskFactor > 0 && _riskFactor <= RISK_FACTOR_DENUMINATOR, "Invalid risk factor");
+        require(_riskFactor > 0 && _riskFactor <= RISK_FACTOR_DENOMINATOR, "Invalid risk factor");
         tokenRiskFactor[_token] = _riskFactor;
         emit TokenRiskFactorUpdate(_token, _riskFactor);
     }
@@ -122,14 +123,14 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
     /// @dev Register operator
     function registerOperator(address operator) external onlyOwner {
         if (operators.contains(operator)) {
-            revert OperatorAlreadyRegistred();
+            revert OperatorAlreadyRegistered();
         }
 
         if (!IRegistry(OPERATOR_REGISTRY).isEntity(operator)) {
             revert NotOperator();
         }
 
-        if (!IOptInService(NETWORK_OPTINSERVICE).isOptedIn(operator, NETWORK)) {
+        if (!IOptInService(NETWORK_OPT_IN_SERVICE).isOptedIn(operator, NETWORK)) {
             revert OperatorNotOptedIn();
         }
 
@@ -149,7 +150,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         (, uint48 disabledTime) = operators.getTimes(operator);
 
         if (disabledTime == 0 || disabledTime + SLASHING_WINDOW > block.timestamp) {
-            revert OperarorGracePeriodNotPassed();
+            revert OperatorGracePeriodNotPassed();
         }
 
         operators.remove(operator);
@@ -158,7 +159,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
     /// @dev Register vault
     function registerVault(address vault) external onlyOwner {
         if (vaults.contains(vault)) {
-            revert VaultAlreadyRegistred();
+            revert VaultAlreadyRegistered();
         }
 
         if (!IRegistry(VAULT_FACTORY).isEntity(vault)) {
@@ -206,10 +207,8 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
         uint256 _expectCollateral,
         bytes calldata _forwardParams
     ) external {
-        require(address(ARBITRATOR) != address(0), "Invalid arbitrator");
-        require(address(_secondaryChainGateway) != address(0), "Invalid secondary chain gateway");
-        uint256 collateral = getOperatorStakeValue(msg.sender, getCurrentEpoch());
-        require(collateral >= _expectCollateral, "Collateral not enough");
+        uint256 collateral = getOperatorStakeCurrentValue(msg.sender);
+        require(collateral > 0 && collateral >= _expectCollateral, "Collateral not enough");
         ARBITRATOR.sendFastSyncMessage(
             _secondaryChainGateway,
             _newTotalSyncedPriorityTxs,
@@ -217,10 +216,10 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
             collateral,
             _forwardParams
         );
-        emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, uint256(_syncHash));
+        emit SendFastSyncMessage(_secondaryChainGateway, _newTotalSyncedPriorityTxs, _syncHash, collateral);
     }
 
-    /// @dev Get avaliable stake value for operator
+    /// @dev Get available stake value for operator
     function getOperatorStakeValue(address operator, uint48 epoch) public view returns (uint256 totalStakeValue) {
         if (totalStakeCached[epoch]) {
             return operatorStakeCache[epoch][operator];
@@ -248,11 +247,16 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
             }
 
             address collateralToken = IVault(vault).collateral();
+            // todo ICollateral(collateralToken).asset()
             uint256 tokenPrice = TOKEN_PRICE_ORACLE.getTokenPrice(collateralToken);
             uint256 _riskFactor = getTokenRiskFactor(collateralToken);
-            uint256 stakeValue = (vaultCollateral * tokenPrice * _riskFactor) / RISK_FACTOR_DENUMINATOR;
+            uint256 stakeValue = (vaultCollateral * tokenPrice * _riskFactor) / RISK_FACTOR_DENOMINATOR;
             totalStakeValue += stakeValue;
         }
+    }
+
+    function getOperatorStakeCurrentValue(address operator) public view returns (uint256) {
+        return getOperatorStakeValue(operator, getCurrentEpoch());
     }
 
     function getTotalStakeValue(uint48 epoch) public view returns (uint256) {
@@ -313,7 +317,7 @@ contract FastSettlementMiddleware is IFastSettlementMiddleware, OwnableUpgradeab
                 ? risk
                 : riskFactor > 0
                     ? riskFactor
-                    : RISK_FACTOR_DENUMINATOR;
+                    : RISK_FACTOR_DENOMINATOR;
     }
 
     function _calcTotalStake(uint48 epoch) private view returns (uint256 totalStakeValue) {
