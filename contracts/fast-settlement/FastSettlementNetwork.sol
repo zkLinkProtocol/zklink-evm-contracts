@@ -6,7 +6,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {IBaseDelegator} from "./lib/symbiotic/interfaces/delegator/IBaseDelegator.sol";
 import {IVault} from "./lib/symbiotic/interfaces/vault/IVault.sol";
 import {IVetoSlasher} from "./lib/symbiotic/interfaces/slasher/IVetoSlasher.sol";
@@ -15,13 +14,7 @@ import {INetworkMiddlewareService} from "./lib/symbiotic/interfaces/service/INet
 import {INetworkRegistry} from "./lib/symbiotic/interfaces/INetworkRegistry.sol";
 import {IRegistry} from "./lib/symbiotic/interfaces/common/IRegistry.sol";
 
-contract FastSettlementNetwork is
-    Initializable,
-    UUPSUpgradeable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    PausableUpgradeable
-{
+contract FastSettlementNetwork is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address public immutable NETWORK_REGISTRY;
     address public immutable METADATA_SERVICE;
     address public immutable NETWORK_MIDDLEWARE_SERVICE;
@@ -46,7 +39,6 @@ contract FastSettlementNetwork is
         __UUPSUpgradeable_init_unchained();
         __Ownable_init_unchained();
         __ReentrancyGuard_init_unchained();
-        __Pausable_init_unchained();
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -54,11 +46,6 @@ contract FastSettlementNetwork is
     modifier checkVault(address vault) {
         require(IRegistry(VAULT_FACTORY).isEntity(vault), "vault not found");
         _;
-    }
-
-    function setOwner(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "owner must not be zero address");
-        _transferOwnership(newOwner);
     }
 
     function registerNetwork() external onlyOwner {
@@ -70,12 +57,10 @@ contract FastSettlementNetwork is
     }
 
     function setMiddleware(address middleware) external onlyOwner {
-        require(middleware != address(0), "middleware must not be zero address");
         INetworkMiddlewareService(NETWORK_MIDDLEWARE_SERVICE).setMiddleware(middleware);
     }
 
     function setMaxNetworkLimit(address vault, uint96 identifier, uint256 amount) external onlyOwner checkVault(vault) {
-        require(amount > 0, "amount must be greater than 0");
         address delegator = IVault(vault).delegator();
         IBaseDelegator(delegator).setMaxNetworkLimit(identifier, amount);
     }
@@ -86,7 +71,6 @@ contract FastSettlementNetwork is
         address resolver_,
         bytes calldata hints
     ) external onlyOwner checkVault(vault) {
-        require(resolver_ != address(0), "resolver must not be zero address");
         address slasher = IVault(vault).slasher();
         IVetoSlasher(slasher).setResolver(identifier, resolver_, hints);
     }
