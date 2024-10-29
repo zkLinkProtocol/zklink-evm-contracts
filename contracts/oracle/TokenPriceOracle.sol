@@ -92,7 +92,7 @@ contract TokenPriceOracle is ITokenPriceOracle, AccessControlUpgradeable, UUPSUp
                 (10 ** (USD_DECIMALS + 18) * uint(uint64(pythPrice.price))) /
                 (10 ** (uint8(uint32(-1 * pythPrice.expo)) + tokenInfo.decimals));
         } else {
-            require(tokenInfo.defaultPrice > 0, "No default price");
+            // return 0 if token not registered
             return tokenInfo.defaultPrice;
         }
     }
