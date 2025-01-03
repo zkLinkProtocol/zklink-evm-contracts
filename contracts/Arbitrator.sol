@@ -10,6 +10,7 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IArbitrator} from "./interfaces/IArbitrator.sol";
 import {IL1Gateway} from "./interfaces/IL1Gateway.sol";
 import {IAdmin} from "./zksync/l1-contracts/zksync/interfaces/IAdmin.sol";
+import {IFastSettlementMiddleware} from "./interfaces/IFastSettlementMiddleware.sol";
 import {IZkSync} from "./zksync/l1-contracts/zksync/interfaces/IZkSync.sol";
 import {FeeParams} from "./zksync/l1-contracts/zksync/Storage.sol";
 
@@ -32,12 +33,15 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     bytes32 private finalizeMessageHash;
     /// @dev A transient storage value for represent a valid message claim
     uint256 private claiming;
+    /// @notice The fast settlement contract
+    IFastSettlementMiddleware public fastSettlementMiddleware;
+    bool public paused;
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[48] private __gap;
+    uint256[46] private __gap;
 
     /// @notice Primary chain gateway init
     event InitPrimaryChain(IL1Gateway indexed gateway);
@@ -47,6 +51,13 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     event RelayerStatusUpdate(address indexed relayer, bool isActive);
     /// @notice Validator's status changed
     event ValidatorStatusUpdate(IL1Gateway indexed gateway, address validatorAddress, bool isActive);
+    /// @notice FastSettlement changed
+    event FastSettlementUpdate(
+        IFastSettlementMiddleware indexed oldFastSettlementMiddleware,
+        IFastSettlementMiddleware indexed newFastSettlementMiddleware
+    );
+    /// @notice Pause changed
+    event PauseUpdate(bool paused);
     /// @notice Fee params for L1->L2 transactions changed
     event NewFeeParams(IL1Gateway indexed gateway, FeeParams newFeeParams);
     /// @notice Emit when receive message from l1 gateway
@@ -57,6 +68,24 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
     /// @notice Checks if relayer is active
     modifier onlyRelayer() {
         require(relayers[msg.sender], "Not relayer"); // relayer is not active
+        _;
+    }
+
+    /// @notice Checks if caller is fastSettlement
+    modifier onlyFastSettlementMiddleware() {
+        require(msg.sender == address(fastSettlementMiddleware), "Not fast settlement middleware");
+        _;
+    }
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
+     */
+    modifier whenNotPaused() {
+        require(!paused, "Pausable: paused");
         _;
     }
 
@@ -129,6 +158,23 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         emit ValidatorStatusUpdate(_gateway, _validator, _active);
     }
 
+    /// @dev Set new fast settlement
+    function setFastSettlement(IFastSettlementMiddleware _newFastSettlementMiddleware) external onlyOwner {
+        require(address(_newFastSettlementMiddleware) != address(0), "Invalid fastSettlementMiddleware");
+        IFastSettlementMiddleware oldFastSettlementMiddleware = fastSettlementMiddleware;
+        if (oldFastSettlementMiddleware != _newFastSettlementMiddleware) {
+            fastSettlementMiddleware = _newFastSettlementMiddleware;
+            emit FastSettlementUpdate(oldFastSettlementMiddleware, _newFastSettlementMiddleware);
+        }
+    }
+
+    function setPause(bool _paused) external onlyFastSettlementMiddleware {
+        if (paused != _paused) {
+            paused = _paused;
+            emit PauseUpdate(_paused);
+        }
+    }
+
     function isRelayerActive(address _relayer) external view returns (bool) {
         return relayers[_relayer];
     }
@@ -183,7 +229,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         uint256 _value,
         bytes calldata _callData,
         bytes calldata _adapterParams
-    ) external payable nonReentrant onlyRelayer {
+    ) external payable nonReentrant onlyRelayer whenNotPaused {
         bytes32 _finalizeMessageHash = keccak256(abi.encode(_value, _callData));
         require(secondaryChainGateways[_gateway], "Not secondary chain gateway");
         require(
@@ -203,7 +249,7 @@ contract Arbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Reentra
         uint256 _receiveValue,
         bytes calldata _receiveCallData,
         bytes calldata _forwardParams
-    ) external payable nonReentrant onlyRelayer {
+    ) external payable nonReentrant onlyRelayer whenNotPaused {
         // Set `claiming` to 1 and check it in `receiveMessage`
         assembly {
             tstore(claiming.slot, 1)

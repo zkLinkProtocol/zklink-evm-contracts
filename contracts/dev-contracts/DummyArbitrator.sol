@@ -12,6 +12,7 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
     event ReceiveMessage(uint256 value, bytes callData);
 
     IL1Gateway public primaryChainGateway;
+    bool public paused;
 
     function initialize() external initializer {
         __Ownable_init();
@@ -54,5 +55,9 @@ contract DummyArbitrator is IArbitrator, OwnableUpgradeable, UUPSUpgradeable, Re
         bytes calldata
     ) external payable {
         // do nothing
+    }
+
+    function setPause(bool _paused) external {
+        paused = _paused;
     }
 }

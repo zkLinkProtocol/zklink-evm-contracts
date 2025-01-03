@@ -49,4 +49,7 @@ interface IArbitrator {
         bytes calldata _receiveCallData,
         bytes calldata _forwardParams
     ) external payable;
+
+    /// @notice Set the pause state to stop forward message across chains
+    function setPause(bool _paused) external;
 }
