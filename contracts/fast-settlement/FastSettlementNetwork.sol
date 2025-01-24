@@ -9,28 +9,24 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {IVetoSlasher} from "@symbioticfi/core/src/interfaces/slasher/IVetoSlasher.sol";
-import {IMetadataService} from "@symbioticfi/core/src/interfaces/service/IMetadataService.sol";
 import {INetworkMiddlewareService} from "@symbioticfi/core/src/interfaces/service/INetworkMiddlewareService.sol";
 import {INetworkRegistry} from "@symbioticfi/core/src/interfaces/INetworkRegistry.sol";
 import {IRegistry} from "@symbioticfi/core/src/interfaces/common/IRegistry.sol";
 
 contract FastSettlementNetwork is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address public immutable NETWORK_REGISTRY;
-    address public immutable METADATA_SERVICE;
     address public immutable NETWORK_MIDDLEWARE_SERVICE;
 
     address public immutable VAULT_FACTORY;
 
     constructor(
         address _networkRegistry,
-        address _metadataService,
         address _networkMiddlewareService,
         address _vaultFactory
     ) {
         _disableInitializers();
 
         NETWORK_REGISTRY = _networkRegistry;
-        METADATA_SERVICE = _metadataService;
         NETWORK_MIDDLEWARE_SERVICE = _networkMiddlewareService;
         VAULT_FACTORY = _vaultFactory;
     }
@@ -50,10 +46,6 @@ contract FastSettlementNetwork is Initializable, UUPSUpgradeable, OwnableUpgrade
 
     function registerNetwork() external onlyOwner {
         INetworkRegistry(NETWORK_REGISTRY).registerNetwork();
-    }
-
-    function setMetadataURL(string calldata metadataURL) external onlyOwner {
-        IMetadataService(METADATA_SERVICE).setMetadataURL(metadataURL);
     }
 
     function setMiddleware(address middleware) external onlyOwner {
