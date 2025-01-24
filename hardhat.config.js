@@ -10,6 +10,9 @@ require('./script/deploy_governance');
 require('./script/deploy_linea_l2_governance');
 require('./script/deploy_zklink_token');
 require('./script/deploy_sync_l2_txHash_relayer');
+require('./script/deploy_fastSettlement_network');
+require('./script/deploy_fastSettlement_operator');
+require('./script/deploy_fastSettlement_middleware');
 
 const BaseConfig = require('./hardhat.base.config');
 
