@@ -7,14 +7,12 @@ const { task, types } = require('hardhat/config');
 task('deployFastSettlementNetwork', 'Deploy fastSettlement network')
   .addParam('force', 'Fore redeploy all contracts', false, types.boolean, true)
   .addParam('networkregistry', 'the networkRegistry address', undefined, types.string, false)
-  .addParam('metadataservice', 'the metadataService address', undefined, types.string, false)
   .addParam('networkmiddlewareservice', 'the networkMiddlewareService address', undefined, types.string, false)
   .addParam('vaultfactory', 'the vaultFactory address', undefined, types.string, false)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let force = taskArgs.force;
     let networkRegistry = taskArgs.networkregistry;
-    let metadataService = taskArgs.metadataservice;
     let networkMiddlewareService = taskArgs.networkmiddlewareservice;
     let vaultFactory = taskArgs.vaultfactory;
     let skipVerify = taskArgs.skipVerify;
@@ -34,7 +32,7 @@ task('deployFastSettlementNetwork', 'Deploy fastSettlement network')
       const contract = await contractDeployer.deployProxy(
         'FastSettlementNetwork',
         [],
-        [networkRegistry, metadataService, networkMiddlewareService, vaultFactory],
+        [networkRegistry, networkMiddlewareService, vaultFactory],
       );
       const transaction = await getDeployTx(contract);
       networkAddr = await contract.getAddress();
@@ -62,7 +60,6 @@ task('deployFastSettlementNetwork', 'Deploy fastSettlement network')
     if ((!(logName.DEPLOY_LOG_FASTSETTLEMENT_NETWORK_TARGET_VERIFIED in deployLog) || force) && !skipVerify) {
       await verifyContractCode(hardhat, networkTargetAddr, [
         networkRegistry,
-        metadataService,
         networkMiddlewareService,
         vaultFactory,
       ]);
@@ -80,13 +77,11 @@ task('deployFastSettlementNetwork', 'Deploy fastSettlement network')
 
 task('upgradeFastSettlementNetwork', 'Upgrade fastSettlement network')
   .addParam('networkRegistry', 'the networkRegistry address', undefined, types.string, false)
-  .addParam('metadataService', 'the metadataService address', undefined, types.string, false)
   .addParam('networkMiddlewareService', 'the networkMiddlewareService address', undefined, types.string, false)
   .addParam('vaultFactory', 'the vaultFactory address', undefined, types.string, false)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let networkRegistry = taskArgs.networkRegistry;
-    let metadataService = taskArgs.metadataService;
     let networkMiddlewareService = taskArgs.networkMiddlewareService;
     let vaultFactory = taskArgs.vaultFactory;
     let skipVerify = taskArgs.skipVerify;
@@ -112,7 +107,6 @@ task('upgradeFastSettlementNetwork', 'Upgrade fastSettlement network')
     console.log('upgrade fastSettlement network...');
     const contract = await contractDeployer.upgradeProxy('FastSettlementNetwork', contractAddr, [
       networkRegistry,
-      metadataService,
       networkMiddlewareService,
       vaultFactory,
     ]);
@@ -127,7 +121,6 @@ task('upgradeFastSettlementNetwork', 'Upgrade fastSettlement network')
     if (!skipVerify) {
       await verifyContractCode(hardhat, newContractTargetAddr, [
         networkRegistry,
-        metadataService,
         networkMiddlewareService,
         vaultFactory,
       ]);
@@ -138,13 +131,11 @@ task('upgradeFastSettlementNetwork', 'Upgrade fastSettlement network')
 
 task('deployFastSettlementNetworkTarget', 'Deploy fastSettlement network target')
   .addParam('networkRegistry', 'the networkRegistry address', undefined, types.string, false)
-  .addParam('metadataService', 'the metadataService address', undefined, types.string, false)
   .addParam('networkMiddlewareService', 'the networkMiddlewareService address', undefined, types.string, false)
   .addParam('vaultFactory', 'the vaultFactory address', undefined, types.string, false)
   .addParam('skipVerify', 'Skip verify', false, types.boolean, true)
   .setAction(async (taskArgs, hardhat) => {
     let networkRegistry = taskArgs.networkRegistry;
-    let metadataService = taskArgs.metadataService;
     let networkMiddlewareService = taskArgs.networkMiddlewareService;
     let vaultFactory = taskArgs.vaultFactory;
     let skipVerify = taskArgs.skipVerify;
@@ -157,7 +148,6 @@ task('deployFastSettlementNetworkTarget', 'Deploy fastSettlement network target'
 
     const contract = await contractDeployer.deployContract('FastSettlementNetwork', [
       networkRegistry,
-      metadataService,
       networkMiddlewareService,
       vaultFactory,
     ]);
@@ -171,7 +161,6 @@ task('deployFastSettlementNetworkTarget', 'Deploy fastSettlement network target'
     if (!skipVerify) {
       await verifyContractCode(hardhat, contractAddr, [
         networkRegistry,
-        metadataService,
         networkMiddlewareService,
         vaultFactory,
       ]);
