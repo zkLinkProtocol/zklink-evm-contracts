@@ -1,8 +1,7 @@
 const { providers, Wallet, utils } = require('ethers');
 const { readDeployContract, getLogName, readDeployLogField } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
-const { L1TransactionReceipt, L1ToL2MessageStatus } = require('@arbitrum/sdk');
-const { L1ToL2MessageGasEstimator } = require('@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator');
+const { ParentTransactionReceipt, ParentToChildMessageStatus, ParentToChildMessageGasEstimator } = require('@arbitrum/sdk');
 const { getBaseFee } = require('@arbitrum/sdk/dist/lib/utils/lib');
 const { task, types } = require('hardhat/config');
 
@@ -80,7 +79,7 @@ task('setSecondaryGateway', 'Send secondary gateway')
     /**
      * Now we can query the required gas params using the estimateAll method in Arbitrum SDK
      */
-    const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(l2Provider);
+    const l1ToL2MessageGasEstimate = new ParentToChildMessageGasEstimator(l2Provider);
 
     const l1WalletAddress = await l1Wallet.getAddress();
     const l1WalletBalance = utils.formatEther(await l1Wallet.getBalance());
@@ -136,21 +135,21 @@ task('setSecondaryGateway', 'Send secondary gateway')
     console.log(`The l1 tx hash: ${l1TxHash}`);
     const arbitratorReceipt = await l1Tx.wait();
 
-    const l1TxReceipt = new L1TransactionReceipt(arbitratorReceipt);
+    const l1TxReceipt = new ParentTransactionReceipt(arbitratorReceipt);
 
     /**
      * In principle, a single L1 txn can trigger any number of L1-to-L2 messages (each with its own sequencer number).
      * In this case, we know our txn triggered only one
      * Here, We check if our L1 to L2 message is redeemed on L2
      */
-    const messages = await l1TxReceipt.getL1ToL2Messages(l2Wallet);
+    const messages = await l1TxReceipt.getParentToChildMessages(l2Wallet);
     const message = messages[0];
     console.log('Waiting for the L2 execution of the transaction. This may take up to 10-15 minutes ⏰');
     const messageResult = await message.waitForStatus();
     const status = messageResult.status;
-    if (status === L1ToL2MessageStatus.REDEEMED) {
-      console.log(`L2 retryable ticket is executed 🥳 ${messageResult.l2TxReceipt.transactionHash}`);
+    if (status === ParentToChildMessageStatus.REDEEMED) {
+      console.log(`L2 retryable ticket is executed 🥳 ${messageResult.childTxReceipt.transactionHash}`);
     } else {
-      console.log(`L2 retryable ticket is failed with status ${L1ToL2MessageStatus[status]}`);
+      console.log(`L2 retryable ticket is failed with status ${ParentToChildMessageStatus[status]}`);
     }
   });

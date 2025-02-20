@@ -1,11 +1,10 @@
 const { providers } = require('ethers');
 const { readDeployContract } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
-const { L1ToL2MessageGasEstimator } = require('@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator');
 const { getBaseFee } = require('@arbitrum/sdk/dist/lib/utils/lib');
 const { task, types } = require('hardhat/config');
 const { zkLinkConfig } = require('../../../script/zklink_config');
-const { L1TransactionReceipt, L1ToL2MessageStatus } = require('@arbitrum/sdk');
+const { ParentTransactionReceipt, ParentToChildMessageStatus, ChildTransactionReceipt, ChildToParentMessageStatus, ParentToChildMessageGasEstimator } = require('@arbitrum/sdk');
 
 require('dotenv').config();
 
@@ -59,7 +58,7 @@ task('encodeL1ToL2Calldata', 'Encode call data for l1 to l2')
     /**
      * Now we can query the required gas params using the estimateAll method in Arbitrum SDK
      */
-    const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(l2Provider);
+    const l1ToL2MessageGasEstimate = new ParentToChildMessageGasEstimator(l2Provider);
 
     /**
      * The estimateAll method gives us the following values for sending an L1->L2 message
@@ -110,21 +109,40 @@ task('checkL1TxStatus', 'Check the l1 tx status')
 
     const l1Provider = new providers.JsonRpcProvider(process.env.L1RPC);
     const l2Provider = new providers.JsonRpcProvider(process.env.L2RPC);
-    const l1TxReceipt = new L1TransactionReceipt(await l1Provider.getTransactionReceipt(l1TxHash));
+    const l1TxReceipt = new ParentTransactionReceipt(await l1Provider.getTransactionReceipt(l1TxHash));
 
     /**
      * In principle, a single L1 txn can trigger any number of L1-to-L2 messages (each with its own sequencer number).
      * In this case, we know our txn triggered only one
      * Here, We check if our L1 to L2 message is redeemed on L2
      */
-    const messages = await l1TxReceipt.getL1ToL2Messages(l2Provider);
+    const messages = await l1TxReceipt.getParentToChildMessages(l2Provider);
     const message = messages[0];
     console.log('Waiting for the L2 execution of the transaction. This may take up to 10-15 minutes ⏰');
     const messageResult = await message.waitForStatus();
     const status = messageResult.status;
-    if (status === L1ToL2MessageStatus.REDEEMED) {
-      console.log(`L2 retryable ticket is executed 🥳 ${messageResult.l2TxReceipt.transactionHash}`);
+    if (status === ParentToChildMessageStatus.REDEEMED) {
+      console.log(`L2 retryable ticket is executed 🥳 ${messageResult.childTxReceipt.transactionHash}`);
     } else {
-      console.log(`L2 retryable ticket is failed with status ${L1ToL2MessageStatus[status]}`);
+      console.log(`L2 retryable ticket is failed with status ${ParentToChildMessageStatus[status]}`);
     }
+  });
+
+task('checkL2TxStatus', 'Check the l2 tx status')
+  .addParam('l2TxHash', 'The l2 tx hash', undefined, types.string)
+  .setAction(async (taskArgs) => {
+    const l2TxHash = taskArgs.l2TxHash;
+    console.log(`The l2 tx hash: ${l2TxHash}`);
+
+    const l1Provider = new providers.JsonRpcProvider(process.env.L1RPC);
+    const l2Provider = new providers.JsonRpcProvider(process.env.L2RPC);
+    const txReceipt = await l2Provider.getTransactionReceipt(
+      l2TxHash,
+    );
+    const arbL2Receipt = new ChildTransactionReceipt(txReceipt);
+    const l2ToL1Msg = (
+      await arbL2Receipt.getChildToParentMessages(l1Provider)
+    ).pop();
+    const msgStatus = await l2ToL1Msg.status(l2Provider);
+    console.log(`The l2 message status: ${ChildToParentMessageStatus[msgStatus]}`);
   });

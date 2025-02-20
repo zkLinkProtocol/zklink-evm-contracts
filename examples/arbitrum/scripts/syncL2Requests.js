@@ -1,7 +1,7 @@
 const { providers, Wallet, utils } = require('ethers');
 const { readDeployContract } = require('../../../script/utils');
 const logName = require('../../../script/deploy_log_name');
-const { L2TransactionReceipt, L2ToL1MessageStatus } = require('@arbitrum/sdk');
+const { ChildTransactionReceipt, ChildToParentMessageStatus } = require('@arbitrum/sdk');
 const { task, types } = require('hardhat/config');
 
 require('dotenv').config();
@@ -44,13 +44,13 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
     /**
      * First, let's find the Arbitrum txn from the txn hash provided
      */
-    const l2Receipt = new L2TransactionReceipt(syncL2RequestsReceipt);
+    const l2Receipt = new ChildTransactionReceipt(syncL2RequestsReceipt);
 
     /**
      * Note that in principle, a single transaction could trigger any number of outgoing messages; the common case will be there's only one.
      * For the sake of this script, we assume there's only one / just grad the first one.
      */
-    const messages = await l2Receipt.getL2ToL1Messages(l1Wallet);
+    const messages = await l2Receipt.getChildToParentMessages(l1Wallet);
     const l2ToL1Msg = messages[0];
 
     /**
@@ -58,7 +58,7 @@ task('syncL2Requests', 'Send sync point from zkLink to arbitrator')
      */
     const msgStatus = await l2ToL1Msg.status(l2Provider);
     console.log(`Message status: ${msgStatus}`);
-    if ((await l2ToL1Msg.status(l2Provider)) === L2ToL1MessageStatus.EXECUTED) {
+    if ((await l2ToL1Msg.status(l2Provider)) === ChildToParentMessageStatus.EXECUTED) {
       console.log(`Message already executed! Nothing else to do here`);
       return;
     }

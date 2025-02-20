@@ -9,7 +9,7 @@
     "ethers": "^5.1.2"
   },
   "dependencies": {
-    "@arbitrum/sdk": "^3.1.13",
+    "@arbitrum/sdk": "^4.0.3",
     "dotenv": "^16.4.1"
   }
 }
