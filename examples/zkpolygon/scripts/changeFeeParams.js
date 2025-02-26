@@ -2,7 +2,7 @@ const { ZkEvmClient, use } = require('@maticnetwork/maticjs');
 const { Web3ClientPlugin } = require('@maticnetwork/maticjs-ethers');
 const { providers, Wallet, utils } = require('ethers');
 const { readDeployContract, getLogName } = require('../../../script/utils');
-const { CROSS_CHAIN_MESSENGER_ABI, L2_CROSS_CHAIN_MESSENGER_ADDREESS } = require('./constants');
+const { CROSS_CHAIN_MESSENGER_ABI, L2_CROSS_CHAIN_MESSENGER_ADDRESS } = require('./constants');
 const logName = require('../../../script/deploy_log_name');
 const { task } = require('hardhat/config');
 
@@ -24,7 +24,7 @@ task('changeFeeParams', 'Change fee params for zkLink').setAction(async (taskArg
 
   const messengerContract = await hre.ethers.getContractAt(
     CROSS_CHAIN_MESSENGER_ABI,
-    L2_CROSS_CHAIN_MESSENGER_ADDREESS,
+    L2_CROSS_CHAIN_MESSENGER_ADDRESS,
     l2Wallet,
   );
   console.log(`The messenger contract address: ${messengerContract.address}`);
