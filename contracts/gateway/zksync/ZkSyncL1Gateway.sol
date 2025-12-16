@@ -2,7 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {IMailbox, TxStatus} from "../../zksync/l1-contracts/zksync/interfaces/IMailbox.sol";
-import {IGetters} from "../../zksync/l1-contracts/zksync/interfaces/IGetters.sol";
+import {IBridgeHub, L2TransactionRequestDirect} from "../../interfaces/zksync/IBridgeHub.sol";
+import {IL1AssetRouter} from "../../interfaces/zksync/IL1AssetRouter.sol";
 import {IArbitrator} from "../../interfaces/IArbitrator.sol";
 import {L1BaseGateway} from "../L1BaseGateway.sol";
 import {IZkSyncL1Gateway} from "../../interfaces/zksync/IZkSyncL1Gateway.sol";
@@ -16,8 +17,12 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
     /// @dev The L2 eth withdraw message minimum length
     uint256 private constant L2_ETH_WITHDRAW_MESSAGE_MINIMUM_LENGTH = 108;
 
-    /// @notice ZkSync message service on local chain
-    IMailbox public immutable MESSAGE_SERVICE;
+    /// @notice ZkSync bridge on local chain
+    IBridgeHub public immutable BRIDGE_HUB;
+    /// @notice ZkSync l1 asset router on local chain
+    IL1AssetRouter public immutable L1ASSET_ROUTER;
+    /// @notice ZkSync era chain id(324 for mainnet, 300 for sepolia)
+    uint256 public immutable ZKSYNC_ERA_CHAIN_ID;
 
     /// @dev A mapping L2 batch number => message number => flag
     /// @dev Used to indicate that zkSync L2 -> L1 message was already processed
@@ -34,9 +39,11 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         _;
     }
 
-    constructor(IArbitrator _arbitrator, IMailbox _messageService) L1BaseGateway(_arbitrator) {
+    constructor(IArbitrator _arbitrator, IBridgeHub _bridgeHub, IL1AssetRouter _l1AssetRouter,  uint256 _zksyncEraChainId) L1BaseGateway(_arbitrator) {
         _disableInitializers();
-        MESSAGE_SERVICE = _messageService;
+        BRIDGE_HUB = _bridgeHub;
+        L1ASSET_ROUTER = _l1AssetRouter;
+        ZKSYNC_ERA_CHAIN_ID = _zksyncEraChainId;
     }
 
     /// @dev Receive eth from zkSync canonical bridge
@@ -59,18 +66,21 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         // If the l2 transaction fails to execute, for example l2GasLimit is too small
         // The l2 value will be refunded to the l2 gateway address.
         // Then the relayer can retry failed tx from L1
-        uint256 baseCost = MESSAGE_SERVICE.l2TransactionBaseCost(tx.gasprice, _l2GasLimit, _l2GasPerPubdataByteLimit);
+        uint256 baseCost = BRIDGE_HUB.l2TransactionBaseCost(ZKSYNC_ERA_CHAIN_ID, tx.gasprice, _l2GasLimit, _l2GasPerPubdataByteLimit);
         uint256 totalValue = baseCost + _value;
         uint256 leftMsgValue = msg.value - totalValue;
-        bytes32 l2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: totalValue}(
-            remoteGateway,
-            _value,
-            executeData,
-            _l2GasLimit,
-            _l2GasPerPubdataByteLimit,
-            new bytes[](0),
-            remoteGateway
-        );
+        L2TransactionRequestDirect memory request = L2TransactionRequestDirect({
+            chainId: ZKSYNC_ERA_CHAIN_ID,
+            mintValue: totalValue,
+            l2Contract: remoteGateway,
+            l2Value: _value,
+            l2Calldata: executeData,
+            l2GasLimit: _l2GasLimit,
+            l2GasPerPubdataByteLimit: _l2GasPerPubdataByteLimit,
+            factoryDeps: new bytes[](0),
+            refundRecipient: remoteGateway
+        });
+        bytes32 l2TxHash = BRIDGE_HUB.requestL2TransactionDirect{value: totalValue}(request);
         executedMessage[l2TxHash] = messageHash;
         if (leftMsgValue > 0) {
             // solhint-disable-next-line avoid-low-level-calls
@@ -91,7 +101,8 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         (uint256 value, bytes memory callData) = _parseL2EthWithdrawalMessage(_message);
 
         // Check if the withdrawal has already been finalized on L2.
-        bool alreadyFinalised = IGetters(address(MESSAGE_SERVICE)).isEthWithdrawalFinalized(
+        bool alreadyFinalised = L1ASSET_ROUTER.isWithdrawalFinalized(
+            ZKSYNC_ERA_CHAIN_ID,
             _l2BatchNumber,
             _l2MessageIndex
         );
@@ -102,7 +113,8 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
                 sender: L2_ETH_TOKEN_SYSTEM_CONTRACT_ADDR,
                 data: _message
             });
-            bool success = MESSAGE_SERVICE.proveL2MessageInclusion(
+            bool success = BRIDGE_HUB.proveL2MessageInclusion(
+                ZKSYNC_ERA_CHAIN_ID,
                 _l2BatchNumber,
                 _l2MessageIndex,
                 l2ToL1Message,
@@ -111,7 +123,8 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
             require(success, "Invalid message");
         } else {
             // Finalize the withdrawal if it is not yet done.
-            MESSAGE_SERVICE.finalizeEthWithdrawal(
+            L1ASSET_ROUTER.finalizeWithdrawal(
+                ZKSYNC_ERA_CHAIN_ID,
                 _l2BatchNumber,
                 _l2MessageIndex,
                 _l2TxNumberInBatch,
@@ -148,7 +161,8 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
         uint16 _l2TxNumberInBatch,
         bytes32[] calldata _merkleProof
     ) external payable nonReentrant onlyRelayer {
-        bool proofValid = MESSAGE_SERVICE.proveL1ToL2TransactionStatus(
+        bool proofValid = BRIDGE_HUB.proveL1ToL2TransactionStatus(
+            ZKSYNC_ERA_CHAIN_ID,
             _failedL2TxHash,
             _l2BatchNumber,
             _l2MessageIndex,
@@ -165,15 +179,18 @@ contract ZkSyncL1Gateway is IZkSyncL1Gateway, L1BaseGateway, BaseGateway {
 
         // Retry the message without l2 value
         // Excess fee will be refunded to the `_refundRecipient`
-        bytes32 replacedL2TxHash = MESSAGE_SERVICE.requestL2Transaction{value: msg.value}(
-            remoteGateway,
-            0,
-            _executeData,
-            _l2GasLimit,
-            _l2GasPerPubdataByteLimit,
-            new bytes[](0),
-            _refundRecipient
-        );
+        L2TransactionRequestDirect memory request = L2TransactionRequestDirect({
+            chainId: ZKSYNC_ERA_CHAIN_ID,
+            mintValue: msg.value,
+            l2Contract: remoteGateway,
+            l2Value: 0,
+            l2Calldata: _executeData,
+            l2GasLimit: _l2GasLimit,
+            l2GasPerPubdataByteLimit: _l2GasPerPubdataByteLimit,
+            factoryDeps: new bytes[](0),
+            refundRecipient: _refundRecipient
+        });
+        bytes32 replacedL2TxHash = BRIDGE_HUB.requestL2TransactionDirect{value: msg.value}(request);
         executedMessage[replacedL2TxHash] = messageHash;
         emit RetryFailedMessage(_failedL2TxHash, replacedL2TxHash);
     }
