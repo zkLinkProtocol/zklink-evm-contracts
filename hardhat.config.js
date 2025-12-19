@@ -1,4 +1,5 @@
-require('@nomicfoundation/hardhat-toolbox');
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-verify");
 require('@openzeppelin/hardhat-upgrades');
 require('./script/deploy_zklink');
 require('./script/deploy_arbitrator');
