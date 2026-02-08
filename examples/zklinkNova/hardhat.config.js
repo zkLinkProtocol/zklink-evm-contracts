@@ -3,6 +3,7 @@ require('./scripts/getTxStatus');
 require('./scripts/decodeRawTx');
 require('./scripts/printGovernanceCall');
 require('./scripts/sendRawTx');
+require('./scripts/owner');
 
 const BaseConfig = require('../../hardhat.base.config');
 
